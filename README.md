@@ -47,12 +47,12 @@ Auxiliary functions of the environment (to get state variables and reward signal
 Video annotations from the breakfast dataset, as pickle files.
 
 Each pickle has the following fields:
-	-'idx_action': Index/Order of the atomic actions in the recipe.
-	-'label': Atomic Action.
-	-'verb_label': Verb of the atomic action. 
-	-'object_label': Objects used in the atomic action. 
-	-'frame_init': Initial frame of the atomic action in the video.
-	-'frame_end': Last frame of the atomic action in the video. 
+- 'idx_action': Index/Order of the atomic actions in the recipe.
+- 'label': Atomic Action.
+- 'verb_label': Verb of the atomic action. 
+- 'object_label': Objects used in the atomic action. 
+- 'frame_init': Initial frame of the atomic action in the video.
+- 'frame_end': Last frame of the atomic action in the video. 
 
 
 

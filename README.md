@@ -13,45 +13,50 @@ In our particular Reinforcement Learning scenario:
 
 
 # FILES DESCRIPTION
+
+Training script of the DQN.
+------------------------------------------------
 ```
 ./train_dqn.py
 ```
-Training script of the DQN.
-------------------------------------------------
 
+Testing script of the DQN.
+------------------------------------------------
 ```
 ./test_dqn.py
 ```
-Testing script of the DQN.
-------------------------------------------------
 
+Implementation of the fully-connected neural network and the Replay Memory module of the DQN.
+------------------------------------------------
 ```
 ./DQN.py
 ```
-Implementation of the fully-connected neural network and the Replay Memory module of the DQN.
+
+
+Default configuration of the training script and the environment. 
 ------------------------------------------------
 ```
 ./config.py
 ```
-Default configuration of the training script and the environment. 
+
+Implementation of the custom environment.
 ------------------------------------------------
 ```
 ./gym-basic/gym_basic/envs/main.py
 ```
-Implementation of the custom environment.
+
+Auxiliary functions of the environment (to get state variables and reward signals from user input).
 ------------------------------------------------
 ```
 ./aux.py
 ```
-Auxiliary functions of the environment (to get state variables and reward signals from user input).
-------------------------------------------------
 
+
+Video annotations from the breakfast dataset, as pickle files.
+------------------------------------------------
 ```
 ./video_annotations/*.pkl
 ```
-
-Video annotations from the breakfast dataset, as pickle files.
-
 Each pickle has the following fields:
 - 'idx_action': Index/Order of the atomic actions in the recipe.
 - 'label': Atomic Action.

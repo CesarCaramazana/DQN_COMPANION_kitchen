@@ -13,10 +13,10 @@ In our particular Reinforcement Learning scenario:
 
 
 # FILES DESCRIPTION
-'''
+```
 ./train_dqn.py
 Training script of the DQN.
-'''
+```
 
 ./test_dqn.py
 Testing script of the DQN.

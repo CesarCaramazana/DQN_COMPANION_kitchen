@@ -1,8 +1,8 @@
 gym==0.24.0
-ipython==8.4.0
 matplotlib==3.5.0
+nltk==3.7
 numpy==1.22.3
-Pillow==9.1.1
+PySimpleGUI==4.60.1
 setuptools==61.2.0
 torch==1.11.0
 torchvision==0.12.0

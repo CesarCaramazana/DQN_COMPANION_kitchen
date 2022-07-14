@@ -56,7 +56,7 @@ pip install -r requirements.txt
 
 # HOW TO USE
 Train the model.
-
+```
 usage: train_dqn.py [-h] [--experiment_name EXPERIMENT_NAME] [--save_model] [--load_model]
                     [--load_episode LOAD_EPISODE] [--batch_size BATCH_SIZE]
                     [--num_episodes NUM_EPISODES] [--lr LR] [--replay_memory REPLAY_MEMORY]
@@ -99,10 +99,10 @@ optional arguments:
                         state, immediate reward, total reward].
   --cuda                Use GPU if available.
 
-
+```
 ------------------------------------------------
 Test the model.
-
+```
 usage: test_dqn.py [-h] [--experiment_name EXPERIMENT_NAME] [--load_episode LOAD_EPISODE]
                    [--root ROOT] [--num_episodes NUM_EPISODES] [--eps_test EPS_TEST] [--display] [--cuda]
 
@@ -125,4 +125,4 @@ optional arguments:
                         state, immediate reward, total reward].                        
   --cuda                Use GPU if available.
 
-
+```

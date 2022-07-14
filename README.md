@@ -23,6 +23,7 @@ Training script of the DQN.
 ```
 Testing script of the DQN.
 
+```
 ./DQN.py
 ```
 Implementation of the fully-connected neural network and the Replay Memory module of the DQN.
@@ -38,11 +39,11 @@ Implementation of the custom environment.
 ./aux.py
 ```
 Auxiliary functions of the environment (to get state variables and reward signals from user input).
-```
 
 ```
 ./video_annotations/*.pkl
 ```
+
 Video annotations from the breakfast dataset, as pickle files.
 Each pickle has the following fields:
 	'idx_action': Index/Order of the atomic actions in the recipe.

@@ -1,6 +1,7 @@
-#PROJECT TITLE: "A Deep Q Network implementation for a recipe preparation task"
+# PROJECT TITLE 
+"A Deep Q Network implementation for a recipe preparation task"
 
-#PROJECT DESCRIPTION
+# PROJECT DESCRIPTION
 
 A Pytorch implementation of a Deep Q Learning scenario with a custom gym environment. The environment simulates a recipe-preparation problem, where a passive agent interacts with the objects in a kitchen and the active agent aims to provide useful help by performing an action related to the task.
 The passive agent provides a reward signal via the available interfaces in order to modify and fine-tune the action decision system. 
@@ -11,7 +12,7 @@ In our particular Reinforcement Learning scenario:
 - Rewards signals are bounded between -1 and 1. 
 
 
-#FILES DESCRIPTION
+# FILES DESCRIPTION
 
 ./train_dqn.py
 Training script of the DQN.
@@ -44,7 +45,7 @@ Each pickle has the following fields:
 
 
 
-#HOW TO INSTALL
+# HOW TO INSTALL
 To install required libraries, run the following command:
 
 pip install -r requirements.txt
@@ -52,7 +53,7 @@ pip install -r requirements.txt
 
 
 
-#HOW TO USE
+# HOW TO USE
 Train the model.
 
 usage: train_dqn.py [-h] [--experiment_name EXPERIMENT_NAME] [--save_model] [--load_model]

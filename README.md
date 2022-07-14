@@ -17,28 +17,34 @@ In our particular Reinforcement Learning scenario:
 ./train_dqn.py
 ```
 Training script of the DQN.
+------------------------------------------------
 
 ```
 ./test_dqn.py
 ```
 Testing script of the DQN.
+------------------------------------------------
 
 ```
 ./DQN.py
 ```
 Implementation of the fully-connected neural network and the Replay Memory module of the DQN.
+------------------------------------------------
 ```
 ./config.py
 ```
 Default configuration of the training script and the environment. 
+------------------------------------------------
 ```
 ./gym-basic/gym_basic/envs/main.py
 ```
 Implementation of the custom environment.
+------------------------------------------------
 ```
 ./aux.py
 ```
 Auxiliary functions of the environment (to get state variables and reward signals from user input).
+------------------------------------------------
 
 ```
 ./video_annotations/*.pkl

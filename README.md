@@ -1,5 +1,5 @@
 # PROJECT TITLE 
-"A Deep Q Network implementation for a recipe preparation task"
+### A Deep Q Network implementation for a recipe preparation task
 
 # PROJECT DESCRIPTION
 

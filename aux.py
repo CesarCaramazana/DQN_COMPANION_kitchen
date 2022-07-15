@@ -166,7 +166,7 @@ freq_obs = 30
 #annotations = np.load(os.path.join(videos[video_idx], pickle), allow_pickle=True)
 annotations = np.load(videos[video_idx], allow_pickle=True)
 
-print(annotations)
+#print(annotations)
 
 
 def get_init_state(version=1):	

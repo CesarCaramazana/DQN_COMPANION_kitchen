@@ -14,6 +14,13 @@ In our particular Reinforcement Learning scenario:
 - Rewards signals are bounded between -1 and 1. 
 
 
+Some problems that have been identified:
+- In order to train the model without the need of real interaction, a table of deterministic rewards has been stablished in the environment setup. This shifts the problem closer to a supervised learning scenario, since there is only one optimal action for every posible state.
+- The states are currently defined by the "Next atomic action", even though the Active Object variable is concatenated. To make the Active Object useful, one could try to implement a take_action function that takes into account which object is needed. 
+- The robot action repertoire is not the actual repertoire. Right now, actions have been hard-coded as "grab object", where "object" is every possibility of the environment. 
+- The discount gamma factor plays a critical role in the loss function curve. When gamma is close to 0.99, the loss is noisier; when gamma is close to 0, the loss has a very steep slope during the first episodes and then gets horizontal. 
+
+
 # FILES DESCRIPTION
 
 Training script of the DQN.
@@ -21,19 +28,21 @@ Training script of the DQN.
 ```
 ./train_dqn.py
 ```
+Trains the DQN. The specific arguments are specified below.
 
 Testing script of the DQN.
 ------------------------------------------------
 ```
 ./test_dqn.py
 ```
+Tests the DQN. Essentially executes the same operations as the training module, but the exploration rate is set to 0 and gradients are not backpropagated. 
 
 Implementation of the fully-connected neural network and the Replay Memory module of the DQN.
 ------------------------------------------------
 ```
 ./DQN.py
 ```
-
+Basic implementation of a FCNN, with only one input layer and one output layer, as well as the Replay Memory.
 
 Default configuration of the training script and the environment. 
 ------------------------------------------------
@@ -46,13 +55,14 @@ Implementation of the custom environment.
 ```
 ./gym-basic/gym_basic/envs/main.py
 ```
+Creation and definition of the kitchen environment. This is where the take_action, transition and get_reward functions are implemented. 
 
 Auxiliary functions of the environment .
 ------------------------------------------------
 ```
 ./aux.py
 ```
-Functions to get state variables and reward signals from user input. Implementation of interface functions for the input systems.
+Functions to get state variables and reward signals from user input. Implementation of interface functions for the input systems which retrieve observations from the environment.
 
 Video annotations from the breakfast dataset, as pickle files.
 ------------------------------------------------

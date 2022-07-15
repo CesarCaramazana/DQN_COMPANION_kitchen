@@ -204,8 +204,8 @@ print("_"*30)
 t1 = time.time() #Tik
 
 for i_episode in range(LOAD_EPISODE, NUM_EPISODES+1):
-	#print("| EPISODE #", i_episode , end='\r')
-	print("| EPISODE #", i_episode , end='\n')
+	if(args.display): print("| EPISODE #", i_episode , end='\n')
+	else: print("| EPISODE #", i_episode , end='\r')
 
 	state = torch.tensor(env.reset(), dtype=torch.float, device=device).unsqueeze(0)
 

@@ -10,7 +10,6 @@ import os
 import nltk #Sentiment Analysis via NLP
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
-
 import config as cfg
 
 N_ATOMIC_ACTIONS = cfg.N_ATOMIC_ACTIONS
@@ -144,15 +143,8 @@ def undo_concat_state_extended(state):
 	
 #GET STATE FROM VIDEO ANNOTATIONS---------------------------------------
 
-root = "./videos/*"
-#root = "/export/data_gpm/public/sharon/breakfast_database/processed_maria_local/*"
-pickle = "video_annotations.pkl"
-videos = glob.glob(root)
-
-#New pickles (12 julio)
 root = "./video_annotations/*"
 videos = glob.glob(root)
-
 
 random.shuffle(videos)
 
@@ -163,7 +155,6 @@ frame = 0
 freq_obs = 30
 
 
-#annotations = np.load(os.path.join(videos[video_idx], pickle), allow_pickle=True)
 annotations = np.load(videos[video_idx], allow_pickle=True)
 
 #print(annotations)
@@ -178,8 +169,7 @@ def get_init_state(version=1):
 		state (numpy vector)
 	"""
 	global video_idx, action_idx, annotations, frame
-	#path = os.path.join(videos[video_idx], pickle)
-	#pck = np.load(path, allow_pickle=True)
+
 	pck = np.load(videos[video_idx], allow_pickle=True)
 	
 	#print("We are at: ", video_idx)
@@ -229,9 +219,10 @@ def get_next_action_annotations(action_idx, annotations):
 
 	
 	#Noise
-	#noise = np.random.uniform(0, 0.01, N_ATOMIC_ACTIONS)
+	noise = np.random.uniform(0, 0.1, N_ATOMIC_ACTIONS)
+	na = na + noise
 	#na = softmax(na + noise)
-	
+	#print(na)
 	return na
 
 
@@ -327,7 +318,7 @@ def get_reward_keyboard():
 	"""
 	Returns an integer value read from keyboard input.
 	Output:
-		Input value or 0 if the user did not provide a valid number.
+		reward (int): Input value or 0 if the user did not provide a valid number.
 	"""
 	reward = input("Input reward value...\n")
 	
@@ -342,6 +333,7 @@ def get_emotion():
 	"""
 	Returns an integer value based on the facial expression, as a reward signal.
 	Output:
+		reward (int): reward value provided by the facial expression recognition system. 
 	
 	"""
 	reward = ... #whatever function calls the emotion recognition system
@@ -353,6 +345,13 @@ def get_emotion():
 	
 
 def get_reward_GUI():
+	"""
+	Gets a reward signal from a Graphical Interface with three buttons: Negative (-1), Neutral (0) and Positive (+1)
+	
+	Output:
+		reward (int): reward value provided by the user. 
+	
+	"""
 	button_size = (25, 15)	
 	reward = 0
 	
@@ -448,6 +447,12 @@ print("\nUncat AO of shape ", ao__.shape, "\n", ao__)
 
 
 def print_setup(args):
+	"""
+	Prints a table with the arguments of the training script.
+	Input:
+		args: arguments during execution time. 
+	
+	"""
 	print("")
 	print(" Experiment ", args.experiment_name)
 	print("="*39)

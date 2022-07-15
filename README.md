@@ -6,6 +6,8 @@
 A Pytorch implementation of a Deep Q Learning scenario with a custom gym environment. The environment simulates a recipe-preparation problem, where a passive agent interacts with the objects in a kitchen and the active agent aims to provide useful help by performing an action related to the task.
 The passive agent provides a reward signal via the available interfaces in order to modify and fine-tune the action decision system. 
 
+![alt text](https://github.com/CesarCaramazana/DQN_COMPANION_kitchen/blob/main/images/DQN_loop.PNG?raw=True)
+
 In our particular Reinforcement Learning scenario:
 - The states are continuous and dynamic. We do not have a model of the environment (state transitions), so the state is updated by observations.
 - The discount factor of future rewards is close to 0 -we do not care that much about cumulative rewards; we want the agent to be optimal on a moment-to-moment basis-.

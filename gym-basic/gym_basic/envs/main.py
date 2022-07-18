@@ -124,157 +124,157 @@ class BasicEnv(gym.Env):
 		
 		reward = 0
 		
-		if state == 0: #'pour milk'
+		if state == 1: #'pour milk'
 			if action == 8: #'bring milk'
 				reward = 1
 			else: reward = -1	
 		
-		elif state == 1: #'pour water'
+		elif state == 2: #'pour water'
 			if action == 17: #'bring water'
 				reward = 1
 			else: reward = -1
 		
-		elif state == 2: #'pour coffee'
+		elif state == 3: #'pour coffee'
 			if action == 18: #'do nothing' -> *coffee is at arm's reach
 				reward = 1
 			else: reward = -1					
 		
-		elif state == 3: #'pour Nesquik'
+		elif state == 4: #'pour Nesquik'
 			if action == 18:
 				reward = 1
 			else: reward = -1
 		
-		elif state == 4: #'pour sugar'
+		elif state == 5: #'pour sugar'
 			if action == 18:
 				reward = 1
 			else: reward = -1
 		
-		elif state == 5: #'put microwave'
+		elif state == 6: #'put microwave'
 			if action == 18:
 				reward = 1
 			else: reward = -1	
 		
-		elif state == 6: #'stir spoon
+		elif state == 7: #'stir spoon
 			if action == 18:
 				reward = 1
 			else: reward = -1
 		
-		elif state == 7: #'extract milk fridge'
+		elif state == 8: #'extract milk fridge'
 			if action == 8:
 				reward = 1
 			else: reward = -1					
 		
-		elif state == 8: #'extract water fridge'
+		elif state == 9: #'extract water fridge'
 			if action == 17:
 				reward = 1
 			else: reward = -1
 		
-		elif state == 9: #'extract sliced bread'
+		elif state == 10: #'extract sliced bread'
 			if action == 18:
 				reward = 1
 			else: reward = -1
 		
-		elif state == 10: #'put toaster'
+		elif state == 11: #'put toaster'
 			if action == 18:
 				reward = 1
 			else: reward = -1	
 		
-		elif state == 11: #'extract butter fridge'
+		elif state == 12: #'extract butter fridge'
 			if action == 1: #'bring butter'
 				reward = 1
 			else: reward = -1
 		
-		elif state == 12: #'extract jam fridge'
+		elif state == 13: #'extract jam fridge'
 			if action == 6: #'bring jam'
 				reward = 1
 			else: reward = -1					
 		
-		elif state == 13: #'extract tomato sauce fridge'
+		elif state == 14: #'extract tomato sauce fridge'
 			if action == 16: #'bring tomato sauce'
 				reward = 1
 			else: reward = -1
 		
-		elif state == 14: #'extract nutella fridge'
+		elif state == 15: #'extract nutella fridge'
 			if action == 10: #'bring nutella'
 				reward = 1
 			else: reward = -1			
 		
-		elif state == 15: #'spread butter'
+		elif state == 16: #'spread butter'
 			if action == 18:
 				reward = 1
 			else: reward = -1	
 		
-		elif state == 16: #'spread jam'
+		elif state == 17: #'spread jam'
 			if action == 18:
 				reward = 1
 			else: reward = -1
 		
-		elif state == 17: #'spread tomato sauce'
+		elif state == 18: #'spread tomato sauce'
 			if action == 18:
 				reward = 1
 			else: reward = -1					
 		
-		elif state == 18: #'spread nutella'
+		elif state == 19: #'spread nutella'
 			if action == 18:
 				reward = 1 
 			else: reward = -1
 		
-		elif state == 19: #'pour olive oil'
+		elif state == 20: #'pour olive oil'
 			if action == 18:
 				reward = 1
 			else: reward = -1
 			
-		elif state == 20: #'put jam fridge'
+		elif state == 21: #'put jam fridge'
 			if action == 18:
 				reward = 1
 			else: reward = -1	
 		
-		elif state == 21: #'put butter fridge'
+		elif state == 22: #'put butter fridge'
 			if action == 20:
 				reward = 1
 			else: reward = -1
 		
-		elif state == 22: #'put tomato sauce fridge'
+		elif state == 23: #'put tomato sauce fridge'
 			if action == 21:
 				reward = 1
 			else: reward = -1					
 		
-		elif state == 23: #'put nutella fridge'
+		elif state == 24: #'put nutella fridge'
 			if action == 22:
 				reward = 1
 			else: reward = -1
 		
-		elif state == 24: #'pour milk bowl'
+		elif state == 25: #'pour milk bowl'
 			if action == 18:
 				reward = 1
 			else: reward = -1
 			
-		elif state == 25: #'pour cereals bowl'
+		elif state == 26: #'pour cereals bowl'
 			if action == 18:
 				reward = 1
 			else: reward = -1	
 		
-		elif state == 26: #'pour nesquik bowl'
+		elif state == 27: #'pour nesquik bowl'
 			if action == 18:
 				reward = 1
 			else: reward = -1
 		
-		elif state == 27: #'put bowl microwave'
+		elif state == 28: #'put bowl microwave'
 			if action == 18:
 				reward = 1
 			else: reward = -1					
 		
-		elif state == 28: #'stir spoon bowl'
+		elif state == 29: #'stir spoon bowl'
 			if action == 18:
 				reward = 1
 			else: reward = -1
 		
-		elif state == 29: #'put milk fridge'
+		elif state == 30: #'put milk fridge'
 			if action == 23:
 				reward = 1
 			else: reward = -1
 			
-		elif state == 30: #'put sliced bread plate'
+		elif state == 31: #'put sliced bread plate'
 			if action == 18:
 				reward = 1
 			else: reward = -1	
@@ -287,7 +287,6 @@ class BasicEnv(gym.Env):
 				
 		self.total_reward += reward
 		self.steps += -1
-
 			
 		self.transition() #Get new observation -> state'
 				
@@ -321,10 +320,8 @@ class BasicEnv(gym.Env):
 		#reward = get_sentiment_keyboard() #REWARD VIA TEXT (SENTIMENT ANALYSIS OF A SENTENCE)
 		
 		self.total_reward += reward
-		self.steps += -1
+		self.steps += -1			
 
-			
-		#time.sleep(1) #Frequency of observations
 		self.transition()	
 			
 		

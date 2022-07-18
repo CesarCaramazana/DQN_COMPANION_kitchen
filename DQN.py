@@ -10,7 +10,7 @@ class DQN(nn.Module):
 		
 		self.input_layer = nn.Sequential(nn.Linear(input_size, 256), nn.ReLU())
 		
-		#self.hidden_layer = nn.Sequential(nn.Linear(256, 256), nn.ReLU())
+		self.hidden_layer = nn.Sequential(nn.Linear(256, 256), nn.ReLU())
 				
 		self.output_layer = nn.Linear(256, output_size)
 		
@@ -23,8 +23,7 @@ class DQN(nn.Module):
 		#print("")
 		
 		x = self.input_layer(x)
-		#x = self.hidden_layer(x)
-
+		x = self.hidden_layer(x)
 		x = self.output_layer(x)
 		
 		
@@ -40,6 +39,12 @@ def init_weights(m):
     if isinstance(m, nn.Linear):
         torch.nn.init.xavier_uniform_(m.weight)
         m.bias.data.fill_(0.01)
+		
+		
+
+#----------------------------------		
+		
+		
 		
 Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))		
 class ReplayMemory(object):

@@ -28,13 +28,9 @@ class BasicEnv(gym.Env):
 			self.observation_space = gym.spaces.Discrete(N_ATOMIC_ACTIONS) #State as Next Action
 		elif VERSION == 2:
 			self.observation_space = gym.spaces.Discrete(N_ATOMIC_ACTIONS+N_OBJECTS) #State as Next Action + VWM	 
-		elif VERSION == 3:
-			self.observation_space = gym.spaces.Discrete(N_ATOMIC_ACTIONS+3*N_OBJECTS+N_OBJECTS)
+
 		
 		self.state = [] #One hot encoded state
-		self.steps = 0 #Number of actions
-
-		self.end = N_ATOMIC_ACTIONS-1 #Next Act
 		
 		self.total_reward = 0
 		
@@ -52,34 +48,31 @@ class BasicEnv(gym.Env):
 	def step(self, action):
 		"""
 		Transition from the current state (self.state) to the next one given an action.
+		
+		Input:
+			action: (int) action taken by the agent.
+		Output:
+			next_state: (numpy array) state transitioned to after taking action.
+			reward: (int) reward received. 
+			done: (bool) True if the episode is finished (the recipe has reached its end).
+			info:	
 		"""
 		assert self.action_space.contains(action)
 		done = False
 		
 		current_state = self.state #Current state
 			
-		reward = self._take_action(action) #Take action and transition from current state to state'
-		
+		reward = self._take_action(action) #Take action	
 		#reward = self._take_action2(action) #REWARD GUI
-
-		next_state = self.state
 		
-		#if undo_one_hot(self.state) == self.end or self.steps == 0: #Finish episode when reached end state or run out of moves
-		"""
-		if self.steps == 0: #Finish if run out of moves	
-			done=True
-		"""
-		#print("Transitioned to: ", undo_one_hot(next_state))
-		if undo_one_hot(next_state) == N_ATOMIC_ACTIONS-1: #If the next action is nothing (==terminal state), finish episode
-			done = True
+		self.transition() #Transition to a new state
+		next_state = self.state
 
+		if undo_one_hot(self.state) == N_ATOMIC_ACTIONS-1: #If the next action is nothing (==terminal state), finish episode
+			done = True
 		
 		#PRINT STATE-ACTION TRANSITION & REWARD
 		if self.display: self.render(current_state, next_state, action, reward, self.total_reward)
-		#self.render(undo_one_hot(current_state), undo_one_hot(next_state), action, reward, self.total_reward)
-		
-		#self.render(undo_one_hot(undo_concat_na(current_state, N_ATOMIC_ACTIONS)), undo_one_hot(undo_concat_na(next_state, N_ATOMIC_ACTIONS)), action, reward, self.total_reward) #NA + Ob
-		
 
 		
 		info = {}
@@ -99,7 +92,7 @@ class BasicEnv(gym.Env):
 
 			
 		self.total_reward = 0
-		self.steps = N_ATOMIC_ACTIONS
+
 		
 		return self.state
 
@@ -286,10 +279,8 @@ class BasicEnv(gym.Env):
 		#------------------------------		
 				
 		self.total_reward += reward
-		self.steps += -1
 			
-		self.transition() #Get new observation -> state'
-				
+			
 	
 		return reward
 	
@@ -316,13 +307,12 @@ class BasicEnv(gym.Env):
 							
 		print("| STATE: {0:>29s}".format(self.next_atomic_action_repertoire[state]), " | ACTION: {0:>20s}".format(self.action_repertoire[action]))
 		
-		reward = get_reward_GUI() #REWARD VIA GRAPHICAL INTERFACE
+		#reward = get_reward_GUI() #REWARD VIA GRAPHICAL INTERFACE
 		#reward = get_sentiment_keyboard() #REWARD VIA TEXT (SENTIMENT ANALYSIS OF A SENTENCE)
+		reward = reward_confirmation_perform(action)	
+
 		
 		self.total_reward += reward
-		self.steps += -1			
-
-		self.transition()	
 			
 		
 		return reward
@@ -339,6 +329,12 @@ class BasicEnv(gym.Env):
 	def render(self, state, next_state, action, reward, total_reward):
 		"""
 		Prints the environment.		
+		Input:
+			state: (numpy array) current state of the environment.
+			next_state: (numpy array) state transitioned to after taking action.
+			action: (int) action taken in current state.
+			reward: (int) reward received in current state by taking action.
+			total_reward: (int) cumulative reward of the episode.
 		"""
 		if VERSION == 1:
 			state = undo_one_hot(state)

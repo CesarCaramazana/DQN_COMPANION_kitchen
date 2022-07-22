@@ -15,9 +15,9 @@ In our particular Reinforcement Learning scenario:
 - The output of the network should not be softmaxed (it approximates the Q value, not the probability of each action, which depends on the reward).
 
 
-Some problems that have been identified:
+*Some problems that have been identified*:
 - In order to train the model without the need of real interaction, a table of deterministic rewards has been stablished in the environment setup. This shifts the problem closer to a supervised learning scenario, since there is only one optimal action for every posible state.
-- The states are currently defined by the "Next atomic action", even though the Active Object variable is concatenated. To make the Active Object useful, one could try to implement a take_action function that takes into account which object is needed. 
+- The states are currently defined as the "Next atomic action", even though the Active Object variable is concatenated. To make the Active Object useful, one could try to implement a take_action function that takes into account which object is needed. 
 - The robot action repertoire is not the actual repertoire. Right now, actions have been hard-coded as "grab object", where "object" is every possibility of the environment. 
 - The discount gamma factor plays a critical role in the loss function curve. When gamma is close to 0.99, the loss is noisier; when gamma is close to 0, the loss has a very steep slope during the first episodes and then gets horizontal. 
 

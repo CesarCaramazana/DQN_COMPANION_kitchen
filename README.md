@@ -86,9 +86,9 @@ To install required libraries, run the following command:
 ```
 pip install -r requirements.txt
 ```
-In order to generate the requirements file, you need to install the library ```pipreqs```and run the following command in the root folder:
+In order to generate the requirements file, you need to install the library ```pipreqs``` and run the following command in the root folder:
 ```
-pipreqs ./
+pipreqs ./ --force
 ```
 
 

@@ -36,7 +36,7 @@ parser.add_argument('--replay_memory', type=int, default=cfg.REPLAY_MEMORY, help
 parser.add_argument('--gamma', type=float, default=cfg.GAMMA, help="(float) Discount rate of future rewards. For example: 0.99.")
 parser.add_argument('--eps_start', type=float, default=cfg.EPS_START, help="(float) Initial exploration rate. For example: 0.99.")
 parser.add_argument('--eps_end', type=float, default=cfg.EPS_END, help="(float) Terminal exploration rate. For example: 0.05.")
-parser.add_argument('--eps_decay', type=int, default=cfg.EPS_DECAY, help="(int) Decay factor of the exploration rate, in proportion to the number of steps. Step where the epsilon has decay to 0.367. For example: 3000.")
+parser.add_argument('--eps_decay', type=int, default=cfg.EPS_DECAY, help="(int) Decay factor of the exploration rate. Episode where the epsilon has decay to 0.367 of the initial value. For example: num_episodes/2.")
 parser.add_argument('--target_update', type=int, default=cfg.TARGET_UPDATE, help="(int) Frequency of the update of the Target Network, in number of episodes. For example: 10.")
 parser.add_argument('--root', type=str, default=cfg.ROOT, help="(str) Name of the root folder for the saving of checkpoints. Parent folder of EXPERIMENT_NAME folders. For example: ./Checkpoints/")
 parser.add_argument('--display', action='store_true', default=False, help="Display environment info as [Current state, action taken, transitioned state, immediate reward, total reward].")
@@ -100,6 +100,7 @@ memory = ReplayMemory(REPLAY_MEMORY)
 
 print_setup(args)
 
+steps_done = 0 
 
 # ----------------------------------
 
@@ -121,12 +122,13 @@ if LOAD_MODEL:
 	optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 	LOAD_EPISODE = checkpoint['episode']
 	total_loss = checkpoint['loss']
+	steps_done = checkpoint['steps']
 	print("-"*30)
 
 target_net.load_state_dict(policy_net.state_dict())
 
 	
-steps_done = 0 
+
 
 #Action taking
 def select_action(state):
@@ -141,7 +143,6 @@ def select_action(state):
 	sample = random.random() #Generate random number [0, 1]
 	eps_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY) #Get current exploration rate
 
-	steps_done += 1
 	if sample > eps_threshold: #If the random number is higher than the current exploration rate, the policy network determines the best action.
 		with torch.no_grad():
 			out = policy_net(state)
@@ -211,6 +212,8 @@ for i_episode in range(LOAD_EPISODE, NUM_EPISODES+1):
 
 	episode_loss = []
 	done = False
+	
+	steps_done += 1
 
 	for t in count(): 
 		action = select_action(state)
@@ -253,7 +256,8 @@ for i_episode in range(LOAD_EPISODE, NUM_EPISODES+1):
 			'model_state_dict': policy_net.state_dict(),
 			'optimizer_state_dict': optimizer.state_dict(),
 			'episode': i_episode,
-			'loss': total_loss
+			'loss': total_loss,
+			'steps': steps_done
 				
 			}, os.path.join(path, model_name))
 

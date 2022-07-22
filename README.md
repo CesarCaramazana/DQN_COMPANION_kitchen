@@ -64,7 +64,11 @@ Auxiliary functions of the environment .
 ```
 ./aux.py
 ```
-Functions to get state variables and reward signals from user input. Implementation of link functions between the input systems and the environment --such as get_state(), which will call the Action Prediction system, the VWM, etcetera, and generate a state variable by concatenation, for example--.
+In this script, some auxiliary functions that are used in the environment setup (./gym-basic/gym_basic/envs/main.py) are implemented.
+There are three types of functions:
+	1) **General purpose**: regarding the management of array variables.
+	2) **Get state**: as interface functions between the input systems and the environment. Right now using the video annotations. In the future, these functions will be used to retrieve the outputs of the Action Prediction system (among others) and generate the state of the environment.
+	3) **Rewards**: user interfaces to get the reward value. 
 
 Video annotations from the breakfast dataset, as pickle files.
 ------------------------------------------------

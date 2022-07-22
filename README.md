@@ -161,10 +161,30 @@ optional arguments:
 
 ```
 ./
-    /gym-basic
-    /images
-        plot.png
-    /video_annotations    
+  /gym-basic
+      /gym_basic
+          __init__.py
+          envs/
+              basic_env.py
+              __init__.py
+              main.py
+      setup.py
+  /images
+      some_image.png
+  /video_annotations
+      recipe_date.pkl
+  aux.py
+  DQN.py
+  config.py
+  train_dqn.py
+  test_dqn.py
+  
+  /Checkpoints
+      /experiment_name
+          model_#episode.pt
+  
+  README.md
+  requirements.txt
 
 ```
 

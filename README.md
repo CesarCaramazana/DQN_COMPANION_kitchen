@@ -64,7 +64,7 @@ Auxiliary functions of the environment .
 ```
 ./aux.py
 ```
-Functions to get state variables and reward signals from user input. Implementation of link functions between the input systems and the environment --such as get_state(), which will call the Action Prediction system and the VWM script and generate a state variable, for example--.
+Functions to get state variables and reward signals from user input. Implementation of link functions between the input systems and the environment --such as get_state(), which will call the Action Prediction system, the VWM, etcetera, and generate a state variable by concatenation, for example--.
 
 Video annotations from the breakfast dataset, as pickle files.
 ------------------------------------------------

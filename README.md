@@ -156,3 +156,15 @@ optional arguments:
   --cuda                Use GPU if available.
 
 ```
+
+# FOLDER STRUCTURE
+
+```
+./
+    /gym-basic
+    /images
+        plot.png
+    /video_annotations    
+
+```
+

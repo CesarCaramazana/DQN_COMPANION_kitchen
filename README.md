@@ -66,9 +66,9 @@ Auxiliary functions of the environment .
 ```
 In this script, some auxiliary functions that are used in the environment setup (./gym-basic/gym_basic/envs/main.py) are implemented.
 There are three types of functions:
-	1) **General purpose**: regarding the management of array variables.
-	2) **Get state**: as interface functions between the input systems and the environment. Right now using the video annotations. In the future, these functions will be used to retrieve the outputs of the Action Prediction system (among others) and generate the state of the environment.
-	3) **Rewards**: user interfaces to get the reward value. 
+- 1) **General purpose**: regarding the management of array variables.
+- 2) **Get state**: as interface functions between the input systems and the environment. Right now using the video annotations. In the future, these functions will be used to retrieve the outputs of the Action Prediction system (among others) and generate the state of the environment.
+- 3) **Rewards**: user interfaces to get the reward value. 
 
 Video annotations from the breakfast dataset, as pickle files.
 ------------------------------------------------

@@ -29,7 +29,7 @@ Training script of the DQN.
 ```
 ./train_dqn.py
 ```
-Trains the DQN. The specific arguments are specified below.
+Trains the DQN. The arguments are specified below.
 
 Testing script of the DQN.
 ------------------------------------------------
@@ -43,27 +43,28 @@ Implementation of the fully-connected neural network and the Replay Memory modul
 ```
 ./DQN.py
 ```
-Basic implementation of a FCNN, with only one input layer and one output layer, as well as the Replay Memory.
+Basic implementation of a FCNN, with only one hidden layer, as well as the Replay Memory.
 
 Default configuration of the training script and the environment. 
 ------------------------------------------------
 ```
 ./config.py
 ```
+Default variables for the training (such as the exploration rate, learning rate and number of episodes) and for the environment (action and state spaces, with their meanings).
 
 Implementation of the custom environment.
 ------------------------------------------------
 ```
 ./gym-basic/gym_basic/envs/main.py
 ```
-Creation and definition of the kitchen environment. This is where the take_action, transition and get_reward functions are implemented. 
+Creation and definition of the kitchen environment. This is where the take_action, transition and get_reward functions are implemented.  
 
 Auxiliary functions of the environment .
 ------------------------------------------------
 ```
 ./aux.py
 ```
-Functions to get state variables and reward signals from user input. Implementation of interface functions for the input systems which retrieve observations from the environment.
+Functions to get state variables and reward signals from user input. Implementation of link functions between the input systems and the environment --such as get_state(), which will call the Action Prediction system and the VWM script and generate a state variable, for example--.
 
 Video annotations from the breakfast dataset, as pickle files.
 ------------------------------------------------
@@ -85,7 +86,10 @@ To install required libraries, run the following command:
 ```
 pip install -r requirements.txt
 ```
-
+In order to generate the requirements file, you need to install the library ```pipreqs```and run the following command in the root folder:
+```
+pipreqs ./
+```
 
 
 # HOW TO USE

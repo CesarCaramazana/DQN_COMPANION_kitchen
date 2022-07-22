@@ -261,11 +261,11 @@ def get_time_step():
 	"""
 	global action_idx, frame
 	#time.sleep(1)
-	frame += 200
+	frame += 60
 	
-	if frame % freq_obs == 0:
-		if frame > annotations['frame_init'][action_idx]:
-			action_idx +=1
+	#if frame % freq_obs == 0:
+	if frame > annotations['frame_init'][action_idx]:
+		action_idx +=1
 	return action_idx
 
 
@@ -384,6 +384,69 @@ def get_reward_GUI():
 	return reward
 
 
+def reward_confirmation_perform(action):
+	"""
+	Performs an action after receiving confirmation (via POSITIVE reward) or cancels the operation if received NEGATIVE/NEUTRAL reward. The reward is offered through a Graphical Interface with three buttons. 
+	
+	Input:
+		action (int): action-output of the DQN (according to an exploration-exploitation policy).
+	
+	Output:
+		reward (int): reward value provided by the user. 
+	
+	"""
+	button_size = (25, 15)	
+	reward = 0
+	
+	#Button layout (as a matrix)
+	interface = [[
+	sg.Button('NEGATIVE', size=button_size, key='Negative', button_color='red'), 
+	sg.Button('NEUTRAL', key='Neutral', size=button_size, button_color='gray'), 
+	sg.Button('POSITIVE', key='Positive', size=button_size, button_color='blue')
+	]]
+	
+	#Generate window with the button layout
+	
+	
+	
+	if action != 18:
+		window = sg.Window('Interface', interface, background_color='black').Finalize()	
+		print("\nROBOT: I'm going to", cfg.ROBOT_ACTIONS_MEANINGS[action])
+	
+		while True:
+			event, values = window.read()
+		
+			if event == sg.WIN_CLOSED or event == 'Negative':
+				reward = -1
+				break
+		
+			if event == sg.WIN_CLOSED or event == 'Neutral':
+				reward = 0
+				break
+		
+			if event == sg.WIN_CLOSED or event == 'Positive':
+				reward = +1
+				break	
+		window.close()
+	
+		global frame
+	
+		#Confirmation
+		if reward == 1:
+			print("PERFORMING ACTION - ", cfg.ROBOT_ACTIONS_MEANINGS[action], "\n")
+			for i in range(10):
+				print("."*(i+1), end='\r')
+				time.sleep(0.25)
+			#time.sleep(1)
+			frame += 300
+		
+		else: 
+			#print("Or maybe not.")
+			pass	
+	
+	
+	return reward
+
 def get_sentiment_keyboard():
 	"""
 	Returns an integer reward value extracted from the sentiment analysis of an input sentence.
@@ -397,8 +460,7 @@ def get_sentiment_keyboard():
 	
 	score = analyzer.polarity_scores(sentence)
 	#print("Score : ", score['compound'])
-	
-	
+		
 	if score['compound'] > 0.1: reward = 1
 	elif score['compound'] < -0.1: reward = -1
 	else : reward = 0
@@ -408,6 +470,10 @@ def get_sentiment_keyboard():
 	
 
 	return reward
+
+
+	
+	
 
 
 #---------------------------------

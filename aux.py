@@ -15,6 +15,20 @@ import config as cfg
 N_ATOMIC_ACTIONS = cfg.N_ATOMIC_ACTIONS
 N_OBJECTS = cfg.N_OBJECTS
 
+"""
+In this script, some auxiliary functions that are used in the environment setup (./gym-basic/gym_basic/envs/main.py) are implemented.
+There are three types of functions:
+	1) General purpose: regarding the management of array variables.
+	2) Get state: as interface functions between the input systems and the environment. Right now using video_annotations. In the future, these functions will be used to retrieve the outputs of the Action Prediction system (among others).
+	3) Reward: user interfaces to get the reward value. 
+
+"""
+
+
+# 1) GENERAL PURPOSE FUNCTIONS
+#Management of vectors: one hot encoding, softmax, concatenations and deconcatenations.
+#---------------------------------------------------------------------------
+
 def one_hot(x, n):
 	"""
 	One hot encoding of an integer variable x with n number of possible values.
@@ -57,34 +71,6 @@ def softmax(x):
 
 
 
-
-def get_VWM():
-	"""
-	Generate a random matrix that emulates the Visual Working Memory (VWM) of the Action Prediction system.
-	The VWM has dimensions (N_OBJECTS, 3), while not considering the object 'background' as part of N_OBJECTS.
-	For each object, the VWM stores the X and Y coordinates with respect to the gaze, and the activation weight w0, that decays over time with a factor gamma. All in all, it is an expanded representation of the Active Object feature. 
-	
-	Output:
-		vwm: random matrix (numpy array) with dimensions (N_OBJECTS, 3), where the 3rd column is softmaxed.	
-	"""
-	#vwm = np.zeros((n_objects-1, 3), dtype=np.float32)
-	#vwm[object, 3] | vwm[:, 0] == x coordinates | vwm[:, 1] == y coordinates | vwm[:, 2] == weight
-	#So, for example: vwm[3, 0] is the X coordinate (w.r.t the gaze) of the object #3.
-	
-	vwm = np.random.normal(0, 0.1, size=(N_OBJECTS, 3))
-	vwm[:, 2] = softmax(vwm[:,2])
-	
-	return vwm
-
-
-def get_sensorymotor():
-	"""
-	
-	"""
-	sm = np.zeros((1,1))
-	
-	return sm
-
 def concat_vectors(a, b):
 	"""
 	Concatenates two vectors along axis 0.
@@ -99,7 +85,6 @@ def concat_vectors(a, b):
 	
 	return v
 
-	
 
 
 #State: NA + AO
@@ -121,27 +106,11 @@ def undo_concat_state(state):
 	return next_action, ao
 
 
-def undo_concat_state_extended(state):
-	"""
-	Separates a full state vector into the Next Action vector, the VWM matrix and the Active Object vector.
-	Input:
-		State: (numpy array) representation of the full state as a Next Action vector, a flattened VWM matrix and an Active Object vector.
-	Output:
-		next_action: (numpy array) vector of dimensions N_ATOMIC_ACTIONS.
-		vwm: (numpy array) matrix of dimensions (N_OBJECTS, 3).
-		active_object: (numpy array) vector of dimensions N_OBJECTS.
-	"""
-	
-	next_action = state[0:N_ATOMIC_ACTIONS] 
-	vwm = state[N_ATOMIC_ACTIONS:(3*N_OBJECTS+N_ATOMIC_ACTIONS)]
-	vwm = vwm.reshape(N_OBJECTS, 3)
-	active_object = state[(3*N_OBJECTS+N_ATOMIC_ACTIONS):]
-	
-	return next_action, vwm, active_object
 	
 	
-	
-#GET STATE FROM VIDEO ANNOTATIONS---------------------------------------
+# 2) GET STATE 
+#Get the state of the environment from video annotations.
+#---------------------------------------------------------------------------
 
 root = "./video_annotations/*"
 videos = glob.glob(root)
@@ -150,13 +119,11 @@ random.shuffle(videos)
 
 total_videos = len(videos)
 video_idx = 0
-action_idx = 0
-frame = 0
+action_idx = 0 
+frame = 0 #Current frame
 freq_obs = 30
 
-
 annotations = np.load(videos[video_idx], allow_pickle=True)
-
 #print(annotations)
 
 
@@ -227,7 +194,6 @@ def get_next_action_annotations(action_idx, annotations):
 
 
 
-
 def get_active_object_annotations(action_idx, annotations):
 	"""
 	Gets the active objects of an atomic action given the index of the action.
@@ -249,7 +215,6 @@ def get_active_object_annotations(action_idx, annotations):
 			ao[idx] = 1
 	
 	return ao	
-
 
 
 def get_time_step():
@@ -310,7 +275,8 @@ def get_state(version=1):
 	
 	
 	
-#GET REWARDS	
+# 3) GET REWARDS	
+#User interfaces/Reward functions.
 #---------------------------------------------------------------------------
 
 
@@ -485,7 +451,7 @@ na3 = get_end_state()
 na4 = get_random_state()
 
 ao = get_active_object()
-vwm = get_VWM()
+
 
 s = get_state()
 s_ext = get_state_extended()

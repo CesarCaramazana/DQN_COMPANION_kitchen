@@ -91,25 +91,19 @@ pip install -r requirements.txt
 # HOW TO USE
 Train the model.
 ```
-usage: train_dqn.py [-h] [--experiment_name EXPERIMENT_NAME] [--save_model] [--load_model]
-                    [--load_episode LOAD_EPISODE] [--batch_size BATCH_SIZE]
-                    [--num_episodes NUM_EPISODES] [--lr LR] [--replay_memory REPLAY_MEMORY]
-                    [--gamma GAMMA] [--eps_start EPS_START] [--eps_end EPS_END]
-                    [--eps_decay EPS_DECAY] [--target_update TARGET_UPDATE] [--root ROOT]
-                    [--display] [--cuda]
+usage: train_dqn.py [-h] [--experiment_name EXPERIMENT_NAME] [--save_model] [--load_model] [--load_episode LOAD_EPISODE] [--batch_size BATCH_SIZE]
+                    [--num_episodes NUM_EPISODES] [--lr LR] [--replay_memory REPLAY_MEMORY] [--gamma GAMMA] [--eps_start EPS_START] [--eps_end EPS_END]
+                    [--eps_decay EPS_DECAY] [--target_update TARGET_UPDATE] [--root ROOT] [--display] [--cuda]
 
 optional arguments:
   -h, --help            show this help message and exit
   --experiment_name EXPERIMENT_NAME
-                        (str) Name of the experiment. Used to name the folder where the model is
-                        saved. For example: my_first_DQN.
+                        (str) Name of the experiment. Used to name the folder where the model is saved. For example: my_first_DQN.
   --save_model          Save a checkpoint in the EXPERIMENT_NAME folder.
-  --load_model          Load a checkpoint from the EXPERIMENT_NAME folder. If no episode is
-                        specified (LOAD_EPISODE), it loads the latest created file.
+  --load_model          Load a checkpoint from the EXPERIMENT_NAME folder. If no episode is specified (LOAD_EPISODE), it loads the latest created file.
   --load_episode LOAD_EPISODE
-                        (int) Number of episode to load from the EXPERIMENT_NAME folder, as the
-                        sufix added to the checkpoints when the save files are created. For
-                        example: 500, which will load 'model_500.pt'.
+                        (int) Number of episode to load from the EXPERIMENT_NAME folder, as the sufix added to the checkpoints when the save files are
+                        created. For example: 500, which will load 'model_500.pt'.
   --batch_size BATCH_SIZE
                         (int) Batch size for the training of the network. For example: 64.
   --num_episodes NUM_EPISODES
@@ -122,16 +116,14 @@ optional arguments:
                         (float) Initial exploration rate. For example: 0.99.
   --eps_end EPS_END     (float) Terminal exploration rate. For example: 0.05.
   --eps_decay EPS_DECAY
-                        (int) Decay factor of the exploration rate, in proportion to the number
-                        of of steps. Step where the epsilon has decay to 0.367. For example: 3000.
+                        (int) Decay factor of the exploration rate. Episode where the epsilon has decay to 0.367 of the initial value. For example:
+                        num_episodes/2.
   --target_update TARGET_UPDATE
-                        (int) Frequency of the update of the Target Network, in number of
-                        episodes. For example: 10.
-  --root ROOT           (str) Name of the root folder for the saving of checkpoints. Parent
-                        folder of EXPERIMENT_NAME folders. For example: ./Checkpoints/
-  --display             Display environment info as [Current state, action taken, transitioned
-                        state, immediate reward, total reward].
+                        (int) Frequency of the update of the Target Network, in number of episodes. For example: 10.
+  --root ROOT           (str) Name of the root folder for the saving of checkpoints. Parent folder of EXPERIMENT_NAME folders. For example: ./Checkpoints/
+  --display             Display environment info as [Current state, action taken, transitioned state, immediate reward, total reward].
   --cuda                Use GPU if available.
+
 
 ```
 ------------------------------------------------

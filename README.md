@@ -45,7 +45,8 @@ Implementation of the fully-connected neural network and the Replay Memory modul
 ```
 Basic implementation of a FCNN, with only one hidden layer, as well as the Replay Memory.
 
-The number of input neurons depends on the size of the STATE SPACE. For example, if we consider the state to be defined as the vector probabilities of Next Atomic Action, we would have as many neurons in the input layer as the number of atomic actions (given that they are one-hot encoded). 
+The number of input neurons depends on the size of the STATE SPACE. For example, if we considered the state to be defined as the vector of probabilities of *Next Atomic Action*, we would have as many neurons in the input layer as the number of atomic actions. 
+
 The number of output neurons is the same as the number of actions from the robot action repertoire (or ACTION SPACE). The network approximates que Q value for each possible action. 
 
 ![DQN FCNN](https://github.com/CesarCaramazana/DQN_COMPANION_kitchen/blob/main/images/DQN_FCNN.PNG?raw=True)

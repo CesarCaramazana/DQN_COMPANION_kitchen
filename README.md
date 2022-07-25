@@ -78,6 +78,17 @@ There are three types of functions:
 2. **Get state**: as interface functions between the input systems and the environment. Right now using the video annotations. In the future, these functions will be used to retrieve the outputs of the Action Prediction system (among others) and generate the state of the environment.
 3. **Rewards**: user interfaces to get the reward value. 
 
+In the following picture these blocks are incorporated into the general DQN loop. 
+
+![DQN Aux](https://github.com/CesarCaramazana/DQN_COMPANION_kitchen/blob/main/images/auxiliary_functions.PNG?raw=True)
+
+*Some notes:
+- The current implementation, the Get_state() function uses video annotations and does not call the Action Prediction System, nor the Visual Working Memory. 
+- The VWM is not encoded in the annotations, and therefore is not used right now as an input variable. 
+- One_hot() and Concatenate() are the two most significant general purpose functions. One-hot encoding is necessary right now because the Next Atomic Action is annotated as an integer. The Action Prediction System will most likely output a vector, which won't require one-hot encoding. 
+- Because of the three above, this picture should not be taken as a faithful representation of the annotation-based implementation of our scenario, but a mixture between what is and what will be once the other systems are available. *
+
+
 Video annotations from the breakfast dataset, as pickle files.
 ------------------------------------------------
 ```

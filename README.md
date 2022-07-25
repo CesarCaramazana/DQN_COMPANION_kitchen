@@ -45,7 +45,7 @@ Implementation of the fully-connected neural network and the Replay Memory modul
 ```
 Basic implementation of a FCNN, with only one hidden layer, as well as the Replay Memory.
 
-The number of input neurons depends on the size of the STATE SPACE. For example, if we consider the state to be defined as the probabilities vector of Next Atomic Action, we would have as many neurons in the input layer as the number of atomic actions (given that they are one-hot encoded). 
+The number of input neurons depends on the size of the STATE SPACE. For example, if we consider the state to be defined as the vector probabilities of Next Atomic Action, we would have as many neurons in the input layer as the number of atomic actions (given that they are one-hot encoded). 
 The number of output neurons is the same as the number of actions from the robot action repertoire (or ACTION SPACE). The network approximates que Q value for each possible action. 
 
 ![DQN FCNN](https://github.com/CesarCaramazana/DQN_COMPANION_kitchen/blob/main/images/DQN_FCNN.PNG?raw=True)
@@ -78,15 +78,15 @@ There are three types of functions:
 2. **Get state**: as interface functions between the input systems and the environment. Right now using the video annotations. In the future, these functions will be used to retrieve the outputs of the Action Prediction system (among others) and generate the state of the environment.
 3. **Rewards**: user interfaces to get the reward value. 
 
-In the following picture these blocks are incorporated into the general DQN loop. 
+In the following picture, these blocks are incorporated into the general DQN loop. 
 
 ![DQN Aux](https://github.com/CesarCaramazana/DQN_COMPANION_kitchen/blob/main/images/auxiliary_functions.PNG?raw=True)
 
-*Some notes:
-- The current implementation, the Get_state() function uses video annotations and does not call the Action Prediction System, nor the Visual Working Memory. 
-- The VWM is not encoded in the annotations, and therefore is not used right now as an input variable. 
-- One_hot() and Concatenate() are the two most significant general purpose functions. One-hot encoding is necessary right now because the Next Atomic Action is annotated as an integer. The Action Prediction System will most likely output a vector, which won't require one-hot encoding. 
-- Because of the three above, this picture should not be taken as a faithful representation of the annotation-based implementation of our scenario, but a mixture between what is and what will be once the other systems are available. *
+*Some notes*:
+- *In the current implementation, the Get_state() function uses video annotations, and does not call the Action Prediction System, nor the Visual Working Memory*. 
+- *The VWM is not encoded in the annotations, and therefore is not used right now as an input variable*. 
+- *One_hot() and Concatenate() are the two most significant general purpose functions. One-hot encoding is necessary right now because the Next Atomic Action is annotated as an integer. The Action Prediction System will output a vector of probabilties, which won't require one-hot encoding*. 
+- *Because of the three above, this picture should not be taken as a faithful representation of the annotation-based implementation of our scenario, but a mixture between what is and what will be once the other systems are available. *
 
 
 Video annotations from the breakfast dataset, as pickle files.

@@ -10,8 +10,8 @@ The passive agent provides a reward signal via the available interfaces in order
 
 In our particular Reinforcement Learning scenario:
 - The states are continuous and dynamic. We do not have a model of the environment (state transitions), so the state is updated by observations.
-- The discount factor of future rewards is close to 0 -we do not care that much about cumulative rewards; we want the agent to be optimal on a moment-to-moment basis-.
-- Rewards signals are bounded between -1 and 1. 
+- The discount factor of future rewards is close to 0 --we do not care that much about cumulative rewards; we want the agent to be optimal on a moment-to-moment basis--.
+- Rewards are bounded between -1 and 1. 
 - The output of the network should not be softmaxed (it approximates the Q value, not the probability of each action, which depends on the reward).
 
 

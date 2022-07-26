@@ -124,7 +124,8 @@ frame = 0 #Current frame
 freq_obs = 30
 
 annotations = np.load(videos[video_idx], allow_pickle=True)
-#print(annotations)
+print()
+print(annotations)
 
 
 def get_init_state(version=1):	
@@ -219,12 +220,12 @@ def get_active_object_annotations(action_idx, annotations):
 
 def get_time_step():
 	"""
-	Gets action idx with respect to the current frame of the video.
+	Gets action idx (from the annotations) with respect to the current frame of the video.
 	
 	Output:
 		action_idx (int): index of the next atomic action for a given frame. 
 	"""
-	global action_idx, frame
+	global action_idx, frame, annotations
 	#time.sleep(1)
 	frame += 60
 	
@@ -312,7 +313,7 @@ def get_emotion():
 
 def get_reward_GUI():
 	"""
-	Gets a reward signal from a Graphical Interface with three buttons: Negative (-1), Neutral (0) and Positive (+1)
+	Gets a reward signal from a Graphical User Interface with three buttons: Negative (-1), Neutral (0) and Positive (+1).
 	
 	Output:
 		reward (int): reward value provided by the user. 
@@ -329,7 +330,7 @@ def get_reward_GUI():
 	]]
 	
 	#Generate window with the button layout
-	window = sg.Window('Interface', interface, background_color='black').Finalize()	
+	window = sg.Window('Interface', interface, background_color='black', return_keyboard_events=True).Finalize()	
 	
 	while True:
 		event, values = window.read()
@@ -338,13 +339,26 @@ def get_reward_GUI():
 			reward = -1
 			break
 		
-		if event == sg.WIN_CLOSED or event == 'Neutral':
+		elif event == sg.WIN_CLOSED or event == 'Neutral':
 			reward = 0
 			break
 		
-		if event == sg.WIN_CLOSED or event == 'Positive':
+		elif event == sg.WIN_CLOSED or event == 'Positive':
 			reward = +1
 			break	
+		
+		elif event == '1:10': #Keyboard press 1
+			window['Negative'].click()
+		
+		elif event == '2:11': #Keyboard press 2
+			window['Neutral'].click()
+		
+		elif event == '3:12': #Keyboard press 3
+			window['Positive'].click()
+			
+		elif event == 'q:24': #Keyboard press q
+			break	
+			
 	window.close()
 	
 	return reward
@@ -352,7 +366,7 @@ def get_reward_GUI():
 
 def reward_confirmation_perform(action):
 	"""
-	Performs an action after receiving confirmation (via POSITIVE reward) or cancels the operation if received NEGATIVE/NEUTRAL reward. The reward is offered through a Graphical Interface with three buttons. 
+	Performs an action after receiving confirmation (POSITIVE reward) or cancels the operation if received NEGATIVE/NEUTRAL reward. The reward is offered through a Graphical User Interface with three buttons: Negative (-1), Neutral (0) and Positive (+1).
 	
 	Input:
 		action (int): action-output of the DQN (according to an exploration-exploitation policy).
@@ -371,12 +385,10 @@ def reward_confirmation_perform(action):
 	sg.Button('POSITIVE', key='Positive', size=button_size, button_color='blue')
 	]]
 	
-	#Generate window with the button layout
-	
-	
+	#Generate window with the button layout	
 	
 	if action != 18:
-		window = sg.Window('Interface', interface, background_color='black').Finalize()	
+		window = sg.Window('Interface', interface, background_color='black', return_keyboard_events=True).Finalize()	
 		print("\nROBOT: I'm going to", cfg.ROBOT_ACTIONS_MEANINGS[action])
 	
 		while True:
@@ -386,13 +398,22 @@ def reward_confirmation_perform(action):
 				reward = -1
 				break
 		
-			if event == sg.WIN_CLOSED or event == 'Neutral':
+			elif event == sg.WIN_CLOSED or event == 'Neutral':
 				reward = 0
 				break
 		
-			if event == sg.WIN_CLOSED or event == 'Positive':
+			elif event == sg.WIN_CLOSED or event == 'Positive':
 				reward = +1
 				break	
+				
+			elif event == '1:10': #Keyboard press 1
+				window['Negative'].click()
+				
+			elif event == '2:11': #Keyboard press 2
+				window['Neutral'].click()
+			
+			elif event == '3:12': #Keyboard press 3
+				window['Positive'].click()	
 		window.close()
 	
 		global frame

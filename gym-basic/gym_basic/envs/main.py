@@ -29,7 +29,6 @@ class BasicEnv(gym.Env):
 		elif VERSION == 2:
 			self.observation_space = gym.spaces.Discrete(N_ATOMIC_ACTIONS+N_OBJECTS) #State as Next Action + VWM	 
 
-		
 		self.state = [] #One hot encoded state
 		
 		self.total_reward = 0
@@ -62,7 +61,7 @@ class BasicEnv(gym.Env):
 		
 		current_state = self.state #Current state
 			
-		reward = self._take_action(action) #Take action	
+		reward = self._take_action(action) #Deterministic rewards
 		#reward = self._take_action2(action) #REWARD GUI
 		
 		self.transition() #Transition to a new state
@@ -73,7 +72,6 @@ class BasicEnv(gym.Env):
 		
 		#PRINT STATE-ACTION TRANSITION & REWARD
 		if self.display: self.render(current_state, next_state, action, reward, self.total_reward)
-
 		
 		info = {}
 		return next_state, reward, done, info		
@@ -89,7 +87,6 @@ class BasicEnv(gym.Env):
 		super().reset()
 		
 		self.state = get_init_state(version=VERSION)
-
 			
 		self.total_reward = 0
 
@@ -100,8 +97,7 @@ class BasicEnv(gym.Env):
 	def _take_action(self, action): 
 		"""
 		Version of the take action function that considers a unique correct robot action for each state, related to the required object and its position (fridge or table). 
-		
-		
+				
 		Input:
 			action: (int) from the action repertoire taken by the agent.
 		Output:
@@ -113,7 +109,7 @@ class BasicEnv(gym.Env):
 			state = undo_one_hot(self.state) #If the state is the Next Action vector, undo the O-H to obtain the integer value.
 		elif VERSION == 2: #If the state is NA + VWM, first separate the two variables and then obtain the value of the state from the Next Action.
 			na, ao = undo_concat_state(self.state)
-			state = undo_one_hot(na) 	
+			state = undo_one_hot(na) #Only consider the Next Action as the state.	
 		
 		reward = 0
 		
@@ -278,9 +274,7 @@ class BasicEnv(gym.Env):
 			else: reward = -1					
 		#------------------------------		
 				
-		self.total_reward += reward
-			
-			
+		self.total_reward += reward			
 	
 		return reward
 	
@@ -300,17 +294,13 @@ class BasicEnv(gym.Env):
 		elif VERSION == 2: #If the state is NA + VWM, first separate the two variables and then obtain the value of the state from the Next Action.
 			na, ao = undo_concat_state(self.state)
 			state = undo_one_hot(na) 	
-		elif VERSION == 3:
-			na, vwm, ao = undo_concat_state_extended(self.state)
-			state = undo_one_hot(na)
 			
 							
 		print("| STATE: {0:>29s}".format(self.next_atomic_action_repertoire[state]), " | ACTION: {0:>20s}".format(self.action_repertoire[action]))
 		
 		#reward = get_reward_GUI() #REWARD VIA GRAPHICAL INTERFACE
 		#reward = get_sentiment_keyboard() #REWARD VIA TEXT (SENTIMENT ANALYSIS OF A SENTENCE)
-		reward = reward_confirmation_perform(action)	
-
+		reward = reward_confirmation_perform(action) #Reward as confirmation-cancel.	
 		
 		self.total_reward += reward
 			
@@ -342,11 +332,6 @@ class BasicEnv(gym.Env):
 		elif VERSION == 2:
 			na, vwm = undo_concat_state(state)
 			next_na, next_vwm = undo_concat_state(next_state)
-			state = undo_one_hot(na)
-			next_state = undo_one_hot(next_na)
-		elif VERSION == 3:
-			na, vwm, ao = undo_concat_state_extended(state)
-			next_na, next_vwm, next_ao = undo_concat_state_extended(next_state)
 			state = undo_one_hot(na)
 			next_state = undo_one_hot(next_na)
 		

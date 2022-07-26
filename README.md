@@ -105,7 +105,7 @@ Each pickle has the following fields:
 
 For example:
 
-![Pickle](https://github.com/CesarCaramazana/DQN_COMPANION_kitchen/blob/main/images/annotations_pickle.PNG?raw=True)
+![Pickle](https://github.com/CesarCaramazana/DQN_COMPANION_kitchen/blob/main/images/annotations_pickle.png?raw=True)
 
 
 # HOW TO INSTALL

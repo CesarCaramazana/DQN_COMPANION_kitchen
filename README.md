@@ -222,5 +222,6 @@ optional arguments:
 - [ ] Incorporate the Visual Working Memory in the state.
 - [ ] Parallelize reward and action performing.
 - [ ] Incorporate the Face Expression Recognizer into the get_reward repertoire.
+- [ ] Parallelize reward interfaces.
 
 

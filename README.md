@@ -103,6 +103,9 @@ Each pickle has the following fields:
 - 'frame_init': Initial frame of the atomic action in the video.
 - 'frame_end': Last frame of the atomic action in the video. 
 
+For example:
+
+![Pickle](https://github.com/CesarCaramazana/DQN_COMPANION_kitchen/blob/main/images/annotations_pickle.PNG?raw=True)
 
 
 # HOW TO INSTALL

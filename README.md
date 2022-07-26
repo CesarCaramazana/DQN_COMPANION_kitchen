@@ -87,7 +87,7 @@ In the following picture, these blocks are incorporated into the general DQN loo
 - *In the current implementation, the Get_state() function uses video annotations, and does not call the Action Prediction System, nor the Visual Working Memory*. 
 - *The VWM is not encoded in the annotations, and therefore is not used right now as an input variable*. 
 - *One_hot() and Concatenate() are the two most significant general purpose functions. One-hot encoding is necessary right now because the Next Atomic Action is annotated as an integer. The Action Prediction System will output a vector of probabilties, which won't require one-hot encoding*. 
-- *Because of the three above, this picture should not be taken as a faithful representation of the annotation-based implementation of our scenario, but a mixture between what is and what will be once the other systems are available. *
+- *Because of the three above, this picture should not be taken as a faithful representation of the annotation-based implementation of our scenario, but a mixture between what is and what will be once the other systems are available.*
 
 
 Video annotations from the breakfast dataset, as pickle files.

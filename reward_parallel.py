@@ -50,7 +50,7 @@ def get_reward_GUI():
 		
 		elif event == sg.WIN_CLOSED or event == 'Positive':
 			reward = +1
-			e.set()
+			#e.set()
 			break
 		
 		elif event == '1:10': #Keyboard press 1
@@ -84,7 +84,9 @@ def get_reward_keyboard():
 		rwd = input("Input reward value...\n")	
 		try:
 			reward = int(rwd)
-			e.set()
+			
+			if reward <= 0: #If NEGATIVE reward, interrupt execution 
+				e.set()
 			#print("Success")
 			break
 
@@ -97,20 +99,22 @@ def get_reward_keyboard():
 	#print("out of while KEY")
 	#_thread.interrupt_main()
 
-def get_reward_keyboard():
+"""
+def get_reward_keyboard_GUI():
 	global reward
 
 	sg.theme('SandyBeach')
 	
 	layout = [[sg.Text('Reward: '), sg.InputText()], [sg.Submit(), sg.Cancel()]]
 	
-	window = sg.Window('Interface', layout).Finalize()
+	window= sg.Window('Interface', layout).Finalize()
 	
 	while e.isSet() == False:
-		event, values = window.read()
+		event, values = window.read(timeout=500)
 	
 		try:
 			reward = int(values[0])
+			e.set()
 			break
 	
 		except:
@@ -119,8 +123,8 @@ def get_reward_keyboard():
 	
 	print(values[0])
 	
-	e.set()
-
+	#e.set()
+"""
 
 def get_sentiment_keyboard():
 	"""
@@ -153,30 +157,68 @@ def interfaces():
 	#_thread.start_new_thread(get_sentiment_keyboard, tuple()) #--------> from terminal to GUI so that it can be easily parallelized with other interfaces
 
 
-def get_reward(main):
+def get_reward(interfaces):
 	try:
-		_thread.start_new_thread(main, tuple())
+		_thread.start_new_thread(interfaces, tuple())
 		while e.isSet() == False:
 			e.wait(1)
 	except KeyboardInterrupt:
 		pass	
 
 
-#keyboard_input_GUI()
+#Perform an action
+def perform_action(action=0):
+    T0 = time.time()
+    
+    time_to_perform = 3*action
+    print("\nAction ", action, "| Time to perform: ", time_to_perform)
+    
+    while e.isSet() == False:        
+        e.wait(1)
+        print("...")
+        
+        #print(time.time()-T0)
+        if (time.time() - T0) > time_to_perform:
+        	print("Finished action!\n")
+        	e.set()
+        
+        #e.wait(6)
+        #print("Finished")
+    _thread.interrupt_main() # kill the raw_input thread
 
-get_reward(interfaces)
 
-"""
-try:
-    _thread.start_new_thread(main, tuple())
-    while e.isSet() == False:    	
-    	e.wait(10)
-    	#time.sleep(1) 
-    	print(e.isSet())
-except KeyboardInterrupt:
-    pass 
-"""
 
-print("FINAL REWARD: ", reward)
+def main(action):
+	_thread.start_new_thread(perform_action, (action,))
+	_thread.start_new_thread(interfaces, tuple())
+	
+
+
+def return_reward():
+	global reward
+	
+	return reward
+
+def take_action(action):
+	global reward
+	
+	try:
+		_thread.start_new_thread(main, (action,))
+		while e.isSet() == False:
+			e.wait(1)
+	
+	except KeyboardInterrupt:
+		pass		
+
+	return return_reward()
+	
+action = 3
+a = take_action(action) 
+print("Returned reward: ", a)
+
+#get_reward(interfaces)
+
+
+#print("FINAL REWARD: ", reward)
 
 

@@ -1,8 +1,9 @@
 gym==0.24.0
+keyboard==0.13.5
 matplotlib==3.5.0
 nltk==3.7
 numpy==1.22.3
-PySimpleGUI==4.60.1
+PySimpleGUI==4.60.3
 setuptools==61.2.0
 torch==1.11.0
 torchvision==0.12.0

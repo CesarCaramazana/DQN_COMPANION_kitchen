@@ -171,6 +171,7 @@ def perform_action(action=0):
     T0 = time.time()
     
     time_to_perform = 3*action
+    time_to_perform = 10
     print("\nAction ", action, "| Time to perform: ", time_to_perform)
     
     while e.isSet() == False:        
@@ -191,7 +192,7 @@ def perform_action(action=0):
 def main(action):
 	_thread.start_new_thread(perform_action, (action,))
 	_thread.start_new_thread(interfaces, tuple())
-	
+	#_thread.start_new_thread(get_reward, (interfaces,))
 
 
 def return_reward():
@@ -199,7 +200,7 @@ def return_reward():
 	
 	return reward
 
-def take_action(action):
+def ta3(action):
 	global reward
 	
 	try:
@@ -210,11 +211,19 @@ def take_action(action):
 	except KeyboardInterrupt:
 		pass		
 
-	return return_reward()
+	#return return_reward()
 	
+	return reward
+
+
+
 action = 3
-a = take_action(action) 
+a = ta3(action) 
 print("Returned reward: ", a)
+b = ta3(5)
+print("Return reward: ", b)
+c = ta3(1)
+print("Return reward: ", c)
 
 #get_reward(interfaces)
 

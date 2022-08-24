@@ -19,7 +19,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 from DQN import DQN, ReplayMemory, Transition, init_weights 
-from aux import print_setup
+from config import print_setup
 import config as cfg
 import argparse
 

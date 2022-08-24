@@ -68,6 +68,8 @@ def get_reward_GUI():
 	#print("out of while GUI")
 	
 	window.close()
+	_thread.exit()
+	#_thread.interrupt_main()
 
 
 
@@ -99,32 +101,6 @@ def get_reward_keyboard():
 	#print("out of while KEY")
 	#_thread.interrupt_main()
 
-"""
-def get_reward_keyboard_GUI():
-	global reward
-
-	sg.theme('SandyBeach')
-	
-	layout = [[sg.Text('Reward: '), sg.InputText()], [sg.Submit(), sg.Cancel()]]
-	
-	window= sg.Window('Interface', layout).Finalize()
-	
-	while e.isSet() == False:
-		event, values = window.read(timeout=500)
-	
-		try:
-			reward = int(values[0])
-			e.set()
-			break
-	
-		except:
-			print("ERROR")		
-	window.close()
-	
-	print(values[0])
-	
-	#e.set()
-"""
 
 def get_sentiment_keyboard():
 	"""
@@ -152,7 +128,7 @@ def get_sentiment_keyboard():
 
 
 def interfaces():
-	_thread.start_new_thread(get_reward_GUI, tuple())
+	#_thread.start_new_thread(get_reward_GUI, tuple())
 	_thread.start_new_thread(get_reward_keyboard, tuple())    #--------> from terminal to GUI so that it can be easily parallelized with other interfaces
 	#_thread.start_new_thread(get_sentiment_keyboard, tuple()) #--------> from terminal to GUI so that it can be easily parallelized with other interfaces
 
@@ -185,20 +161,18 @@ def perform_action(action=0):
         
         #e.wait(6)
         #print("Finished")
-    _thread.interrupt_main() # kill the raw_input thread
+    print("FINISHED ACTION (either timeout or interrupted)")
+
+    #_thread.interrupt_main() # kill the raw_input thread
 
 
 
 def main(action):
 	_thread.start_new_thread(perform_action, (action,))
-	_thread.start_new_thread(interfaces, tuple())
-	#_thread.start_new_thread(get_reward, (interfaces,))
+	#_thread.start_new_thread(interfaces, tuple())
+	_thread.start_new_thread(get_reward, (interfaces,))
 
 
-def return_reward():
-	global reward
-	
-	return reward
 
 def ta3(action):
 	global reward
@@ -209,21 +183,33 @@ def ta3(action):
 			e.wait(1)
 	
 	except KeyboardInterrupt:
+		print("No new main")
 		pass		
 
-	#return return_reward()
+
+	print("EEEE: ", e.isSet())
+	time.sleep(1)
+	e.clear()
+	print("E AFTER CLEAR: ", e.isSet())
+
 	
 	return reward
 
 
 
 action = 3
+
 a = ta3(action) 
-print("Returned reward: ", a)
+print("Returned reward A: ", a)
+
+print("\n Some other operation")
+time.sleep(5)
+
+
 b = ta3(5)
-print("Return reward: ", b)
+print("Return reward B: ", b)
 c = ta3(1)
-print("Return reward: ", c)
+print("Return reward C: ", c)
 
 #get_reward(interfaces)
 

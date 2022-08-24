@@ -6,6 +6,8 @@ import time
 from aux import *
 import config as cfg
 
+#from reward_parallel import *
+
 #CONFIGURATION GLOBAL ENVIRONMENT VARIABLES
 ACTION_SPACE = cfg.ACTION_SPACE
 N_ATOMIC_ACTIONS = cfg.N_ATOMIC_ACTIONS
@@ -61,8 +63,9 @@ class BasicEnv(gym.Env):
 		
 		current_state = self.state #Current state
 			
-		reward = self._take_action(action) #Deterministic rewards
-		#reward = self._take_action2(action) #REWARD GUI
+		#reward = self._take_action(action) #Deterministic rewards
+		reward = self._take_action2(action) #REWARD GUI
+
 		
 		self.transition() #Transition to a new state
 		next_state = self.state
@@ -298,15 +301,15 @@ class BasicEnv(gym.Env):
 							
 		print("| STATE: {0:>29s}".format(self.next_atomic_action_repertoire[state]), " | ACTION: {0:>20s}".format(self.action_repertoire[action]))
 		
-		#reward = get_reward_GUI() #REWARD VIA GRAPHICAL INTERFACE
+		reward = get_reward_GUI() #REWARD VIA GRAPHICAL INTERFACE
 		#reward = get_sentiment_keyboard() #REWARD VIA TEXT (SENTIMENT ANALYSIS OF A SENTENCE)
-		reward = reward_confirmation_perform(action) #Reward as confirmation-cancel.	
+		#reward = reward_confirmation_perform(action) #Reward as confirmation-cancel.	
 		
 		self.total_reward += reward
 			
 		
 		return reward
-	
+
 	
 	def transition(self):
 		"""

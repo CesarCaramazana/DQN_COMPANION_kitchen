@@ -459,6 +459,16 @@ def get_sentiment_keyboard():
 	return reward
 
 
+
+
+#PARALLELIZATION OF GET_REWARD AND PERFORM_ACTION FUNCTIONS
+
+
+
+
+# ...
+
+
 	
 	
 
@@ -499,34 +509,7 @@ print("\nUncat AO of shape ", ao__.shape, "\n", ao__)
 
 
 
-def print_setup(args):
-	"""
-	Prints a table with the arguments of the training script.
-	Input:
-		args: arguments during execution time. 
-	
-	"""
-	print("")
-	print(" Experiment ", args.experiment_name)
-	print("="*39)
-	print("  DQN parameters")
-	print("="*39)
-	print("| SIZE OF REPLAY MEMORY     | {0:<6g}".format(args.replay_memory), " |")
-	print("| INITIAL EXPLORATION RATE  | {0:<6g}".format(args.eps_start), " |")
-	print("| TERMINAL EXPLORATION RATE | {0:<6g}".format(args.eps_end), " |")
-	print("| GAMMA DISCOUNT FACTOR     | {0:<6g}".format(args.gamma), " |")
-	print("| FREQ. TARGET UPDATE       | {0:<6g}".format(args.target_update), " |")
-	print("="*39)
-	print("  Training parameters")
-	print("="*39)
-	print("| NUMBER OF EPISODES        | {0:<6g}".format(args.num_episodes), " |")
-	print("| BATCH SIZE                | {0:<6g}".format(args.batch_size), " |")
-	print("| LEARNING RATE             | {0:<6g}".format(args.lr), " |")
-	print("| SAVE MODEL                | {0:<6g}".format(args.save_model), " |")
-	print("| LOAD MODEL                | {0:<6g}".format(args.load_model), " |")
-	print("| LOAD EPISODE              | {0:<6g}".format(args.load_episode), " |")
-	
-	print("="*39)	
+
 
 	
 

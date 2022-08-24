@@ -7,10 +7,10 @@ REPLAY_MEMORY = 1000 #Size of replay memory (deque object)
 
 NUM_EPISODES = 2000 #"Number of training epochs"
 BATCH_SIZE = 64
-GAMMA = 0.6 #Discount rate for future rewards
+GAMMA = 0.8 #Discount rate for future rewards
 EPS_START = 0.99 #Initial exporation rate
 EPS_END = 0.01 #Final exploration rate
-EPS_DECAY = NUM_EPISODES*12 #Exploration rate decay factor
+EPS_DECAY = NUM_EPISODES/2 #Exploration rate decay factor
 TARGET_UPDATE = 10 #Episodes between target network update (policy net parameters -> target net)
 LR = 1e-4 #Learning rate
 
@@ -69,6 +69,20 @@ ATOMIC_ACTIONS_MEANINGS = {
 
 }
 
+"""
+Objects that are at human's reach:
+	everything else
+
+Objects that are in the fridge:
+	butter
+	jam
+	milk
+	nutella
+	tomato sauce
+	water
+
+"""
+
 OBJECTS_MEANINGS = {
 	0: 'background',
 	1: 'bowl',
@@ -96,19 +110,7 @@ OBJECTS_MEANINGS = {
 
 }
 
-"""
-Objects that are at human's reach:
-	everything else
 
-Objects that are in the fridge:
-	butter
-	jam
-	milk
-	nutella
-	tomato sauce
-	water
-
-"""
 
 
 ROBOT_ACTIONS_MEANINGS = {	
@@ -144,4 +146,31 @@ ACTION_SPACE = len(ROBOT_ACTIONS_MEANINGS)
 N_ATOMIC_ACTIONS = len(ATOMIC_ACTIONS_MEANINGS)
 
 
-
+def print_setup(args):
+	"""
+	Prints a table with the arguments of the training script.
+	Input:
+		args: arguments during execution time. 
+	
+	"""
+	print("")
+	print(" Experiment ", args.experiment_name)
+	print("="*39)
+	print("  DQN parameters")
+	print("="*39)
+	print("| SIZE OF REPLAY MEMORY     | {0:<6g}".format(args.replay_memory), " |")
+	print("| INITIAL EXPLORATION RATE  | {0:<6g}".format(args.eps_start), " |")
+	print("| TERMINAL EXPLORATION RATE | {0:<6g}".format(args.eps_end), " |")
+	print("| GAMMA DISCOUNT FACTOR     | {0:<6g}".format(args.gamma), " |")
+	print("| FREQ. TARGET UPDATE       | {0:<6g}".format(args.target_update), " |")
+	print("="*39)
+	print("  Training parameters")
+	print("="*39)
+	print("| NUMBER OF EPISODES        | {0:<6g}".format(args.num_episodes), " |")
+	print("| BATCH SIZE                | {0:<6g}".format(args.batch_size), " |")
+	print("| LEARNING RATE             | {0:<6g}".format(args.lr), " |")
+	print("| SAVE MODEL                | {0:<6g}".format(args.save_model), " |")
+	print("| LOAD MODEL                | {0:<6g}".format(args.load_model), " |")
+	print("| LOAD EPISODE              | {0:<6g}".format(args.load_episode), " |")
+	
+	print("="*39)	

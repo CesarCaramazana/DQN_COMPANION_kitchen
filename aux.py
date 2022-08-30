@@ -12,6 +12,7 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 import config as cfg
 
+
 N_ATOMIC_ACTIONS = cfg.N_ATOMIC_ACTIONS
 N_OBJECTS = cfg.N_OBJECTS
 
@@ -227,7 +228,7 @@ def get_time_step():
 	"""
 	global action_idx, frame, annotations
 	#time.sleep(1)
-	frame += 60
+	frame += 240
 	
 	#if frame % freq_obs == 0:
 	if frame > annotations['frame_init'][action_idx]:
@@ -463,14 +464,93 @@ def get_sentiment_keyboard():
 
 #PARALLELIZATION OF GET_REWARD AND PERFORM_ACTION FUNCTIONS
 
+import _thread
+import threading
 
+reward = 0
+e = threading.Event()
 
 
 # ...
 
+def get_reward_keyboard_thread():
+	"""
+	Returns an integer value read from keyboard input.
+	Output:
+		reward (int): Input value or 0 if the user did not provide a valid number.
+	"""
+	global reward
+		
+	while e.isSet() == False:
+		rwd = input("Input reward value...\n")	
+		try:
+			reward = int(rwd)
+			
+			if reward <= 0: #If NEGATIVE reward, interrupt execution 
+				e.set()
+
+			break
+
+		except: 
+			print("ERROR: invalid reward value.")
 
 	
+def interfaces():
+	#_thread.start_new_thread(get_reward_GUI_thread, tuple())
+	_thread.start_new_thread(get_reward_keyboard_thread, tuple()) 	
+
+
+def get_reward(interfaces):
+	try:
+		_thread.start_new_thread(interfaces, tuple())
+		while e.isSet() == False:
+			e.wait(1)
+	except KeyboardInterrupt:
+		pass	
+
+#Perform an action
+def perform_action(action=0):
+    T0 = time.time()
+    
+    time_to_perform = 5
+    print("\nPerforming action ", action, "| Time to perform: ", time_to_perform)
+    
+    while e.isSet() == False:        
+        e.wait(1)
+        print("...")
+        
+        #print(time.time()-T0)
+        if (time.time() - T0) > time_to_perform:
+        	print("Finished action!\n")
+        	e.set()
+
+    print("FINISHED ACTION (either timeout or interrupted)")
+
+
+
+
+def main(action):
+	_thread.start_new_thread(perform_action, (action,))
+	_thread.start_new_thread(interfaces, tuple())
+
+
+
+def perform_action_get_reward(action):
+	global reward
 	
+	try:
+		_thread.start_new_thread(main, (action,))
+		while e.isSet() == False:
+			e.wait(1)
+	
+	except KeyboardInterrupt:
+		_thread.interrupt_main()
+		pass		
+
+	e.clear()
+		
+	return reward
+
 
 
 #---------------------------------

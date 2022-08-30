@@ -118,7 +118,7 @@ for i_episode in range(NUM_EPISODES):
 			next_state = None
 		
 		if done: #When the episode is finished, we save the cumulative reward in the list 'total_reward'.
-			total_reward.append(env.get_total_reward())
+			total_reward.append(env.get_total_reward()/(t+1))
 			break
 
 

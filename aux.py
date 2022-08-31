@@ -496,20 +496,25 @@ def get_reward_keyboard_thread():
 
 	
 def interfaces():
+	"""
+	Creates a thread for every input interface.
+	
+	"""
 	#_thread.start_new_thread(get_reward_GUI_thread, tuple())
 	_thread.start_new_thread(get_reward_keyboard_thread, tuple()) 	
 
 
-def get_reward(interfaces):
-	try:
-		_thread.start_new_thread(interfaces, tuple())
-		while e.isSet() == False:
-			e.wait(1)
-	except KeyboardInterrupt:
-		pass	
 
 #Perform an action
 def perform_action(action=0):
+
+    """
+    Simulates the performing of an action that takes some time to complete.
+    
+    Input:
+    	action: (int) from the action repertoire.
+    	
+    """
     T0 = time.time()
     
     time_to_perform = 5
@@ -530,12 +535,27 @@ def perform_action(action=0):
 
 
 def main(action):
+	"""
+	Creates a thread for the action-performing function and another for the input interfaces.
+	
+	Input:
+		action (int): to be performed by the agent.
+	"""
 	_thread.start_new_thread(perform_action, (action,))
 	_thread.start_new_thread(interfaces, tuple())
 
 
 
 def perform_action_get_reward(action):
+	"""
+	Performs an action and waits for a reward signal to either complete it (positive reward) or interrupt it (negative/neutral reward).
+	
+	Input:
+		action (int): to be performed by the agent.
+	Output:
+		reward (int): input by the user via interfaces.	
+	
+	"""
 	global reward
 	
 	try:

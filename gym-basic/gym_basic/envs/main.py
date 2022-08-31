@@ -312,6 +312,15 @@ class BasicEnv(gym.Env):
 
 	
 	def _take_action3(self, action):
+		"""
+		Version of the take action function that considers the user's input as the reward signal while simulating the action performing. If the reward is positive, it allows the completion of the action; whilst if the reward is negative/neutral, the action is interrupted.
+		
+		Input:
+			action: (int) from the action repertoire taken by the agent.
+		Output:
+			reward: (int) received from the user input.
+		
+		"""
 		
 		reward = perform_action_get_reward(action)
 		

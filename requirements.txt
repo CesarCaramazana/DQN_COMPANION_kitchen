@@ -1,5 +1,4 @@
 gym==0.24.0
-keyboard==0.13.5
 matplotlib==3.5.0
 nltk==3.7
 numpy==1.22.3

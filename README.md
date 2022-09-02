@@ -220,8 +220,14 @@ optional arguments:
 - [x] Reward as a confirmation signal for the action to be performed.
 - [ ] Update robot action repertoire.
 - [ ] Incorporate the Visual Working Memory in the state.
-- [ ] Parallelize reward and action performing.
+- [X] Parallelize reward and action performing.
 - [ ] Incorporate the Face Expression Recognizer into the get_reward repertoire.
 - [X] Parallelize reward interfaces.
+- [ ] Get reward via emotion recognition (function). (S)
+- [ ] Try the emotion recognition with threads. 
+- [ ] cv2.putText() -> scale with respect to image resolution. (C) 
+- [ ] Emotion recognition: different decision thresholds for each emotion. (S) 
+- [ ] Real-life videos for the emotion recognition. (C) 
+- [ ] Remove main() in reward_parallel (C)
 
 

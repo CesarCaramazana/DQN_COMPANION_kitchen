@@ -7,14 +7,13 @@ import nltk #Sentiment Analysis via NLP
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 
-
 e = threading.Event()
-reward = 0
+reward = 0 
 
 
 
 
-def get_reward_GUI():
+def get_reward_GUI_th():
 	"""
 	Gets a reward signal from a Graphical User Interface with three buttons: Negative (-1), Neutral (0) and Positive (+1).
 	
@@ -68,9 +67,9 @@ def get_reward_GUI():
 	#print("out of while GUI")
 	
 	window.close()
-	_thread.exit()
-	#_thread.interrupt_main()
 
+
+#------------------------------------------
 
 
 def get_reward_keyboard():
@@ -95,11 +94,7 @@ def get_reward_keyboard():
 		except: 
 			print("ERROR: invalid reward value.")
 			#break
-		
-		#print("out of try KEY")	
-	
-	#print("out of while KEY")
-	#_thread.interrupt_main()
+
 
 
 def get_sentiment_keyboard():
@@ -123,31 +118,22 @@ def get_sentiment_keyboard():
 	else : reward = 0
 	
 	e.set()
-	#print("end")
 
 
 
 def interfaces():
-	#_thread.start_new_thread(get_reward_GUI, tuple())
+	#_thread.start_new_thread(get_reward_GUI_th, tuple())
+	#_thread.start_new_thread(get_reward_KIVY, tuple())	
 	_thread.start_new_thread(get_reward_keyboard, tuple())    #--------> from terminal to GUI so that it can be easily parallelized with other interfaces
 	#_thread.start_new_thread(get_sentiment_keyboard, tuple()) #--------> from terminal to GUI so that it can be easily parallelized with other interfaces
 
-
-def get_reward(interfaces):
-	try:
-		_thread.start_new_thread(interfaces, tuple())
-		while e.isSet() == False:
-			e.wait(1)
-	except KeyboardInterrupt:
-		pass	
 
 
 #Perform an action
 def perform_action(action=0):
     T0 = time.time()
     
-    time_to_perform = 3*action
-    time_to_perform = 10
+    time_to_perform = 5
     print("\nAction ", action, "| Time to perform: ", time_to_perform)
     
     while e.isSet() == False:        
@@ -169,28 +155,31 @@ def perform_action(action=0):
 
 def main(action):
 	_thread.start_new_thread(perform_action, (action,))
-	#_thread.start_new_thread(interfaces, tuple())
-	_thread.start_new_thread(get_reward, (interfaces,))
-
+	_thread.start_new_thread(interfaces, tuple())
+	#_thread.start_new_thread(get_reward, (interfaces,))
+	
+	
 
 
 def ta3(action):
 	global reward
 	
 	try:
-		_thread.start_new_thread(main, (action,))
+		#_thread.start_new_thread(main, (action,))
+		_thread.start_new_thread(perform_action, (action,))
+		_thread.start_new_thread(interfaces, tuple())
 		while e.isSet() == False:
 			e.wait(1)
 	
 	except KeyboardInterrupt:
-		print("No new main")
+		_thread.interrupt_main()
 		pass		
 
 
-	print("EEEE: ", e.isSet())
-	time.sleep(1)
+	#print("EEEE: ", e.isSet())
+	#time.sleep(0.1)
 	e.clear()
-	print("E AFTER CLEAR: ", e.isSet())
+	#print("E AFTER CLEAR: ", e.isSet())
 
 	
 	return reward
@@ -199,20 +188,21 @@ def ta3(action):
 
 action = 3
 
+print("\nAAAAAAAAAAAAAAAAA")
 a = ta3(action) 
 print("Returned reward A: ", a)
 
-print("\n Some other operation")
-time.sleep(5)
 
-
+print("\nBBBBBBBBBBBBBBBBBBBBBBBBB")
 b = ta3(5)
 print("Return reward B: ", b)
+"""
+print("\nCCCCCCCCCCCCCCCCCCCCC")
 c = ta3(1)
 print("Return reward C: ", c)
 
 #get_reward(interfaces)
-
+"""
 
 #print("FINAL REWARD: ", reward)
 

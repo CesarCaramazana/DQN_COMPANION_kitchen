@@ -487,9 +487,9 @@ def get_reward_keyboard_thread():
 			reward = int(rwd)
 			
 			if reward <= 0: #If NEGATIVE reward, interrupt execution 
+				#print("neg reward")
 				e.set()
-
-			break
+				
 
 		except: 
 			print("ERROR: invalid reward value.")
@@ -517,12 +517,13 @@ def perform_action(action=0):
     """
     T0 = time.time()
     
-    time_to_perform = 5
+    time_to_perform = 10
     print("\nPerforming action ", action, "| Time to perform: ", time_to_perform)
-    
+    i = 0
     while e.isSet() == False:        
         e.wait(1)
-        print("...")
+        print("...", i, "  | e: ", e.isSet())
+        i += 1
         
         #print(time.time()-T0)
         if (time.time() - T0) > time_to_perform:
@@ -533,17 +534,9 @@ def perform_action(action=0):
 
 
 
-
 def main(action):
-	"""
-	Creates a thread for the action-performing function and another for the input interfaces.
-	
-	Input:
-		action (int): to be performed by the agent.
-	"""
 	_thread.start_new_thread(perform_action, (action,))
 	_thread.start_new_thread(interfaces, tuple())
-
 
 
 def perform_action_get_reward(action):
@@ -559,7 +552,9 @@ def perform_action_get_reward(action):
 	global reward
 	
 	try:
-		_thread.start_new_thread(main, (action,))
+		_thread.start_new_thread(perform_action, (action,))
+		_thread.start_new_thread(interfaces, tuple())
+		#_thread.start_new_thread(main, (action,))
 		while e.isSet() == False:
 			e.wait(1)
 	
@@ -567,6 +562,7 @@ def perform_action_get_reward(action):
 		_thread.interrupt_main()
 		pass		
 
+	time.sleep(1)
 	e.clear()
 		
 	return reward

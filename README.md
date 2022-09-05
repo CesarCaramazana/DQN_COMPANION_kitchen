@@ -229,5 +229,6 @@ optional arguments:
 - [ ] Emotion recognition: different decision thresholds for each emotion. (S) 
 - [ ] Real-life videos for the emotion recognition. (C) 
 - [X] Remove main() in reward_parallel (C)
+- [ ] Sound effects for the interfaces. (C)
 
 

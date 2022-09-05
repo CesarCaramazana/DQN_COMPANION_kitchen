@@ -225,7 +225,7 @@ optional arguments:
 - [X] Parallelize reward interfaces.
 - [ ] Get reward via emotion recognition (function). (S)
 - [ ] Try the emotion recognition with threads. 
-- [ ] cv2.putText() -> scale with respect to image resolution. (C) 
+- [X] cv2.putText() -> scale with respect to image resolution. (C) 
 - [ ] Emotion recognition: different decision thresholds for each emotion. (S) 
 - [ ] Real-life videos for the emotion recognition. (C) 
 - [ ] Remove main() in reward_parallel (C)

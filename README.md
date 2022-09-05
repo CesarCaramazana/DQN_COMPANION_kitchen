@@ -228,6 +228,6 @@ optional arguments:
 - [X] cv2.putText() -> scale with respect to image resolution. (C) 
 - [ ] Emotion recognition: different decision thresholds for each emotion. (S) 
 - [ ] Real-life videos for the emotion recognition. (C) 
-- [ ] Remove main() in reward_parallel (C)
+- [X] Remove main() in reward_parallel (C)
 
 

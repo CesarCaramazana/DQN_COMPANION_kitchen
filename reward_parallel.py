@@ -5,6 +5,7 @@ import PySimpleGUI as sg
 import cv2
 import torch
 import os
+import random
 import torch.nn.functional as F
 from torchvision import transforms
 import nltk #Sentiment Analysis via NLP
@@ -16,6 +17,7 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 e = threading.Event()
 got_reward = threading.Event()
+is_finished = threading.Event()
 
 reward = 0 
 
@@ -32,7 +34,7 @@ def get_reward_keyboard():
 	"""
 	global reward
 		
-	while e.isSet() == False:
+	while got_reward.isSet() == False:
 		#print(e.isSet())	
 		rwd = input("Input reward value...\n")	
 		try:
@@ -40,6 +42,7 @@ def get_reward_keyboard():
 			
 			if reward <= 0: #If NEGATIVE reward, interrupt execution 
 				e.set()
+				is_finished.set()
 				print("KEYBOARD | Negative reward ", reward)
 			else:
 				print("KEYBOARD | Positive reward ", reward)	
@@ -50,7 +53,66 @@ def get_reward_keyboard():
 		except: 
 			print("ERROR: invalid reward value.")
 			#break
+
+
+
+
+def get_reward_GUI():
+	"""
+	Gets a reward signal from a Graphical User Interface with three buttons: Negative (-1), Neutral (0) and Positive (+1).
+	
+	Output:
+		reward (int): reward value provided by the user. 
+	
+	"""
+	button_size = (25, 15)	
+	global reward
+	
+	#Button layout (as a matrix)
+	interface = [[
+	sg.Button('NEGATIVE', size=button_size, key='Negative', button_color='red'), 
+	sg.Button('NEUTRAL', key='Neutral', size=button_size, button_color='gray'), 
+	sg.Button('POSITIVE', key='Positive', size=button_size, button_color='blue')
+	]]
+	
+	#Generate window with the button layout
+	window = sg.Window('Interface', interface, background_color='black', return_keyboard_events=True).Finalize()	
+	
+	while got_reward.isSet() == False:
+		event, values = window.read()
 		
+		if event == sg.WIN_CLOSED or event == 'Negative':
+			reward = -1
+			e.set()
+			break
+					
+		elif event == sg.WIN_CLOSED or event == 'Neutral':
+			reward = 0
+			e.set()
+			break
+		
+		elif event == sg.WIN_CLOSED or event == 'Positive':
+			reward = +1
+			#e.set()
+			break
+		
+		elif event == '1:10': #Keyboard press 1
+			window['Negative'].click()
+		
+		elif event == '2:11': #Keyboard press 2
+			window['Neutral'].click()
+		
+		elif event == '3:12': #Keyboard press 3
+			window['Positive'].click()
+			
+		elif event == 'q:24': #Keyboard press q
+			break	
+			
+	#print("out of while GUI")
+	
+	got_reward.set()
+	window.close()
+
 			
 
 
@@ -101,9 +163,13 @@ def display():
     frame_rate = cfg.FRAME_RATE_VID
     try:
       #video_path = str(input("Enter the full path to the video file: "))
-      #video_path = './videos/angry.mp4'
-      video_path = './videos/happy.mov'
-      #video_path = './videos/asco.mp4'
+      #video_path = './videos/happy.mov'
+      
+      idx = random.randint(0, 2)
+      
+      if idx == 0: video_path = './videos/angry.mp4'
+      elif idx == 1: video_path = './videos/happy.mov'      
+      elif idx == 2: video_path = './videos/asco.mp4'
 
     except Exception as error:
       print("Error:", error) #--------------------------------!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! e -> error (e ya se usa para el flag)
@@ -238,8 +304,11 @@ def get_emotion_reward():
     if reward <= 0:
     	print("VIDEO (Facial emotion) | Negative/neutral reward.")
     	e.set()
+    	is_finished.set()
     else: 
-    	print("VIDEO (Facial emotion) | Positive reward.")	    
+    	print("VIDEO (Facial emotion) | Positive reward.")	
+    
+    got_reward.set()	    
 
     
 
@@ -261,17 +330,18 @@ def interfaces():
 def perform_action(action=0):
     T0 = time.time()
     
-    time_to_perform = 10
+    time_to_perform = 20
     print("\nAction ", action, "| Time to perform: ", time_to_perform)
     
-    while e.isSet() == False:        
+    while is_finished.isSet() == False:        
         e.wait(1)
         print("...")
         
         #print(time.time()-T0)
         if (time.time() - T0) > time_to_perform:
         	print("Completed action!\n")
-        	e.set()
+        	is_finished.set()
+        	#e.set()
         
         #e.wait(6)
         #print("Finished")
@@ -295,9 +365,14 @@ def ta3(action):
 		#_thread.start_new_thread(main, (action,))
 		_thread.start_new_thread(perform_action, (action,))
 		_thread.start_new_thread(interfaces, tuple())
-		while e.isSet() == False:
+		
+		while got_reward.isSet() == False:
 			get_emotion_reward()    #---------------------------!!!!!!!!!!!!!!!!!!!!!!!!! openCV en el main
+			#get_reward_GUI()
 			e.wait(1)
+		
+		while is_finished.isSet() == False:
+			is_finished.wait(1)	
 	
 	except KeyboardInterrupt:
 		_thread.interrupt_main()
@@ -305,9 +380,11 @@ def ta3(action):
 
 
 	#print("EEEE: ", e.isSet())
-	time.sleep(0.2)
+	time.sleep(0.5)
 	e.clear()
 	got_reward.clear()
+	is_finished.clear()
+
 	#print("E AFTER CLEAR: ", e.isSet())
 
 	
@@ -322,6 +399,7 @@ print("\nAAAAAAAAAAAAAAAAA")
 a = ta3(action) 
 print("Returned reward A: ", a)
 
+print("\n=============================")
 print("Sleeping 5 seconds...")
 time.sleep(5)
 
@@ -329,14 +407,16 @@ print("\nBBBBBBBBBBBBBBBBBBBBBBBBB")
 b = ta3(5)
 print("Return reward B: ", b)
 
+print("\n=============================")
+print("Sleeping 5 seconds...")
+time.sleep(5)
 
-"""
 print("\nCCCCCCCCCCCCCCCCCCCCC")
 c = ta3(1)
 print("Return reward C: ", c)
 
 #get_reward(interfaces)
-"""
+
 
 #print("FINAL REWARD: ", reward)
 

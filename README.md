@@ -221,10 +221,10 @@ optional arguments:
 - [ ] Update robot action repertoire.
 - [ ] Incorporate the Visual Working Memory in the state.
 - [X] Parallelize reward and action performing.
-- [ ] Incorporate the Face Expression Recognizer into the get_reward repertoire.
+- [X] Incorporate the Face Expression Recognizer into the get_reward repertoire.
 - [X] Parallelize reward interfaces.
-- [ ] Get reward via emotion recognition (function). (S)
-- [ ] Try the emotion recognition with threads. 
+- [X] Get reward via emotion recognition (function). (S)
+- [X] Try the emotion recognition with threads. 
 - [X] cv2.putText() -> scale with respect to image resolution. (C) 
 - [ ] Emotion recognition: different decision thresholds for each emotion. (S) 
 - [ ] Real-life videos for the emotion recognition. (C) 

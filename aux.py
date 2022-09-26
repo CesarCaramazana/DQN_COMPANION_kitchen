@@ -7,9 +7,6 @@ import glob
 import time
 import os
 
-import nltk #Sentiment Analysis via NLP
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from playsound import playsound
 
 import config as cfg
 

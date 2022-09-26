@@ -63,18 +63,17 @@ class BasicEnv(gym.Env):
 		current_state = self.state #Current state
 		
 		#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
-		#Aquí se evalúa si el instante actual coincide con un instante de decisión.
+		#Aquí se puede evaluar si el instante actual coincide con un instante de decisión.
 		
 		frame = get_frame()
-		#print("Frame? : ", frame)
-		
+		#print("Frame: ", frame)
+		#Output periódico
 		if frame % 300 == 0:
 			print("We do an action here")
 			reward = self._take_action(action)
 
 			
 		#reward = self._take_action(action) #Deterministic rewards
-		#reward = self._take_action2(action) #REWARD GUI
 		#reward = self._take_action3(action) #Parallel action-reward
 		
 		self.transition() #Transition to a new state
@@ -291,35 +290,6 @@ class BasicEnv(gym.Env):
 	
 		return reward
 	
-	def _take_action2(self, action): 
-		"""
-		Version of the take action function that considers the user's input as the reward signal. The input can be provided via different interfaces.
-		
-		Input:
-			action: (int) from the action repertoire taken by the agent.
-		Output:
-			reward: (int) received from the user input.
-		
-		"""
-
-		if VERSION == 1:
-			state = undo_one_hot(self.state) #If the state is the Next Action vector, undo the O-H to obtain the integer value.
-		elif VERSION == 2: #If the state is NA + VWM, first separate the two variables and then obtain the value of the state from the Next Action.
-			na, ao = undo_concat_state(self.state)
-			state = undo_one_hot(na) 	
-			
-							
-		print("| STATE: {0:>29s}".format(self.next_atomic_action_repertoire[state]), " | ACTION: {0:>20s}".format(self.action_repertoire[action]))
-		
-		reward = get_reward_GUI() #REWARD VIA GRAPHICAL INTERFACE
-		
-		#reward = get_sentiment_keyboard() #REWARD VIA TEXT (SENTIMENT ANALYSIS OF A SENTENCE)
-		#reward = reward_confirmation_perform(action) #Reward as confirmation-cancel.	
-		
-		self.total_reward += reward
-			
-		
-		return reward
 
 	
 	def _take_action3(self, action):

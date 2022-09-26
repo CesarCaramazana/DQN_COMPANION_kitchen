@@ -9,6 +9,7 @@ import os
 
 import nltk #Sentiment Analysis via NLP
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
+from playsound import playsound
 
 import config as cfg
 
@@ -146,7 +147,7 @@ def get_init_state(version=1):
 	if video_idx+1 < total_videos:
 		video_idx += 1
 	else: 
-		#print("Ya hemos usado todos los vídeos.")
+		print("Ya hemos usado todos los vídeos.")
 		video_idx = 0
 		
 	action_idx = 0
@@ -185,13 +186,28 @@ def get_next_action_annotations(action_idx, annotations):
 		na = one_hot(31, N_ATOMIC_ACTIONS)
 	else:
 		na = one_hot(na, N_ATOMIC_ACTIONS)
-
 	
-	#Noise
-	noise = np.random.uniform(0, 0.1, N_ATOMIC_ACTIONS)
-	na = na + noise
-	#na = softmax(na + noise)
-	#print(na)
+	
+	noise = np.random.normal(0, 1, N_ATOMIC_ACTIONS)
+	na_noise = na + 0.15*noise	
+	
+	na_norm = (na_noise + abs(np.min(na_noise))) / (np.max(na_noise) - np.min(na_noise))
+	na_norm = na_norm / np.sum(na_norm)
+	
+	"""
+	plt.figure(figsize=(12, 5))
+	plt.subplot(131)
+	plt.title("Original label")
+	plt.plot(na)
+	plt.subplot(132)
+	plt.title("Noise")
+	plt.plot(noise, 'x')
+	plt.subplot(133)
+	plt.title("Probability")
+	plt.plot(na_norm)
+	plt.show()
+	"""
+
 	return na
 
 
@@ -228,14 +244,18 @@ def get_time_step():
 	"""
 	global action_idx, frame, annotations
 	#time.sleep(1)
-	frame += 240
-	
+	frame += 10
+
 	#if frame % freq_obs == 0:
 	if frame > annotations['frame_init'][action_idx]:
 		action_idx +=1
 	return action_idx
 
 
+def get_frame():
+	global frame
+	
+	return frame
 
 def get_state(version=1):
 	"""
@@ -466,107 +486,7 @@ def get_sentiment_keyboard():
 
 import _thread
 import threading
-
-reward = 0
-e = threading.Event()
-
-
-# ...
-
-def get_reward_keyboard_thread():
-	"""
-	Returns an integer value read from keyboard input.
-	Output:
-		reward (int): Input value or 0 if the user did not provide a valid number.
-	"""
-	global reward
-		
-	while e.isSet() == False:
-		rwd = input("Input reward value...\n")	
-		try:
-			reward = int(rwd)
-			
-			if reward <= 0: #If NEGATIVE reward, interrupt execution 
-				#print("neg reward")
-				e.set()
-				
-
-		except: 
-			print("ERROR: invalid reward value.")
-
-	
-def interfaces():
-	"""
-	Creates a thread for every input interface.
-	
-	"""
-	#_thread.start_new_thread(get_reward_GUI_thread, tuple())
-	_thread.start_new_thread(get_reward_keyboard_thread, tuple()) 	
-
-
-
-#Perform an action
-def perform_action(action=0):
-
-    """
-    Simulates the performing of an action that takes some time to complete.
-    
-    Input:
-    	action: (int) from the action repertoire.
-    	
-    """
-    T0 = time.time()
-    
-    time_to_perform = 10
-    print("\nPerforming action ", action, "| Time to perform: ", time_to_perform)
-    i = 0
-    while e.isSet() == False:        
-        e.wait(1)
-        print("...", i, "  | e: ", e.isSet())
-        i += 1
-        
-        #print(time.time()-T0)
-        if (time.time() - T0) > time_to_perform:
-        	print("Finished action!\n")
-        	e.set()
-
-    print("FINISHED ACTION (either timeout or interrupted)")
-
-
-
-def main(action):
-	_thread.start_new_thread(perform_action, (action,))
-	_thread.start_new_thread(interfaces, tuple())
-
-
-def perform_action_get_reward(action):
-	"""
-	Performs an action and waits for a reward signal to either complete it (positive reward) or interrupt it (negative/neutral reward).
-	
-	Input:
-		action (int): to be performed by the agent.
-	Output:
-		reward (int): input by the user via interfaces.	
-	
-	"""
-	global reward
-	
-	try:
-		_thread.start_new_thread(perform_action, (action,))
-		_thread.start_new_thread(interfaces, tuple())
-		#_thread.start_new_thread(main, (action,))
-		while e.isSet() == False:
-			e.wait(1)
-	
-	except KeyboardInterrupt:
-		_thread.interrupt_main()
-		pass		
-
-	time.sleep(1)
-	e.clear()
-		
-	return reward
-
+import cv2
 
 
 #---------------------------------

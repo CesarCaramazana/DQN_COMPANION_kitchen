@@ -6,7 +6,6 @@ import time
 from aux import *
 import config as cfg
 
-
 #CONFIGURATION GLOBAL ENVIRONMENT VARIABLES
 ACTION_SPACE = cfg.ACTION_SPACE
 N_ATOMIC_ACTIONS = cfg.N_ATOMIC_ACTIONS
@@ -59,12 +58,24 @@ class BasicEnv(gym.Env):
 		"""
 		assert self.action_space.contains(action)
 		done = False
+		reward = 0
 		
 		current_state = self.state #Current state
+		
+		#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
+		#Aquí se evalúa si el instante actual coincide con un instante de decisión.
+		
+		frame = get_frame()
+		#print("Frame? : ", frame)
+		
+		if frame % 300 == 0:
+			print("We do an action here")
+			reward = self._take_action(action)
+
 			
 		#reward = self._take_action(action) #Deterministic rewards
 		#reward = self._take_action2(action) #REWARD GUI
-		reward = self._take_action3(action) #Parallel action-reward
+		#reward = self._take_action3(action) #Parallel action-reward
 		
 		self.transition() #Transition to a new state
 		next_state = self.state

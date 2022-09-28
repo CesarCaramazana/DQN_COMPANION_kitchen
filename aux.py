@@ -121,6 +121,7 @@ video_idx = 0
 action_idx = 0 
 frame = 0 #Current frame
 freq_obs = 30
+t_na_i = 0 #Difference to frame init
 
 annotations = np.load(videos[video_idx], allow_pickle=True)
 print()
@@ -242,11 +243,51 @@ def get_time_step():
 	global action_idx, frame, annotations
 	#time.sleep(1)
 	frame += 10
+	#time.sleep(1/30)
+
 
 	#if frame % freq_obs == 0:
-	if frame > annotations['frame_init'][action_idx]:
+	#if frame > annotations['frame_init'][action_idx]:
+	if frame > annotations['frame_end'][action_idx]:
 		action_idx +=1
+		
 	return action_idx
+
+def get_state_v2(version=1):
+	global action_idx, frame, annotations
+	length = len(annotations['label'])
+	
+	action_idx = get_time_step() #Current idx based on current frame
+	
+	if action_idx != length:
+		if frame <= annotations['frame_end'][action_idx]:
+			na = get_next_action_annotations(action_idx, annotations)
+			ao = get_active_object_annotations(action_idx, annotations)
+		"""
+		print("Current frame: ", frame)
+		print("Current idx: ", action_idx)
+		print("Length: ", length)
+		print("Current action: ", annotations['label'][action_idx])
+		print("Current frame init: ", annotations['frame_init'][action_idx])
+		print("Current frame end: ", annotations['frame_end'][action_idx])
+		print("DIFF init: ", annotations['frame_init'][action_idx] - frame)
+		"""	
+	else:
+		na = one_hot(-1, N_ATOMIC_ACTIONS)
+		ao = np.zeros((N_OBJECTS))
+		#print("FINNNNNNNNNNNNNNNNNNNNNNN")
+		
+
+	
+	
+	#print("NA: ", na)
+	if version == 1:
+		state = na
+	elif version == 2:
+		state = concat_vectors(na, ao)	
+	
+	return state
+
 
 
 def get_frame():
@@ -477,14 +518,11 @@ def get_sentiment_keyboard():
 	return reward
 
 
-
-
-#PARALLELIZATION OF GET_REWARD AND PERFORM_ACTION FUNCTIONS
-
-import _thread
-import threading
-import cv2
-
+"""
+while True:
+	s = get_state_v2()
+	
+"""
 
 #---------------------------------
 #Debug

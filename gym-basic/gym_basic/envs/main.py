@@ -68,10 +68,11 @@ class BasicEnv(gym.Env):
 		frame = get_frame()
 		#print("Frame: ", frame)
 		#Output periódico
-		if frame % 300 == 0:
-			print("We do an action here")
+		if frame % 30 == 0:
+			#print("We do an action here")
 			reward = self._take_action(action)
-
+		
+		#reward = self._take_action(action)
 			
 		#reward = self._take_action(action) #Deterministic rewards
 		#reward = self._take_action3(action) #Parallel action-reward
@@ -80,6 +81,7 @@ class BasicEnv(gym.Env):
 		next_state = self.state
 
 		if undo_one_hot(self.state) == N_ATOMIC_ACTIONS-1: #If the next action is nothing (==terminal state), finish episode
+			#print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!!!!!!")
 			done = True
 		
 		#PRINT STATE-ACTION TRANSITION & REWARD
@@ -314,7 +316,8 @@ class BasicEnv(gym.Env):
 		Gets a new observation of the environment and updates the state.
 		"""
 	
-		self.state = get_state(version=VERSION)
+		#self.state = get_state(version=VERSION)
+		self.state = get_state_v2(version=VERSION)
 
 	
 	def render(self, state, next_state, action, reward, total_reward):

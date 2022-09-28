@@ -165,15 +165,17 @@ def optimize_model():
 	transitions = memory.sample(BATCH_SIZE)	
 	batch = Transition(*zip(*transitions))
 	non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), device=device, dtype=torch.bool)
+	
 	non_final_next_states = torch.cat([s for s in batch.next_state if s is not None])
+
 	
 	state_batch = torch.cat(batch.state)
 	action_batch = torch.cat(batch.action)
 	reward_batch = torch.cat(batch.reward)	
-
+	
 	out = policy_net(state_batch)
 	
-	state_action_values = policy_net(state_batch).gather(1, action_batch) #Get Q value for current state with the Policy Network. Q(s)
+	state_action_values = policy_net(state_batch).gather(1, action_batch) #Forward pass on the policy network -> Q values for every action -> Keep only Qvalue for the action that we took when exploring (action_batch), for which we have the reward (reward_batch) and the transition (non_final_next_states).
 	
 	next_state_values = torch.zeros(BATCH_SIZE, device=device)
 	next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0].detach() #Get Q value for next state with the Target Network. Q(s')

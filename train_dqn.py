@@ -206,6 +206,8 @@ print("\nTraining...")
 print("_"*30)
 t1 = time.time() #Tik
 
+
+
 for i_episode in range(LOAD_EPISODE, NUM_EPISODES+1):
 	if(args.display): print("| EPISODE #", i_episode , end='\n')
 	else: print("| EPISODE #", i_episode , end='\r')
@@ -216,27 +218,34 @@ for i_episode in range(LOAD_EPISODE, NUM_EPISODES+1):
 	done = False
 	
 	steps_done += 1
+	num_optim = 0
 
 	for t in count(): 
 		action = select_action(state)
-		_, reward, done, _ = env.step(action.item())
+		_, reward, done, info = env.step(action.item())
 		reward = torch.tensor([reward], device=device)
 
 		next_state = torch.tensor(env.state, dtype=torch.float, device=device).unsqueeze(0)
 
-		memory.push(state, action, next_state, reward)
+		
+		if info: #Only train if we have taken an action (f==30)
+			memory.push(state, action, next_state, reward)
+			optimize_model()
+			num_optim += 1
+		
 
 		if not done: 
 			state = next_state
 		else: 
 			next_state = None
 			
-		optimize_model()
+		#optimize_model()
 		
 		if done: 
 			if episode_loss: 
 				#print("Count t: ", t)
-				total_reward.append(env.get_total_reward()/(t+1))
+				#total_reward.append(env.get_total_reward()/(t+1))
+				total_reward.append(env.get_total_reward()/num_optim)
 				total_loss.append(mean(episode_loss))
 				ex_rate.append(EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY))
 				

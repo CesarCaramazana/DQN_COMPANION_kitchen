@@ -259,12 +259,16 @@ def get_state_v2(version=1):
 	
 	action_idx = get_time_step() #Current idx based on current frame
 	
-	if action_idx != length:
+	if action_idx < length:
+
 		if frame <= annotations['frame_end'][action_idx]:
 			na = get_next_action_annotations(action_idx, annotations)
 			ao = get_active_object_annotations(action_idx, annotations)
-		"""
-		print("Current frame: ", frame)
+		else: 
+			na = get_next_action_annotations(action_idx+1, annotations)
+			ao = get_active_object_annotations(action_idx+1, annotations)
+		"""	
+		print("\nCurrent frame: ", frame)
 		print("Current idx: ", action_idx)
 		print("Length: ", length)
 		print("Current action: ", annotations['label'][action_idx])
@@ -273,6 +277,7 @@ def get_state_v2(version=1):
 		print("DIFF init: ", annotations['frame_init'][action_idx] - frame)
 		"""	
 	else:
+
 		na = one_hot(-1, N_ATOMIC_ACTIONS)
 		ao = np.zeros((N_OBJECTS))
 		#print("FINNNNNNNNNNNNNNNNNNNNNNN")

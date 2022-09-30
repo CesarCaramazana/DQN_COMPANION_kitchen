@@ -59,6 +59,7 @@ class BasicEnv(gym.Env):
 		assert self.action_space.contains(action)
 		done = False
 		reward = 0
+		info = False
 		
 		current_state = self.state #Current state
 		
@@ -67,10 +68,11 @@ class BasicEnv(gym.Env):
 		
 		frame = get_frame()
 		#print("Frame: ", frame)
-		#Output periódico
+		
 		if frame % 30 == 0:
 			#print("We do an action here")
 			reward = self._take_action(action)
+			info = True
 		
 		#reward = self._take_action(action)
 			
@@ -87,7 +89,7 @@ class BasicEnv(gym.Env):
 		#PRINT STATE-ACTION TRANSITION & REWARD
 		if self.display: self.render(current_state, next_state, action, reward, self.total_reward)
 		
-		info = {}
+		
 		return next_state, reward, done, info		
 		
 		

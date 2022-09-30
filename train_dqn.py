@@ -24,6 +24,24 @@ import config as cfg
 import argparse
 
 
+"""
+
+MOVING AVERAGE
+
+
+"""
+
+def moving_average(x, w):
+    return np.convolve(x, np.ones(w), 'valid') / w
+
+
+
+
+
+
+
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--experiment_name', type=str, default=cfg.EXPERIMENT_NAME, help="(str) Name of the experiment. Used to name the folder where the model is saved. For example: my_first_DQN.")
 parser.add_argument('--save_model', action='store_true', default=False, help="Save a checkpoint in the EXPERIMENT_NAME folder.")
@@ -293,13 +311,13 @@ plt.subplot(131)
 plt.title("Loss")
 plt.xlabel("Episode")
 plt.ylabel("Average MSE")
-plt.plot(total_loss, 'r')
+plt.plot(moving_average(total_loss, 70), 'r')
 
 plt.subplot(132)
 plt.title("Reward")
 plt.xlabel("Episode")
 plt.ylabel("Episode reward")
-plt.plot(total_reward, 'b')
+plt.plot(moving_average(total_reward,70), 'b')
 
 plt.subplot(133)
 plt.title("Exploration rate")
@@ -308,6 +326,9 @@ plt.ylabel("Epsilon")
 plt.plot(ex_rate)
 
 plt.show()
+
+
+
 
 #print("GLOBAL: ", steps_done)
 #print("EXPLORATION RATE: ", (EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY)))

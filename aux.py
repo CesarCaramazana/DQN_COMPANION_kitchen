@@ -177,8 +177,14 @@ def get_next_action_annotations(action_idx, annotations):
 	"""
 	
 	length = len(annotations['label'])
-
-	na = annotations['label'][action_idx]
+	
+	p = random.uniform(0, 1)
+	
+	#Erroneous label 5% of the time
+	if p<0.95:
+		na = annotations['label'][action_idx] #Correct label
+	else:
+		na = random.randint(0, N_ATOMIC_ACTIONS-1) #Random erroneous label	
 	
 	if na == 99:
 		na = one_hot(31, N_ATOMIC_ACTIONS)
@@ -242,7 +248,7 @@ def get_time_step():
 	"""
 	global action_idx, frame, annotations
 	#time.sleep(1)
-	frame += 10
+	frame += 15
 	#time.sleep(1/30)
 
 

@@ -248,7 +248,7 @@ def get_time_step():
 	"""
 	global action_idx, frame, annotations
 	#time.sleep(1)
-	frame += 15
+	frame += 1
 	#time.sleep(1/30)
 
 
@@ -259,20 +259,21 @@ def get_time_step():
 		
 	return action_idx
 
-def get_state_v2(version=1):
+def get_state(version=1):
 	global action_idx, frame, annotations
 	length = len(annotations['label'])
 	
 	action_idx = get_time_step() #Current idx based on current frame
 	
 	if action_idx < length:
-
 		if frame <= annotations['frame_end'][action_idx]:
 			na = get_next_action_annotations(action_idx, annotations)
 			ao = get_active_object_annotations(action_idx, annotations)
 		else: 
 			na = get_next_action_annotations(action_idx+1, annotations)
 			ao = get_active_object_annotations(action_idx+1, annotations)
+			
+			
 		"""	
 		print("\nCurrent frame: ", frame)
 		print("Current idx: ", action_idx)
@@ -306,45 +307,21 @@ def get_frame():
 	
 	return frame
 
-def get_state(version=1):
-	"""
-	Gets the state of the environment as the predicted next action (and the active objects of that action).
-		
-	Input:
-		version (int): version of the state definition. If version is 1, the state is the next atomic action. If version is 2, it is also the active object.
-	Output:
-		state (numpy vector): concatenation (v2) of one-hot encoded next atomic action and active object vectors. 
-	"""
-	global action_idx, annotations
-	
-	
-	length = len(annotations['label'])
-	
-	#-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	#action_idx += 1 #Transition to the next state (action index) inmediately
-	action_idx = get_time_step() #Transition to next state based on time
-	
-	
-	if action_idx+1 < length:
-		na = get_next_action_annotations(action_idx+1, annotations)
-		ao = get_active_object_annotations(action_idx, annotations)
-	
-		#print("NEXT ACTION: ", na)
-		#print("ACTIVE OBJECT: ", ao)
-	
-	else: 
-		#print("Terminal state") #TERMINAL STATE: NextAction is null because the current state is the last action of the recipe
-		na = one_hot(-1, N_ATOMIC_ACTIONS)
-		ao = np.zeros((N_OBJECTS))
-		
-	if version == 1:
-		state = na
-	elif version == 2:
-		state = concat_vectors(na, ao)	
 
-	return state	
+def get_end_execution_frame(action):
+	global annotations, action_idx, frame
+	
+	#print("action idx: ", action_idx)
+	#print("Annotations ", annotations)
+	end_frame = annotations['frame_end'][action_idx]
+	exe_frame = cfg.ROBOT_ACTION_DURATIONS[action] + frame	
+	
+	#print("\nFrame=", frame)
+	#print("End action: ", end_frame)
+	#print("End execution: ", exe_frame)
 	
 	
+	return min(end_frame, exe_frame)
 	
 # 3) GET REWARDS	
 #User interfaces/Reward functions.
@@ -529,11 +506,7 @@ def get_sentiment_keyboard():
 	return reward
 
 
-"""
-while True:
-	s = get_state_v2()
-	
-"""
+
 
 #---------------------------------
 #Debug

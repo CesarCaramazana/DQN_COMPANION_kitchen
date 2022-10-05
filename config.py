@@ -70,8 +70,7 @@ ATOMIC_ACTIONS_MEANINGS = {
 }
 
 """
-Objects that are at human's reach:
-	everything else
+
 
 Objects that are in the fridge:
 	butter
@@ -80,6 +79,9 @@ Objects that are in the fridge:
 	nutella
 	tomato sauce
 	water
+
+Objects that are at human's reach:
+	everything else
 
 """
 
@@ -133,13 +135,46 @@ ROBOT_ACTIONS_MEANINGS = {
 	16: 'bring tomato sauce',
 	17: 'bring water',
 	18: 'do nothing',
-	19: 'return jam',
-	20: 'return butter',
-	21: 'return tomato sauce',
-	22: 'return nutella',
-	23: 'return milk'
+	19: 'put jam fridge',
+	20: 'put butter fridge',
+	21: 'put tomato fridge',
+	22: 'put nutella fridge',
+	23: 'put milk fridge'
 
 }
+
+
+#In frames
+ROBOT_ACTION_DURATIONS = {
+	0: 174, 
+	1: 122, 
+	2: 87, 
+	3: 131, 
+	4: 147, 
+	5: 231, 
+	6: 229, 
+	7: 171, 
+	8: 142, 
+	9: 196, 
+	10: 221, 
+	11: 193, 
+	12: 196, 
+	13: 142, 
+	14: 111, 
+	15: 131, 
+	16: 169, 
+	17: 221, 
+	18: 0, 
+	19: 86, 
+	20: 121, 
+	21: 125, 
+	22: 123, 
+	23: 164
+}
+
+
+
+
 
 N_OBJECTS = len(OBJECTS_MEANINGS)
 ACTION_SPACE = len(ROBOT_ACTIONS_MEANINGS)

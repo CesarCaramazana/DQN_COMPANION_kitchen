@@ -21,6 +21,7 @@ import torch.optim as optim
 from DQN import DQN, ReplayMemory, Transition, init_weights 
 from config import print_setup
 import config as cfg
+from aux import *
 import argparse
 
 
@@ -237,23 +238,30 @@ for i_episode in range(LOAD_EPISODE, NUM_EPISODES+1):
 	
 	steps_done += 1
 	num_optim = 0
+	
+	action = select_action(state) #1
+	frame_exe = get_end_execution_frame(action.item())
 
 	for t in count(): 
-		action = select_action(state)
-		_, reward, done, info = env.step(action.item())
+		#action = select_action(state)
+		_, reward, done, optim, frame = env.step(action.item())
 		reward = torch.tensor([reward], device=device)
-
 		next_state = torch.tensor(env.state, dtype=torch.float, device=device).unsqueeze(0)
-
-		
-		if info: #Only train if we have taken an action (f==30)
+				
+		if optim: #Only train if we have taken an action (f==30)
+			print("OPTIMIZE NOW")
 			memory.push(state, action, next_state, reward)
 			optimize_model()
 			num_optim += 1
-		
+				
+		if frame > frame_exe:
+			print("CAMBIO DE ACCIÓN")
+			action = select_action(state)
+			frame_exe = get_end_execution_frame(action.item())
 
 		if not done: 
 			state = next_state
+
 		else: 
 			next_state = None
 			
@@ -311,13 +319,13 @@ plt.subplot(131)
 plt.title("Loss")
 plt.xlabel("Episode")
 plt.ylabel("Average MSE")
-plt.plot(moving_average(total_loss, 200), 'r')
+plt.plot(moving_average(total_loss, 300), 'r')
 
 plt.subplot(132)
 plt.title("Reward")
 plt.xlabel("Episode")
 plt.ylabel("Episode reward")
-plt.plot(moving_average(total_reward,200), 'b')
+plt.plot(moving_average(total_reward,300), 'b')
 
 plt.subplot(133)
 plt.title("Exploration rate")

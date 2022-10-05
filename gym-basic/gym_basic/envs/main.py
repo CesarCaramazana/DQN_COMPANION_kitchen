@@ -59,20 +59,16 @@ class BasicEnv(gym.Env):
 		assert self.action_space.contains(action)
 		done = False
 		reward = 0
-		info = False
+		optim = False
 		
 		current_state = self.state #Current state
 		
-		#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
-		#Aquí se puede evaluar si el instante actual coincide con un instante de decisión.
+		frame = get_frame()		
 		
-		frame = get_frame()
-		#print("Frame: ", frame)
-		
-		if frame % 30 == 0:
-			#print("We do an action here")
+		if frame % 60 == 0:
+			print("\nWe do an action here")
 			reward = self._take_action(action)
-			info = True
+			optim = True
 		
 		#reward = self._take_action(action)
 			
@@ -90,7 +86,7 @@ class BasicEnv(gym.Env):
 		if self.display: self.render(current_state, next_state, action, reward, self.total_reward)
 		
 		
-		return next_state, reward, done, info		
+		return next_state, reward, done, optim, frame		
 		
 		
 	def get_total_reward(self):
@@ -319,7 +315,7 @@ class BasicEnv(gym.Env):
 		"""
 	
 		#self.state = get_state(version=VERSION)
-		self.state = get_state_v2(version=VERSION)
+		self.state = get_state(version=VERSION)
 
 	
 	def render(self, state, next_state, action, reward, total_reward):

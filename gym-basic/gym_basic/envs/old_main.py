@@ -17,17 +17,6 @@ ROBOT_ACTIONS_MEANINGS = cfg.ROBOT_ACTIONS_MEANINGS
 
 VERSION = cfg.VERSION
 
-#ANNOTATION-RELATED VARIABLES
-root = "./video_annotations/train/*"
-videos = glob.glob(root)
-random.shuffle(videos)
-total_videos = len(videos)
-video_idx = 0 #Index of current video
-action_idx = 0 #Index of next_action
-frame = 0 #Current frame
-
-annotations = np.load(videos[video_idx], allow_pickle=True)
-
 
 class BasicEnv(gym.Env):
 	message = "Custom environment for recipe preparation scenario."
@@ -40,7 +29,8 @@ class BasicEnv(gym.Env):
 		elif VERSION == 2:
 			self.observation_space = gym.spaces.Discrete(N_ATOMIC_ACTIONS+N_OBJECTS) #State as Next Action + VWM	 
 
-		self.state = [] #One hot encoded state		
+		self.state = [] #One hot encoded state
+		
 		self.total_reward = 0
 		
 		self.action_repertoire = ROBOT_ACTIONS_MEANINGS
@@ -66,29 +56,27 @@ class BasicEnv(gym.Env):
 			done: (bool) True if the episode is finished (the recipe has reached its end).
 			info:	
 		"""
-		global frame, action_idx, annotations
-		
-		print("ann: ", annotations)
-		print("F: ", frame)
-		print("Previous end frame. ", annotations['frame_end'][action_idx-1])
-		
-		print("ACTION: ", action)
-		
-		print("Execution frame: ", self.perform_action_time(action))
-		print("idx: ", action_idx)
-		print("ANNOTATION RIGHT NOW: ", annotations['label'][action_idx])
-		
 		assert self.action_space.contains(action)
-		
-		reward = 0
-		
 		done = False
+		reward = 0
 		optim = False
 		
 		current_state = self.state #Current state
 		
+		frame = get_frame()
+		frame_exe = get_end_execution_frame(action)
+		
+		print("F: ", frame)		
+		print("Fexe: ", frame_exe)
+		
+		
+		for i in range(100):
+			self.transition()
+				
+		print("FRAME AFTER TRANSITION: ", get_frame())
+		
 		if frame % 50 == 0:
-			#print("\nWe do an action here")
+			print("\nWe do an action here")
 			reward = self._take_action(action)
 			optim = True
 		
@@ -101,7 +89,7 @@ class BasicEnv(gym.Env):
 
 
 		if undo_one_hot(self.state) == N_ATOMIC_ACTIONS-1: #If the next action is nothing (==terminal state), finish episode
-			#print("TERMINAL STATE.")
+			print("TERMINAL STATE.")
 			done = True
 		
 		#PRINT STATE-ACTION TRANSITION & REWARD
@@ -114,55 +102,17 @@ class BasicEnv(gym.Env):
 	def get_total_reward(self):
 		return self.total_reward
 	
-	
-	def perform_action_time(self, action):
-
-		global annotations, action_idx, frame
-		
-		length = len(annotations['label'])
-		last_frame = int(annotations['frame_end'][length-1])
-		
-		exe_frame = cfg.ROBOT_ACTION_DURATIONS[action] + frame	
-		
-		return min(last_frame, exe_frame)
-	
 	def reset(self):
 		"""
 		Resets the environment to an initial state.
 		"""
 		super().reset()
 		
-		global video_idx, action_idx, annotations, frame
-		
-		annotations = np.load(videos[video_idx], allow_pickle=True)
-		
-		if video_idx+1 < total_videos:
-			video_idx += 1
-		else:
-			video_idx = 0
-			print("EPOCH COMPLETED.")
-		
-		action_idx = 1   #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! START AT 0 OR 1? 
-		frame = 0
-		self.total_reward = 0	
-		
-		#First Next_action and Active Object	
-		na = one_hot(annotations['label'][action_idx], N_ATOMIC_ACTIONS)
-		ao = np.zeros((N_OBJECTS))
-		
-		ao_idx = annotations['object_label'][action_idx]	
-		if type(ao_idx) == int:
-			pass
-		else:
-			for idx in ao_idx:
-				ao = 0.6 * ao
-				ao[idx] = 1
-		
-		if VERSION == 1:
-			self.state = na
-		elif VERSION == 2:
-			self.state = concat_vectors(na, ao)
+		self.state = get_init_state(version=VERSION)
+			
+		self.total_reward = 0
 
+		
 		return self.state
 
 
@@ -349,60 +299,33 @@ class BasicEnv(gym.Env):
 		self.total_reward += reward			
 	
 		return reward
+	
 
+	
+	def _take_action3(self, action):
+		"""
+		Version of the take action function that considers the user's input as the reward signal while simulating the action performing. If the reward is positive, it allows the completion of the action; whilst if the reward is negative/neutral, the action is interrupted.
+		
+		Input:
+			action: (int) from the action repertoire taken by the agent.
+		Output:
+			reward: (int) received from the user input.
+		
+		"""
+		
+		reward = perform_action_get_reward(action)
+		
+		self.total_reward += reward
+		
+		return reward
 	
 	def transition(self):
 		"""
 		Gets a new observation of the environment and updates the state.
 		"""
-		
-		global action_idx, frame, annotations
-		
-		frame += 1
-		length = len(annotations['label']) - 1 #Length from 0 to L-1 (same as action_idx)
-		
-		#print("Frmae. ", frame, end='\r')
-		
-		#GET TIME STEP (action_idx of the next atomic action)	
-		if frame > annotations['frame_init'][action_idx]:
-			action_idx += 1
-				
-		
-		if action_idx >= length+1: #If we finish, code TERMINAL STATE
-			na = one_hot(-1, N_ATOMIC_ACTIONS)
-			ao = np.zeros((N_OBJECTS))
-		else:
-			#NEXT ACTION
-			p = random.uniform(0, 1)
-			
-			if p>0.95:
-				na = random.randint(0, N_ATOMIC_ACTIONS-2)
-			else:
-				na = annotations['label'][action_idx]	
-			
-			na = one_hot(na, N_ATOMIC_ACTIONS)
-			noise = np.random.normal(0, 1, N_ATOMIC_ACTIONS)
-			na_noisy = na + 0.1*noise
-			na_norm = (na_noisy + abs(np.min(na_noisy))) / (np.max(na_noisy) - np.min(na_noisy))
-			na = na_norm / np.sum(na_norm)
-			
-			#ACTIVE OBJECT
-			ao = np.zeros((N_OBJECTS))
-			ao_idx = annotations['object_label'][action_idx]
-			if type(ao_idx) == int:
-				pass
-			else:
-				for idx in ao_idx:
-					ao = 0.6 * ao
-					ao[idx]=1	
 	
-		if VERSION == 1:
-			state = na
-		elif VERSION == 2:
-			state = concat_vectors(na, ao)	
-		
-		
-		self.state = state
+		#self.state = get_state(version=VERSION)
+		self.state = get_state(version=VERSION)
 
 	
 	def render(self, state, next_state, action, reward, total_reward):

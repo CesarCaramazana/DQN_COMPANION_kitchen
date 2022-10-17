@@ -240,24 +240,22 @@ for i_episode in range(LOAD_EPISODE, NUM_EPISODES+1):
 	num_optim = 0
 	
 	action = select_action(state) #1
-	frame_exe = get_end_execution_frame(action.item())
 
+	
 	for t in count(): 
 		#action = select_action(state)
 		_, reward, done, optim, frame = env.step(action.item())
+		#print("Frame: ", frame)
 		reward = torch.tensor([reward], device=device)
 		next_state = torch.tensor(env.state, dtype=torch.float, device=device).unsqueeze(0)
-				
+
+		
 		if optim: #Only train if we have taken an action (f==30)
-			print("OPTIMIZE NOW")
+			#print("OPTIMIZE NOW")
 			memory.push(state, action, next_state, reward)
 			optimize_model()
 			num_optim += 1
-				
-		if frame > frame_exe:
-			print("CAMBIO DE ACCIÓN")
-			action = select_action(state)
-			frame_exe = get_end_execution_frame(action.item())
+
 
 		if not done: 
 			state = next_state
@@ -275,8 +273,8 @@ for i_episode in range(LOAD_EPISODE, NUM_EPISODES+1):
 				total_loss.append(mean(episode_loss))
 				ex_rate.append(EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY))
 				
-				
 
+			print("")
 			break #Finish episode
 	#print(scheduler.optimizer.param_groups[0]['lr']) #Print LR (to check scheduler)
 	
@@ -315,6 +313,7 @@ t2 = time.time() - t1 #Tak
 
 print("\nTraining completed in {:.1f}".format(t2), "seconds.\n")
 
+plt.figure(figsize=(15, 6))
 plt.subplot(131)
 plt.title("Loss")
 plt.xlabel("Episode")

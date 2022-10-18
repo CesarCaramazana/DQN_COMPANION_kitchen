@@ -68,7 +68,8 @@ class BasicEnv(gym.Env):
 		"""
 		global frame, action_idx, annotations
 		
-		print("ann: ", annotations)
+		"""
+		print("\nann: ", annotations)
 		print("F: ", frame)
 		print("Previous end frame. ", annotations['frame_end'][action_idx-1])
 		
@@ -77,6 +78,7 @@ class BasicEnv(gym.Env):
 		print("Execution frame: ", self.perform_action_time(action))
 		print("idx: ", action_idx)
 		print("ANNOTATION RIGHT NOW: ", annotations['label'][action_idx])
+		"""
 		
 		assert self.action_space.contains(action)
 		
@@ -91,10 +93,7 @@ class BasicEnv(gym.Env):
 			#print("\nWe do an action here")
 			reward = self._take_action(action)
 			optim = True
-		
-		#reward = self._take_action(action)			
-		#reward = self._take_action(action) #Deterministic rewards
-		#reward = self._take_action3(action) #Parallel action-reward
+
 		
 		self.transition() #Transition to a new state
 		next_state = self.state
@@ -353,49 +352,69 @@ class BasicEnv(gym.Env):
 	
 	def transition(self):
 		"""
-		Gets a new observation of the environment and updates the state.
+		Gets a new observation of the environment based on the current frame and updates the state.
+		
+		Global variables:
+			frame: current time step.
+			action_idx: index of the NEXT ACTION (state as the predicted action). *The action_idx points towards the next atomic action at the current frame.
+			annotations: pickle with the annotations, in the form of a table. 
+		
 		"""
 		
 		global action_idx, frame, annotations
 		
-		frame += 1
-		length = len(annotations['label']) - 1 #Length from 0 to L-1 (same as action_idx)
+		frame += 1 #Update frame
+		length = len(annotations['label']) - 1 #Length from 0 to L-1 (same as action_idx). "Duration of the recipe, in number of actions"
 		
 		#print("Frmae. ", frame, end='\r')
 		
-		#GET TIME STEP (action_idx of the next atomic action)	
+		
+		# 1)
+		#GET TIME STEP () (Updates the action_idx)
+		#We transition to a new action index when we surpass the init frame of an action (so that we point towards the next one).	
 		if frame > annotations['frame_init'][action_idx]:
 			action_idx += 1
-				
 		
+		
+		
+		# 2) GET NA & AO FROM ANNOTATIONS		
+		# Check if the action_idx is pointing towards nothing == the person is performing the last action of the recipe and there is no NEXT ACTION.
 		if action_idx >= length+1: #If we finish, code TERMINAL STATE
-			na = one_hot(-1, N_ATOMIC_ACTIONS)
-			ao = np.zeros((N_OBJECTS))
+			na = one_hot(-1, N_ATOMIC_ACTIONS) #Code a TERMINAL STATE as [0, 0, ..., 1]
+			ao = np.zeros((N_OBJECTS)) #Code Active Object as zeros.
+		
+		# If we haven't finished the recipe, then we update the STATE by getting the NEXT ACTION and the ACTIVE OBJECT.
 		else:
-			#NEXT ACTION
+			#Generate a random number between 0 and 1. 
 			p = random.uniform(0, 1)
 			
+			# 5% chance of erroneously coding another action that does not correspond to the annotations.
 			if p>0.95:
-				na = random.randint(0, N_ATOMIC_ACTIONS-2)
-			else:
-				na = annotations['label'][action_idx]	
+				na = random.randint(0, N_ATOMIC_ACTIONS-2) #Random label with 5% prob (from action 0 to N_AA-2, to avoid coding the TERMINAL STATE)
 			
-			na = one_hot(na, N_ATOMIC_ACTIONS)
+			# 95 % chance of coding the proper action
+			else:
+				na = annotations['label'][action_idx] #Correct label
+			
+			na = one_hot(na, N_ATOMIC_ACTIONS) #From int to one-hot vector.
+			
+			# Generate gaussian noise with 0 mean and 1 variance.
 			noise = np.random.normal(0, 1, N_ATOMIC_ACTIONS)
-			na_noisy = na + 0.1*noise
-			na_norm = (na_noisy + abs(np.min(na_noisy))) / (np.max(na_noisy) - np.min(na_noisy))
+			na_noisy = na + 0.1*noise #Add the noise to the NEXT ACTION vector. The multiplication factor modulates the amplitude of the noise. Right now, 0.1 is not very aggresive but it is noticeable.
+			na_norm = (na_noisy + abs(np.min(na_noisy))) / (np.max(na_noisy) - np.min(na_noisy)) #Normalize so that the vector represents the probability of each action. 
 			na = na_norm / np.sum(na_norm)
 			
-			#ACTIVE OBJECT
+			# This is an invented variable that codes the active objects of the NEXT ACTION.
 			ao = np.zeros((N_OBJECTS))
-			ao_idx = annotations['object_label'][action_idx]
+			ao_idx = annotations['object_label'][action_idx] #Indices of the objects, for example [1, 4, 5] 
 			if type(ao_idx) == int:
 				pass
 			else:
-				for idx in ao_idx:
+				for idx in ao_idx: # This generates different activation values, so that it is not coded with 0s and 1s.
 					ao = 0.6 * ao
-					ao[idx]=1	
+					ao[idx]=1 # In the example with [1, 4, 5], the AO would look like [0, 0.36, 0, 0, 0.6, 1, 0, ..., 0]
 	
+		#Either take the NEXT ACTION as the STATE, or also concatenate the ACTIVE OBJECT
 		if VERSION == 1:
 			state = na
 		elif VERSION == 2:

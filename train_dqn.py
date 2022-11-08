@@ -23,7 +23,8 @@ from config import print_setup
 import config as cfg
 from aux import *
 import argparse
-
+import pdb
+# import sched, time
 
 """
 
@@ -34,12 +35,6 @@ MOVING AVERAGE
 
 def moving_average(x, w):
     return np.convolve(x, np.ones(w), 'valid') / w
-
-
-
-
-
-
 
 
 
@@ -83,7 +78,7 @@ ROOT = args.root
 
 device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
 
-	
+    
 
 # --------------------------------
 #Lists to debug training
@@ -116,104 +111,150 @@ scheduler = optim.lr_scheduler.StepLR(optimizer, step_size= 800, gamma= 0.99)
 memory = ReplayMemory(REPLAY_MEMORY)
 
 
-
+# s = sched.scheduler(time.time, time.sleep)
 print_setup(args)
 
 steps_done = 0 
 
 # ----------------------------------
 
-if LOAD_MODEL:	
-	path = os.path.join(ROOT, EXPERIMENT_NAME)
-	if LOAD_EPISODE: 
-		model_name = 'model_' + str(LOAD_EPISODE) + '.pt' #If an episode is specified
-		full_path = os.path.join(path, model_name)
+if LOAD_MODEL:    
+    path = os.path.join(ROOT, EXPERIMENT_NAME)
+    if LOAD_EPISODE: 
+        model_name = 'model_' + str(LOAD_EPISODE) + '.pt' #If an episode is specified
+        full_path = os.path.join(path, model_name)
 
-	else:
-		list_of_files = glob.glob(path+ '/*') 
-		full_path = max(list_of_files, key=os.path.getctime) #Get the latest file in directory
+    else:
+        list_of_files = glob.glob(path+ '/*') 
+        full_path = max(list_of_files, key=os.path.getctime) #Get the latest file in directory
 
-	print("-"*30)
-	print("\nLoading model from ", full_path)
-	checkpoint = torch.load(full_path)
-	policy_net.load_state_dict(checkpoint['model_state_dict'])
-	target_net.load_state_dict(checkpoint['model_state_dict'])
-	optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-	LOAD_EPISODE = checkpoint['episode']
-	total_loss = checkpoint['loss']
-	steps_done = checkpoint['steps']
-	print("-"*30)
+    print("-"*30)
+    print("\nLoading model from ", full_path)
+    checkpoint = torch.load(full_path)
+    policy_net.load_state_dict(checkpoint['model_state_dict'])
+    target_net.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    LOAD_EPISODE = checkpoint['episode']
+    total_loss = checkpoint['loss']
+    steps_done = checkpoint['steps']
+    print("-"*30)
 
 target_net.load_state_dict(policy_net.state_dict())
 
-	
+    
+
+
+
+
 
 
 #Action taking
 def select_action(state):
-	"""
-	Function that chooses which action to take in a given state based on the exploration-exploitation paradigm.
-	Input:
-		state: (tensor) current state of the environment.
-	Output:
-		action: (tensor) either the greedy action (argmax Q value) from the policy network output, or a random action. 
-	"""
-	global steps_done
-	sample = random.random() #Generate random number [0, 1]
-	eps_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY) #Get current exploration rate
+    """
+    Function that chooses which action to take in a given state based on the exploration-exploitation paradigm.
+    Input:
+        state: (tensor) current state of the environment.
+    Output:
+        action: (tensor) either the greedy action (argmax Q value) from the policy network output, or a random action. 
+    """
+    global steps_done
+    sample = random.random() #Generate random number [0, 1]
+    eps_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY) #Get current exploration rate
 
-	if sample > eps_threshold: #If the random number is higher than the current exploration rate, the policy network determines the best action.
-		with torch.no_grad():
-			out = policy_net(state)
+    if sample > eps_threshold: #If the random number is higher than the current exploration rate, the policy network determines the best action.
+        with torch.no_grad():
+            out = policy_net(state)
 
-			return out.max(1)[1].view(1,1)
+            return out.max(1)[1].view(1,1)
 
-	else: #If the random number is lower than the current exploration rate, return a random action.
-		return torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long)
+    else: #If the random number is lower than the current exploration rate, return a random action.
+        return torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long)
 
+
+# def do_action(state):
+#     global action_selected
+#     action_selected = select_action(state)
+#     print("From print_time", action_selected)
+
+# # def print_some_times():
+# #    print(time.time())
+# #     s.enter(10, 1, print_time)
+# #     s.enter(5, 2, print_time, argument=('positional',))
+# #     s.enter(5, 1, print_time, kwargs={'a': 'keyword'})
+# #     s.run()
+# #   print(time.time())
+# # print_some_times()
+
+# def do_something(sc,state): 
+#     print("Doing stuff...")
+#     # do your stuff
+#     # action = select_action(state) 
+#     sc.enter(60, 1, do_action(state), (sc,))
+#     sc.run()
+
+def action_rate(flag_do_action,state):
+    global cont
+    
+    if flag_do_action: 
+        cont = 0
+        action_selected = select_action(state)
+        # print("Selection action: ", action_selected)
+        flag_do_action = False
+        flag_decision = True
+    else: 
+        action_selected = 18
+        cont += 1
+        # print("NO SELECTION")
+        if cont == 5:
+            flag_do_action = True 
+            cont = 0
+        flag_decision = False 
+    
+    return action_selected,flag_do_action, flag_decision
+    
 
 # TRAINING OPTIMIZATION FUNCTION
 # ----------------------------------
 
 
 def optimize_model():
-	if len(memory) < BATCH_SIZE:
-		#print("Memory capacity is lower than the batch size")
-		return
-		
-	transitions = memory.sample(BATCH_SIZE)	
-	batch = Transition(*zip(*transitions))
-	non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), device=device, dtype=torch.bool)
-	
-	non_final_next_states = torch.cat([s for s in batch.next_state if s is not None])
+    if len(memory) < BATCH_SIZE:
+        #print("Memory capacity is lower than the batch size")
+        return
+        
+    transitions = memory.sample(BATCH_SIZE)    
+    batch = Transition(*zip(*transitions))
+    non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), device=device, dtype=torch.bool)
+    
+    non_final_next_states = torch.cat([s for s in batch.next_state if s is not None])
 
-	
-	state_batch = torch.cat(batch.state)
-	action_batch = torch.cat(batch.action)
-	reward_batch = torch.cat(batch.reward)	
-	
-	out = policy_net(state_batch)
-	
-	state_action_values = policy_net(state_batch).gather(1, action_batch) #Forward pass on the policy network -> Q values for every action -> Keep only Qvalue for the action that we took when exploring (action_batch), for which we have the reward (reward_batch) and the transition (non_final_next_states).
-	
-	next_state_values = torch.zeros(BATCH_SIZE, device=device)
-	next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0].detach() #Get Q value for next state with the Target Network. Q(s')
-	
-	expected_state_action_values = (next_state_values * GAMMA) + reward_batch #Get Q value for current state as R + Q(s')
-	
-	criterion = nn.SmoothL1Loss() #MSE
+    
+    state_batch = torch.cat(batch.state)
+    action_batch = torch.cat(batch.action)
+    reward_batch = torch.cat(batch.reward)    
+    
+    out = policy_net(state_batch)
+    
+    state_action_values = policy_net(state_batch).gather(1, action_batch) #Forward pass on the policy network -> Q values for every action -> Keep only Qvalue for the action that we took when exploring (action_batch), for which we have the reward (reward_batch) and the transition (non_final_next_states).
+    
+    next_state_values = torch.zeros(BATCH_SIZE, device=device)
+    next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0].detach() #Get Q value for next state with the Target Network. Q(s')
+    
+    expected_state_action_values = (next_state_values * GAMMA) + reward_batch #Get Q value for current state as R + Q(s')
+    
+    criterion = nn.SmoothL1Loss() #MSE
 
-	loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
+    loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
 
-	#print("LOSS: ", loss)
-	episode_loss.append(loss.detach().item())
-	
-	optimizer.zero_grad()
-	loss.backward()
-	for param in policy_net.parameters():
-		param.grad.data.clamp_(-1, 1)
-	optimizer.step()
-	scheduler.step()	
+    #print("LOSS: ", loss)
+    episode_loss.append(loss.detach().item())
+    
+    optimizer.zero_grad()
+    loss.backward()
+    for param in policy_net.parameters():
+        param.grad.data.clamp_(-1, 1)
+    optimizer.step()
+    scheduler.step()    
 
 
 # ----------------------------------
@@ -225,89 +266,115 @@ print("\nTraining...")
 print("_"*30)
 t1 = time.time() #Tik
 
+cont = 0
+action = False
+action_selected = False
 
+flag_do_action = True 
 
 for i_episode in range(LOAD_EPISODE, NUM_EPISODES+1):
-	if(args.display): print("| EPISODE #", i_episode , end='\n')
-	else: print("| EPISODE #", i_episode , end='\r')
+    if(args.display): print("| EPISODE #", i_episode , end='\n')
+    else: print("| EPISODE #", i_episode , end='\r')
 
-	state = torch.tensor(env.reset(), dtype=torch.float, device=device).unsqueeze(0)
+    state = torch.tensor(env.reset(), dtype=torch.float, device=device).unsqueeze(0)
 
-	episode_loss = []
-	done = False
-	
-	steps_done += 1
-	num_optim = 0
-	
-	action = select_action(state) #1
+    episode_loss = []
+    done = False
+    
+    steps_done += 1
+    num_optim = 0
+        
+    # action,flag_do_action, flag_decision = action_rate(flag_do_action,state)
+    # action = select_action(state)
+    
+    # print("Decision: ",flag_decision)
+    for t in count(): 
+        # action = select_action(state).item()
+        action, flag_do_action, flag_decision = action_rate(flag_do_action,state)
+        
+        if flag_decision: 
+            action_ = action
+            action = action.item()
+            
+        array_action = [action,flag_decision]
+        prev_state, next_state, reward, done, optim, flag_pdb = env.step(array_action)
+        #print("Frame: ", frame)
+        reward = torch.tensor([reward], device=device)
+        prev_state = torch.tensor([prev_state], dtype=torch.float,device=device)
+        next_state = torch.tensor([next_state], dtype=torch.float,device=device)
+        # next_state = torch.tensor(env.state, dtype=torch.float, device=device).unsqueeze(0)
 
-	
-	for t in count(): 
-		#action = select_action(state)
-		_, reward, done, optim, frame = env.step(action.item())
-		#print("Frame: ", frame)
-		reward = torch.tensor([reward], device=device)
-		next_state = torch.tensor(env.state, dtype=torch.float, device=device).unsqueeze(0)
+        
+        if optim: #Only train if we have taken an action (f==30)
+            #print("OPTIMIZE NOW")
+            #print("\n------------- TRAIN -------------") 
+            #print("State: ", cfg.ATOMIC_ACTIONS_MEANINGS[undo_one_hot(prev_state[0][:33])])
+            #print("Next State: ",cfg.ATOMIC_ACTIONS_MEANINGS[undo_one_hot(next_state[0][:33])])
+            #print("Acción Robot: ",cfg.ROBOT_ACTIONS_MEANINGS[action])
+            #print("Reward: ",reward)
+            
+            # if flag_pdb: 
+            #     pdb.set_trace()
+            # if reward[0]> -1:
+            #     pdb.set_trace()
+            memory.push(state, action_, next_state, reward)
+            optimize_model()
+            num_optim += 1
 
-		
-		if optim: #Only train if we have taken an action (f==30)
-			#print("OPTIMIZE NOW")
-			memory.push(state, action, next_state, reward)
-			optimize_model()
-			num_optim += 1
 
+        if not done: 
+            state = next_state
 
-		if not done: 
-			state = next_state
+        else: 
+            next_state = None
+            
+        #optimize_model()
+        
+        if done: 
+            if episode_loss: 
+                #print("Count t: ", t)
+                #total_reward.append(env.get_total_reward()/(t+1))
 
-		else: 
-			next_state = None
-			
-		#optimize_model()
-		
-		if done: 
-			if episode_loss: 
-				#print("Count t: ", t)
-				#total_reward.append(env.get_total_reward()/(t+1))
-				total_reward.append(env.get_total_reward()/num_optim)
-				total_loss.append(mean(episode_loss))
-				ex_rate.append(EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY))
-				
+                # print("Memory:  ", memory.show_batch(20))
+                total_reward.append(env.get_total_reward()/num_optim)
+                total_loss.append(mean(episode_loss))
+                ex_rate.append(EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY))
+                
 
-			print("")
-			break #Finish episode
-	#print(scheduler.optimizer.param_groups[0]['lr']) #Print LR (to check scheduler)
-	
-	if i_episode % TARGET_UPDATE == 0: #Copy the Policy Network parameters into Target Network
-		target_net.load_state_dict(policy_net.state_dict())
-	
-	if SAVE_MODEL:
-		if i_episode % SAVE_EPISODE == 0 and i_episode != 0: 
-			path = os.path.join(ROOT, EXPERIMENT_NAME)
-			model_name = 'model_' + str(i_episode) + '.pt'
-			if not os.path.exists(path): os.makedirs(path)
-			print("Saving model at ", os.path.join(path, model_name))
-			torch.save({
-			'model_state_dict': policy_net.state_dict(),
-			'optimizer_state_dict': optimizer.state_dict(),
-			'episode': i_episode,
-			'loss': total_loss,
-			'steps': steps_done
-				
-			}, os.path.join(path, model_name))
+            #print("")
+            break #Finish episode
 
-			
-			if episode_loss:
-				if mean(episode_loss) < best_loss[1]:
-					best_loss[1] = mean(episode_loss)
-					best_loss[0] = i_episode
-					with open(ROOT + EXPERIMENT_NAME + '/best_episode.txt', 'w') as f: f.write(str(best_loss[0]))
-			
-"""				
+    #print(scheduler.optimizer.param_groups[0]['lr']) #Print LR (to check scheduler)
+    
+    if i_episode % TARGET_UPDATE == 0: #Copy the Policy Network parameters into Target Network
+        target_net.load_state_dict(policy_net.state_dict())
+    
+    if SAVE_MODEL:
+        if i_episode % SAVE_EPISODE == 0 and i_episode != 0: 
+            path = os.path.join(ROOT, EXPERIMENT_NAME)
+            model_name = 'model_' + str(i_episode) + '.pt'
+            if not os.path.exists(path): os.makedirs(path)
+            print("Saving model at ", os.path.join(path, model_name))
+            torch.save({
+            'model_state_dict': policy_net.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'episode': i_episode,
+            'loss': total_loss,
+            'steps': steps_done            
+            }, os.path.join(path, model_name))
+
+            
+            if episode_loss:
+                if mean(episode_loss) < best_loss[1]:
+                    best_loss[1] = mean(episode_loss)
+                    best_loss[0] = i_episode
+                    with open(ROOT + EXPERIMENT_NAME + '/best_episode.txt', 'w') as f: f.write(str(best_loss[0]))
+            
+"""                
 #Save best episode in a text file
 if SAVE_MODEL:
-	with open(ROOT + EXPERIMENT_NAME + '/best_episode.txt', 'w') as f:
-		f.write(str(best_loss[0]))
+    with open(ROOT + EXPERIMENT_NAME + '/best_episode.txt', 'w') as f:
+        f.write(str(best_loss[0]))
 """
 t2 = time.time() - t1 #Tak
 

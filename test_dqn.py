@@ -11,9 +11,13 @@ from statistics import mean
 import os
 import glob
 
-from DQN import DQN
 import torch
 import torch.nn as nn
+
+from DQN import DQN, ReplayMemory, Transition, init_weights 
+from config import print_setup
+import config as cfg
+from aux import *
 
 #ARGUMENTS
 import config as cfg
@@ -22,7 +26,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--experiment_name', type=str, default=cfg.EXPERIMENT_NAME, help="(str) Name of the experiment. Used to name the folder where the model was saved during training. For example: my_first_DQN.")
 parser.add_argument('--load_episode', type=int, default=cfg.LOAD_EPISODE, help="(int) Number of episode to load from the EXPERIMENT_NAME folder, as the sufix added to the checkpoints when the save files were created. For example: 500, which will load 'model_500.pt'.")
 parser.add_argument('--root', type=str, default=cfg.ROOT, help="(str) Name of the root folder for the saving of checkpoints. Parent folder of EXPERIMENT_NAME folders. For example: ./Checkpoints/")
-parser.add_argument('--num_episodes', type=int, default=1000, help="(int) Number of episodes.")
+#parser.add_argument('--num_episodes', type=int, default=1000, help="(int) Number of episodes.")
 parser.add_argument('--eps_test', type=float, default=0.0, help="(float) Exploration rate for the action-selection during test. For example: 0.05")
 parser.add_argument('--display', action='store_true', default=False, help="Display environment info as [Current state, action taken, transitioned state, immediate reward, total reward].")
 parser.add_argument('--cuda', action='store_true', default=False, help="Use GPU if available.")
@@ -34,16 +38,20 @@ args = parser.parse_args()
 ROOT = args.root
 EXPERIMENT_NAME = args.experiment_name
 LOAD_EPISODE = args.load_episode
-NUM_EPISODES = args.num_episodes
+#NUM_EPISODES = args.num_episodes
 EPS_TEST = args.eps_test
 
 device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
 
 
+NUM_EPISODES = len(glob.glob("./video_annotations/test/*")) #Run the test only once for every video in the testset
+
+
+
 #TEST 
 #----------------
 #Environment - Custom basic environment for kitchen recipes
-env = gym.make("gym_basic:basic-v0", display=args.display, disable_env_checker=True)
+env = gym.make("gym_basic:basic-v0", display=args.display, test=True, disable_env_checker=True)
 env.reset()
 
 
@@ -88,8 +96,32 @@ def select_action(state):
 			return out.max(1)[1].view(1,1)
 
 	else: 
-		return torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long) #Take random action
+		return torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long) 
+		
+		
+		
+def action_rate(flag_do_action,state):
+    global cont
+    
+    if flag_do_action: 
+        cont = 0
+        action_selected = select_action(state)
+        # print("Selection action: ", action_selected)
+        flag_do_action = False
+        flag_decision = True
+    else: 
+        action_selected = 18
+        cont += 1
+        # print("NO SELECTION")
+        if cont == 5:
+            flag_do_action = True 
+            cont = 0
+        flag_decision = False 
+    
+    return action_selected,flag_do_action, flag_decision		
+		
 
+		
 
 #TEST EPISODE LOOP
 print("\nTESTING...")
@@ -97,37 +129,63 @@ print("=========================================")
 
 policy_net.eval()
 total_reward = []
+steps_done = 0
+
+cont = 0
+action = False
+action_selected = False
+
+flag_do_action = True 
 
 
 for i_episode in range(NUM_EPISODES):
-	print("| EPISODE #", i_episode , end='\r')
+	if(args.display): print("| EPISODE #", i_episode , end='\n')
+	else: print("| EPISODE #", i_episode , end='\r')
 
-	state = torch.tensor(env.reset(), dtype=torch.float, device=device).unsqueeze(0) #Get initial state
-	
+	state = torch.tensor(env.reset(), dtype=torch.float, device=device).unsqueeze(0)
+
 	done = False
+	
+	steps_done += 1
+	num_optim = 0
+	
+	action = select_action(state) #1
 
-	for t in count():
-		action = select_action(state) #Select action
-		_, reward, done, _ = env.step(action.item()) #Take action and receive reward
+	
+	for t in count(): 
+		# action = select_action(state).item()
+		action, flag_do_action, flag_decision = action_rate(flag_do_action,state)
+		
+		if flag_decision: 
+		    action_ = action
+		    action = action.item()
+		    
+		array_action = [action,flag_decision]
+		prev_state, next_state, reward, done, optim, flag_pdb = env.step(array_action)
+		#print("Frame: ", frame)
 		reward = torch.tensor([reward], device=device)
-		next_state = torch.tensor(env.state, dtype=torch.float, device=device).unsqueeze(0) #Transition to next state
+		prev_state = torch.tensor([prev_state], dtype=torch.float,device=device)
+		next_state = torch.tensor([next_state], dtype=torch.float,device=device)
+
 
 		if not done: 
-			state = next_state
+		    state = next_state
+
 		else: 
-			next_state = None
+		    next_state = None
+		    
 		
-		if done: #When the episode is finished, we save the cumulative reward in the list 'total_reward'.
-			total_reward.append(env.get_total_reward()/(t+1))
-			break
+		if done: 
+			total_reward.append(env.get_total_reward())
+			break #Finish episode
 
 
 print("\n\n TEST COMPLETED.\n")
 print(" RESULTS ")
 print("="*33)
-print("| Average reward       | {:.2f}".format(mean(total_reward)), " |")
-print("| Best episode reward  | {:.2f}".format(max(total_reward)), " |")
-print("| Worst episode reward | {:.2f}".format(min(total_reward)), " |")
+print("| Average reward       | {:5.2f}".format(mean(total_reward)), " |")
+print("| Best episode reward  | {:5.2f}".format(max(total_reward)), " |")
+print("| Worst episode reward | {:5.2f}".format(min(total_reward)), " |")
 print("="*33)
 
 

@@ -7,10 +7,10 @@ REPLAY_MEMORY = 1000 #Size of replay memory (deque object)
 
 NUM_EPISODES = 2000 #"Number of training epochs"
 BATCH_SIZE = 64
-GAMMA = 0.8 #Discount rate for future rewards
+GAMMA = 0.1 #Discount rate for future rewards
 EPS_START = 0.99 #Initial exporation rate
 EPS_END = 0.01 #Final exploration rate
-EPS_DECAY = NUM_EPISODES/2 #Exploration rate decay factor
+EPS_DECAY = NUM_EPISODES #Exploration rate decay factor
 TARGET_UPDATE = 10 #Episodes between target network update (policy net parameters -> target net)
 LR = 1e-4 #Learning rate
 

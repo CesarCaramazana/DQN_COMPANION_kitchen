@@ -48,6 +48,20 @@ NUM_EPISODES = len(glob.glob("./video_annotations/test/*")) #Run the test only o
 
 
 
+total_CA_intime = []
+total_CA_late = []
+total_IA_intime = []
+total_IA_late = []
+total_UA_intime = []
+total_UA_late = []
+total_CI = []
+total_II = []
+
+
+
+
+
+
 #TEST 
 #----------------
 #Environment - Custom basic environment for kitchen recipes
@@ -106,7 +120,7 @@ def action_rate(flag_do_action,state):
     if flag_do_action: 
         cont = 0
         action_selected = select_action(state)
-        # print("Selection action: ", action_selected)
+        #print("Selection action: ", action_selected)
         flag_do_action = False
         flag_decision = True
     else: 
@@ -177,8 +191,27 @@ for i_episode in range(NUM_EPISODES):
 		
 		if done: 
 			total_reward.append(env.get_total_reward())
+			total_CA_intime.append(env.CA_intime)
+			total_CA_late.append(env.CA_late)
+			total_IA_intime.append(env.IA_intime)
+			total_IA_late.append(env.IA_late)
+			total_UA_intime.append(env.UA_intime)
+			total_UA_late.append(env.UA_late)
+			total_CI.append(env.CI)
+			total_II.append(env.II)
+
 			break #Finish episode
 
+
+	print("CORRECT ACTIONS (in time): ", env.CA_intime)
+	print("CORRECT ACTIONS (late): ", env.CA_late)
+	print("INCORRECT ACTIONS (in time): ", env.IA_intime)
+	print("INCORRECT ACTIONS (late): ", env.IA_late)
+	print("UNNECESSARY ACTIONS (in time): ", env.UA_intime)
+	print("UNNECESSARY ACTIONS (late): ", env.UA_late)
+	print("CORRECT INACTIONS: ", env.CI)
+	print("INCORRECT INACTIONS: ", env.II)
+	print("")
 
 print("\n\n TEST COMPLETED.\n")
 print(" RESULTS ")
@@ -193,6 +226,35 @@ print("="*33)
 plt.title("Total reward")
 plt.xlabel("Episode")
 plt.ylabel("Episode reward")
-plt.plot(total_reward, 'b')
+plt.stem(total_reward)
+plt.show()
+
+
+
+plt.figure(figsize=(20, 10))
+plt.subplot(241)
+plt.title("Correct actions (in time)")
+plt.stem(total_CA_intime)
+plt.subplot(242)
+plt.title("Correct actions (late)")
+plt.stem(total_CA_late)
+plt.subplot(243)
+plt.title("Incorrect actions (in time)")
+plt.stem(total_IA_intime)
+plt.subplot(244)
+plt.title("Incorrect actions (late)")
+plt.stem(total_IA_late)
+plt.subplot(245)
+plt.title("Unnecessary actions (in time)")
+plt.stem(total_UA_intime)
+plt.subplot(246)
+plt.title("Unnecessary actions (late)")
+plt.stem(total_UA_late)
+plt.subplot(247)
+plt.title("Correct inactions")
+plt.stem(total_CI)
+plt.subplot(248)
+plt.title("Incorrect inactions")
+plt.stem(total_II)
 plt.show()
 

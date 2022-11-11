@@ -38,6 +38,12 @@ def moving_average(x, w):
 
 
 
+
+
+
+
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--experiment_name', type=str, default=cfg.EXPERIMENT_NAME, help="(str) Name of the experiment. Used to name the folder where the model is saved. For example: my_first_DQN.")
 parser.add_argument('--save_model', action='store_true', default=False, help="Save a checkpoint in the EXPERIMENT_NAME folder.")
@@ -88,6 +94,18 @@ best_loss = [0, 9999]
 
 total_reward = [] #List to save the total reward gathered each episode.
 ex_rate = [] #List to save the epsilon value after each episode.
+
+total_CA_intime = []
+total_CA_late = []
+total_IA_intime = []
+total_IA_late = []
+total_UA_intime = []
+total_UA_late = []
+total_CI = []
+total_II = []
+
+
+
 
 #Environment - Custom basic environment for kitchen recipes
 env = gym.make("gym_basic:basic-v0", display=args.display, disable_env_checker=True)
@@ -304,20 +322,19 @@ for i_episode in range(LOAD_EPISODE, NUM_EPISODES+1):
         next_state = torch.tensor([next_state], dtype=torch.float,device=device)
         # next_state = torch.tensor(env.state, dtype=torch.float, device=device).unsqueeze(0)
 
-        
         if optim: #Only train if we have taken an action (f==30)
             #print("OPTIMIZE NOW")
-            #print("\n------------- TRAIN -------------") 
-            #print("State: ", cfg.ATOMIC_ACTIONS_MEANINGS[undo_one_hot(prev_state[0][:33])])
-            #print("Next State: ",cfg.ATOMIC_ACTIONS_MEANINGS[undo_one_hot(next_state[0][:33])])
-            #print("Acción Robot: ",cfg.ROBOT_ACTIONS_MEANINGS[action])
-            #print("Reward: ",reward)
+            print("\n------------- TRAIN -------------") 
+            print("State: ", cfg.ATOMIC_ACTIONS_MEANINGS[undo_one_hot(prev_state[0][:33])])
+            print("Next State: ",cfg.ATOMIC_ACTIONS_MEANINGS[undo_one_hot(next_state[0][:33])])
+            print("Acción Robot: ",cfg.ROBOT_ACTIONS_MEANINGS[action])
+            print("Reward: ",reward)
             
             # if flag_pdb: 
             #     pdb.set_trace()
             # if reward[0]> -1:
             #     pdb.set_trace()
-            memory.push(state, action_, next_state, reward)
+            memory.push(prev_state, action_, next_state, reward)
             optimize_model()
             num_optim += 1
 
@@ -341,7 +358,15 @@ for i_episode in range(LOAD_EPISODE, NUM_EPISODES+1):
                 ex_rate.append(EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY))
                 
 
-            #print("")
+            total_CA_intime.append(env.CA_intime)
+            total_CA_late.append(env.CA_late)
+            total_IA_intime.append(env.IA_intime)
+            total_IA_late.append(env.IA_late)
+            total_UA_intime.append(env.UA_intime)
+            total_UA_late.append(env.UA_late)
+            total_CI.append(env.CI)
+            total_II.append(env.II)
+            print("")
             break #Finish episode
 
     #print(scheduler.optimizer.param_groups[0]['lr']) #Print LR (to check scheduler)
@@ -402,6 +427,33 @@ plt.plot(ex_rate)
 plt.show()
 
 
+
+plt.figure(figsize=(20, 10))
+plt.subplot(241)
+plt.title("Correct actions (in time)")
+plt.plot(total_CA_intime)
+plt.subplot(242)
+plt.title("Correct actions (late)")
+plt.plot(total_CA_late)
+plt.subplot(243)
+plt.title("Incorrect actions (in time)")
+plt.plot(total_IA_intime)
+plt.subplot(244)
+plt.title("Incorrect actions (late)")
+plt.plot(total_IA_late)
+plt.subplot(245)
+plt.title("Unnecessary actions (in time)")
+plt.plot(total_UA_intime)
+plt.subplot(246)
+plt.title("Unnecessary actions (late)")
+plt.plot(total_UA_late)
+plt.subplot(247)
+plt.title("Correct inactions")
+plt.plot(total_CI)
+plt.subplot(248)
+plt.title("Incorrect inactions")
+plt.plot(total_II)
+plt.show()
 
 
 #print("GLOBAL: ", steps_done)

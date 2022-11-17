@@ -24,6 +24,7 @@ import config as cfg
 from aux import *
 import argparse
 import pdb
+from datetime import datetime
 # import sched, time
 
 """
@@ -189,26 +190,6 @@ def select_action(state):
         return torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long)
 
 
-# def do_action(state):
-#     global action_selected
-#     action_selected = select_action(state)
-#     print("From print_time", action_selected)
-
-# # def print_some_times():
-# #    print(time.time())
-# #     s.enter(10, 1, print_time)
-# #     s.enter(5, 2, print_time, argument=('positional',))
-# #     s.enter(5, 1, print_time, kwargs={'a': 'keyword'})
-# #     s.run()
-# #   print(time.time())
-# # print_some_times()
-
-# def do_something(sc,state): 
-#     print("Doing stuff...")
-#     # do your stuff
-#     # action = select_action(state) 
-#     sc.enter(60, 1, do_action(state), (sc,))
-#     sc.run()
 
 def action_rate(flag_do_action,state):
     global cont
@@ -289,6 +270,8 @@ action = False
 action_selected = False
 
 flag_do_action = True 
+now = datetime.now()
+dt_string = now.strftime("%d-%m-%Y_%H:%M")
 
 for i_episode in range(LOAD_EPISODE, NUM_EPISODES+1):
     if(args.display): print("| EPISODE #", i_episode , end='\n')
@@ -302,10 +285,6 @@ for i_episode in range(LOAD_EPISODE, NUM_EPISODES+1):
     steps_done += 1
     num_optim = 0
         
-    # action,flag_do_action, flag_decision = action_rate(flag_do_action,state)
-    # action = select_action(state)
-    
-    # print("Decision: ",flag_decision)
     for t in count(): 
         # action = select_action(state).item()
         action, flag_do_action, flag_decision = action_rate(flag_do_action,state)
@@ -316,7 +295,7 @@ for i_episode in range(LOAD_EPISODE, NUM_EPISODES+1):
             
         array_action = [action,flag_decision]
         prev_state, next_state, reward, done, optim, flag_pdb = env.step(array_action)
-        #print("Frame: ", frame)
+
         reward = torch.tensor([reward], device=device)
         prev_state = torch.tensor([prev_state], dtype=torch.float,device=device)
         next_state = torch.tensor([next_state], dtype=torch.float,device=device)
@@ -324,16 +303,15 @@ for i_episode in range(LOAD_EPISODE, NUM_EPISODES+1):
 
         if optim: #Only train if we have taken an action (f==30)
             #print("OPTIMIZE NOW")
-            print("\n------------- TRAIN -------------") 
-            print("State: ", cfg.ATOMIC_ACTIONS_MEANINGS[undo_one_hot(prev_state[0][:33])])
-            print("Next State: ",cfg.ATOMIC_ACTIONS_MEANINGS[undo_one_hot(next_state[0][:33])])
-            print("Acción Robot: ",cfg.ROBOT_ACTIONS_MEANINGS[action])
-            print("Reward: ",reward)
+            # print("\n------------- TRAIN -------------") 
+            # print("State: ", cfg.ATOMIC_ACTIONS_MEANINGS[undo_one_hot(prev_state[0][:33])])
+            # print("Next State: ",cfg.ATOMIC_ACTIONS_MEANINGS[undo_one_hot(next_state[0][:33])])
+            # print("Acción Robot: ",cfg.ROBOT_ACTIONS_MEANINGS[action])
+            # print("Reward: ",reward)
             
-            # if flag_pdb: 
-            #     pdb.set_trace()
-            # if reward[0]> -1:
-            #     pdb.set_trace()
+            if flag_pdb: 
+                pdb.set_trace()
+
             memory.push(prev_state, action_, next_state, reward)
             optimize_model()
             num_optim += 1
@@ -366,6 +344,7 @@ for i_episode in range(LOAD_EPISODE, NUM_EPISODES+1):
             total_UA_late.append(env.UA_late)
             total_CI.append(env.CI)
             total_II.append(env.II)
+            # pdb.set_trace()
             print("")
             break #Finish episode
 
@@ -374,26 +353,28 @@ for i_episode in range(LOAD_EPISODE, NUM_EPISODES+1):
     if i_episode % TARGET_UPDATE == 0: #Copy the Policy Network parameters into Target Network
         target_net.load_state_dict(policy_net.state_dict())
     
-    if SAVE_MODEL:
-        if i_episode % SAVE_EPISODE == 0 and i_episode != 0: 
-            path = os.path.join(ROOT, EXPERIMENT_NAME)
-            model_name = 'model_' + str(i_episode) + '.pt'
-            if not os.path.exists(path): os.makedirs(path)
-            print("Saving model at ", os.path.join(path, model_name))
-            torch.save({
-            'model_state_dict': policy_net.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'episode': i_episode,
-            'loss': total_loss,
-            'steps': steps_done            
-            }, os.path.join(path, model_name))
+    # if SAVE_MODEL:
+    #     if i_episode % SAVE_EPISODE == 0 and i_episode != 0: 
+    if i_episode % 100 == 0:
 
-            
-            if episode_loss:
-                if mean(episode_loss) < best_loss[1]:
-                    best_loss[1] = mean(episode_loss)
-                    best_loss[0] = i_episode
-                    with open(ROOT + EXPERIMENT_NAME + '/best_episode.txt', 'w') as f: f.write(str(best_loss[0]))
+        path = os.path.join(ROOT, EXPERIMENT_NAME + '_' + dt_string)
+        model_name = 'model_' + str(i_episode) + '.pt'
+        if not os.path.exists(path): os.makedirs(path)
+        print("Saving model at ", os.path.join(path, model_name))
+        torch.save({
+        'model_state_dict': policy_net.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'episode': i_episode,
+        'loss': total_loss,
+        'steps': steps_done            
+        }, os.path.join(path, model_name))
+
+        
+        if episode_loss:
+            if mean(episode_loss) < best_loss[1]:
+                best_loss[1] = mean(episode_loss)
+                best_loss[0] = i_episode
+                with open(ROOT + EXPERIMENT_NAME  + '_' + dt_string + '/best_episode.txt', 'w') as f: f.write(str(best_loss[0]))
             
 """                
 #Save best episode in a text file
@@ -402,10 +383,18 @@ if SAVE_MODEL:
         f.write(str(best_loss[0]))
 """
 t2 = time.time() - t1 #Tak
+now = datetime.now()
+dt_string = now.strftime("%d-%m-%Y_%H:%M:%S")
+
 
 print("\nTraining completed in {:.1f}".format(t2), "seconds.\n")
 
-plt.figure(figsize=(15, 6))
+# pdb.set_trace()
+save_path = os.path.join(path, "Graphics") 
+
+if not os.path.exists(save_path): os.makedirs(save_path)
+
+fig1 = plt.figure(figsize=(15, 6))
 plt.subplot(131)
 plt.title("Loss")
 plt.xlabel("Episode")
@@ -425,10 +414,32 @@ plt.ylabel("Epsilon")
 plt.plot(ex_rate)
 
 plt.show()
+fig1.savefig(save_path+'/train_results_v1_' +dt_string+'.jpg')
+ 
+fig2 = plt.figure(figsize=(15, 6))
+plt.subplot(131)
+plt.title("Loss")
+plt.xlabel("Episode")
+plt.ylabel("Average MSE")
+plt.plot(moving_average(total_loss, 300), 'r')
+
+plt.subplot(132)
+plt.title("Reward")
+plt.xlabel("Episode")
+plt.ylabel("Episode reward")
+plt.plot(moving_average(total_reward, 300), 'r')
+
+plt.subplot(133)
+plt.title("Exploration rate")
+plt.xlabel("Episode")
+plt.ylabel("Epsilon")
+plt.plot(ex_rate)
+
+plt.show()
+fig2.savefig(save_path+'/train_results_v2' +dt_string+'.jpg')
 
 
-
-plt.figure(figsize=(20, 10))
+fig3 = plt.figure(figsize=(20, 10))
 plt.subplot(241)
 plt.title("Correct actions (in time)")
 plt.plot(total_CA_intime)
@@ -454,6 +465,49 @@ plt.subplot(248)
 plt.title("Incorrect inactions")
 plt.plot(total_II)
 plt.show()
+
+fig3.savefig(save_path+'/train_detailed_results_'+dt_string+'.jpg')
+n = 5000
+
+x_axis = np.arange(0,cfg.NUM_EPISODES,n).tolist()
+n_total_CA_intime = [sum(total_CA_intime[i:i+n])/n for i in range(0,len(total_CA_intime)-1,n)]
+n_total_CA_late = [sum(total_CA_late[i:i+n])/n for i in range(0,len(total_CA_late)-1,n)]
+n_total_IA_intime = [sum(total_IA_intime[i:i+n])/n for i in range(0,len(total_IA_intime)-1,n)]
+n_total_IA_late = [sum(total_IA_late[i:i+n])/n for i in range(0,len(total_IA_late)-1,n)]
+n_total_UA_intime = [sum(total_UA_intime[i:i+n])/n for i in range(0,len(total_UA_intime)-1,n)]
+n_total_UA_late = [sum(total_UA_late[i:i+n])/n for i in range(0,len(total_UA_late)-1,n)]
+n_total_CI = [sum(total_CI[i:i+n])/n for i in range(0,len(total_CI)-1,n)]
+n_total_II = [sum(total_II[i:i+n])/n for i in range(0,len(total_II)-1,n)]
+
+
+fig3 = plt.figure(figsize=(20, 10))
+plt.subplot(241)
+plt.title("Correct actions (in time)")
+plt.plot(x_axis,n_total_CA_intime)
+plt.subplot(242)
+plt.title("Correct actions (late)")
+plt.plot(x_axis,n_total_CA_late)
+plt.subplot(243)
+plt.title("Incorrect actions (in time)")
+plt.plot(x_axis,n_total_IA_intime)
+plt.subplot(244)
+plt.title("Incorrect actions (late)")
+plt.plot(x_axis,n_total_IA_late)
+plt.subplot(245)
+plt.title("Unnecessary actions (in time)")
+plt.plot(x_axis,n_total_UA_intime)
+plt.subplot(246)
+plt.title("Unnecessary actions (late)")
+plt.plot(x_axis,n_total_UA_late)
+plt.subplot(247)
+plt.title("Correct inactions")
+plt.plot(x_axis,n_total_CI)
+plt.subplot(248)
+plt.title("Incorrect inactions")
+plt.plot(x_axis,n_total_II)
+plt.show()
+
+fig3.savefig(save_path+'/train_detailed_results_v4_'+dt_string+'.jpg')
 
 
 #print("GLOBAL: ", steps_done)

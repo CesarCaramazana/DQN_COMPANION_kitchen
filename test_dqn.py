@@ -41,11 +41,11 @@ LOAD_EPISODE = args.load_episode
 #NUM_EPISODES = args.num_episodes
 EPS_TEST = args.eps_test
 
+EXPERIMENT_NAME = "first_DQN_22-11-2022_10:23_DECISION_RATE_20"
+
 device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
 
-
 NUM_EPISODES = len(glob.glob("./video_annotations/test/*")) #Run the test only once for every video in the testset
-
 
 
 total_CA_intime = []
@@ -59,38 +59,33 @@ total_II = []
 
 
 
-
-
-
 #TEST 
 #----------------
 #Environment - Custom basic environment for kitchen recipes
 env = gym.make("gym_basic:basic-v0", display=args.display, test=True, disable_env_checker=True)
 env.reset()
 
-
 n_actions = env.action_space.n
 n_states = env.observation_space.n
-
 
 policy_net = DQN(n_states, n_actions).to(device)
 
 #LOAD MODEL from 'EXPERIMENT_NAME' folder
 path = os.path.join(ROOT, EXPERIMENT_NAME)
 if LOAD_EPISODE:
-	model_name = 'model_' + str(LOAD_EPISODE) + '.pt'
-	full_path = os.path.join(path, model_name)
+    model_name = 'model_' + str(LOAD_EPISODE) + '.pt'
+    full_path = os.path.join(path, model_name)
 else:
-		try: 
-			best = open(ROOT + EXPERIMENT_NAME + "/best_episode.txt", mode='r')
-			best_episode = best.read().splitlines()[0]
-			LOAD_EPISODE = int(best_episode)
-			model_name = 'model_' + best_episode + '.pt'
-			full_path = os.path.join(path, model_name)
-			
-		except:
-			list_of_files = glob.glob(path+ '/*') 
-			full_path = max(list_of_files, key=os.path.getctime) #Get the latest file in directory
+        try: 
+            best = open(ROOT + EXPERIMENT_NAME + "/best_episode.txt", mode='r')
+            best_episode = best.read().splitlines()[0]
+            LOAD_EPISODE = int(best_episode)
+            model_name = 'model_' + best_episode + '.pt'
+            full_path = os.path.join(path, model_name)
+            
+        except:
+            list_of_files = glob.glob(path+ '/*') 
+            full_path = max(list_of_files, key=os.path.getctime) #Get the latest file in directory
 
 print("\nLoading model from ", full_path)
 checkpoint = torch.load(full_path)
@@ -100,42 +95,32 @@ policy_net.load_state_dict(checkpoint['model_state_dict'])
 #TEST Select action function, with greedy policy, epsilon = EPS_TEST*.
 #*Maybe consider to set epsilon to 0 so that every action is optimal.
 def select_action(state):
-	sample = random.random()
-	eps_threshold = EPS_TEST
+    sample = random.random()
+    eps_threshold = EPS_TEST
 
-	if sample > eps_threshold:
-		with torch.no_grad():
-			out = policy_net(state)  #Take optimal action
+    if sample > eps_threshold:
+        with torch.no_grad():
+            out = policy_net(state)  #Take optimal action
 
-			return out.max(1)[1].view(1,1)
+            return out.max(1)[1].view(1,1)
 
-	else: 
-		return torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long) 
-		
-		
-		
-def action_rate(flag_do_action,state):
-    global cont
-    
-    if flag_do_action: 
-        cont = 0
-        action_selected = select_action(state)
-        #print("Selection action: ", action_selected)
-        flag_do_action = False
-        flag_decision = True
     else: 
+        return torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long) 
+        
+        
+        
+def action_rate(decision_cont,state):
+   
+    if decision_cont % cfg.DECISION_RATE == 0: 
+        action_selected = select_action(state)
+        flag_decision = True 
+    else:
         action_selected = 18
-        cont += 1
-        # print("NO SELECTION")
-        if cont == 5:
-            flag_do_action = True 
-            cont = 0
-        flag_decision = False 
+        flag_decision = False
     
-    return action_selected,flag_do_action, flag_decision		
-		
+    return action_selected, flag_decision
 
-		
+        
 
 #TEST EPISODE LOOP
 print("\nTESTING...")
@@ -145,73 +130,92 @@ policy_net.eval()
 total_reward = []
 steps_done = 0
 
-cont = 0
-action = False
-action_selected = False
+total_reward_energy = []
+total_reward_time = []
+total_reward_energy_ep = []
+total_reward_time_ep = []
+total_times_execution = []
+decision_cont = 0
+
 
 flag_do_action = True 
 
 
 for i_episode in range(NUM_EPISODES):
-	if(args.display): print("| EPISODE #", i_episode , end='\n')
-	else: print("| EPISODE #", i_episode , end='\r')
+    if(args.display): print("| EPISODE #", i_episode , end='\n')
+    else: print("| EPISODE #", i_episode , end='\r')
 
-	state = torch.tensor(env.reset(), dtype=torch.float, device=device).unsqueeze(0)
+    state = torch.tensor(env.reset(), dtype=torch.float, device=device).unsqueeze(0)
 
-	done = False
-	
-	steps_done += 1
-	num_optim = 0
-	
-	action = select_action(state) #1
-
-	
-	for t in count(): 
-		# action = select_action(state).item()
-		action, flag_do_action, flag_decision = action_rate(flag_do_action,state)
-		
-		if flag_decision: 
-		    action_ = action
-		    action = action.item()
-		    
-		array_action = [action,flag_decision]
-		prev_state, next_state, reward, done, optim, flag_pdb = env.step(array_action)
-		#print("Frame: ", frame)
-		reward = torch.tensor([reward], device=device)
-		prev_state = torch.tensor([prev_state], dtype=torch.float,device=device)
-		next_state = torch.tensor([next_state], dtype=torch.float,device=device)
-
-
-		if not done: 
-		    state = next_state
-
-		else: 
-		    next_state = None
-		    
-		
-		if done: 
-			total_reward.append(env.get_total_reward())
-			total_CA_intime.append(env.CA_intime)
-			total_CA_late.append(env.CA_late)
-			total_IA_intime.append(env.IA_intime)
-			total_IA_late.append(env.IA_late)
-			total_UA_intime.append(env.UA_intime)
-			total_UA_late.append(env.UA_late)
-			total_CI.append(env.CI)
-			total_II.append(env.II)
-
-			break #Finish episode
+    done = False
+    
+    steps_done += 1
+    num_optim = 0
+    
+    action = select_action(state) #1
+    
+    reward_energy_ep = 0
+    reward_time_ep = 0
+    
+    for t in count(): 
+        # action = select_action(state).item()
+        decision_cont += 1
+        action, flag_decision = action_rate(decision_cont, state)
+        
+        if flag_decision: 
+            action_ = action
+            action = action.item()
+            
+        array_action = [action,flag_decision]
+        prev_state, next_state, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times = env.step(array_action)
+        #print("Frame: ", frame)
+        reward = torch.tensor([reward], device=device)
+                
+        reward_energy_ep += reward_energy
+        reward_time_ep += reward_time
+        # print("reward time: ", reward_time)
+        # print("reward energy: ", reward_energy)
+        # print("reward time + reward energy: ", reward_time + reward_energy)
+        # print("reward: ", reward)
+        
+        prev_state = torch.tensor([prev_state], dtype=torch.float,device=device)
+        next_state = torch.tensor([next_state], dtype=torch.float,device=device)
 
 
-	print("CORRECT ACTIONS (in time): ", env.CA_intime)
-	print("CORRECT ACTIONS (late): ", env.CA_late)
-	print("INCORRECT ACTIONS (in time): ", env.IA_intime)
-	print("INCORRECT ACTIONS (late): ", env.IA_late)
-	print("UNNECESSARY ACTIONS (in time): ", env.UA_intime)
-	print("UNNECESSARY ACTIONS (late): ", env.UA_late)
-	print("CORRECT INACTIONS: ", env.CI)
-	print("INCORRECT INACTIONS: ", env.II)
-	print("")
+        if not done: 
+            state = next_state
+
+        else: 
+            next_state = None
+            
+        
+        if done: 
+            total_times_execution.append(execution_times)
+            total_reward_energy_ep.append(reward_energy_ep)
+            total_reward_time_ep.append(reward_time_ep)
+            
+            total_reward.append(env.get_total_reward())
+            total_CA_intime.append(env.CA_intime)
+            total_CA_late.append(env.CA_late)
+            total_IA_intime.append(env.IA_intime)
+            total_IA_late.append(env.IA_late)
+            total_UA_intime.append(env.UA_intime)
+            total_UA_late.append(env.UA_late)
+            total_CI.append(env.CI)
+            total_II.append(env.II)
+
+            break #Finish episode
+
+
+    print("CORRECT ACTIONS (in time): ", env.CA_intime)
+    print("CORRECT ACTIONS (late): ", env.CA_late)
+    print("INCORRECT ACTIONS (in time): ", env.IA_intime)
+    print("INCORRECT ACTIONS (late): ", env.IA_late)
+    print("UNNECESSARY ACTIONS (in time): ", env.UA_intime)
+    print("UNNECESSARY ACTIONS (late): ", env.UA_late)
+    print("CORRECT INACTIONS: ", env.CI)
+    print("INCORRECT INACTIONS: ", env.II)
+    print("")
 
 print("\n\n TEST COMPLETED.\n")
 print(" RESULTS ")
@@ -222,16 +226,21 @@ print("| Worst episode reward | {:5.2f}".format(min(total_reward)), " |")
 print("="*33)
 
 
+save_path = os.path.join(path, "Graphics") 
+if not os.path.exists(save_path): os.makedirs(save_path)
+
+
 #Plots
+fig = plt.figure(figsize=(15, 10))
 plt.title("Total reward")
-plt.xlabel("Episode")
+plt.xlabel("Video")
 plt.ylabel("Episode reward")
 plt.stem(total_reward)
 plt.show()
+fig.savefig(save_path+'/TEST_reward_results.jpg')
 
 
-
-plt.figure(figsize=(20, 10))
+fig = plt.figure(figsize=(20, 10))
 plt.subplot(241)
 plt.title("Correct actions (in time)")
 plt.stem(total_CA_intime)
@@ -258,3 +267,78 @@ plt.title("Incorrect inactions")
 plt.stem(total_II)
 plt.show()
 
+fig.savefig(save_path+'/test_detailed_results.jpg')
+
+# total_results = [total_CA_intime,total_CA_late,total_IA_intime,total_IA_late,total_UA_intime,total_UA_late,total_CI,total_II]
+
+# n = 10
+# plot_detailed_results(n, total_results, save_path, 'TEST')
+
+# n = 100
+# plot_detailed_results(n, total_results, save_path, 'TEST')
+
+total_time_video = list(list(zip(*total_times_execution))[0])
+total_time_iteraction = list(list(zip(*total_times_execution))[1])
+
+lower_iteraction_time = [False]*len(total_time_video)
+
+for idx, val in enumerate(total_time_video):
+    
+    if total_time_iteraction[idx] < val: 
+        lower_iteraction_time[idx] = True
+        
+        
+fig3 = plt.figure(num=None, figsize=(20,10), dpi=80, facecolor='w', edgecolor='k')
+
+# colors = ['red','green']
+plt.yticks([1.0, 0.0], ["Iteraction time < Video",
+                        "Video > Iteraction time"])
+
+colors = np.where(lower_iteraction_time, 'green', 'red')
+plt.scatter(range(0,len(lower_iteraction_time)), lower_iteraction_time, c=colors)
+
+
+# plt.scatter(x=range(0,len(lower_iteraction_time)),y = lower_iteraction_time, c= list(map(colors.get, lower_iteraction_time)), marker='d')#plt.cm.get_cmap('RdBu'))
+plt.title("Time execution")
+plt.xlabel("Video")
+plt.show()
+
+fig3.savefig(save_path+'/TEST_time_execution_boolean.jpg')
+
+fig1 = plt.figure(figsize=(15, 6))
+
+plt.plot([x - y for x, y in zip(total_time_video, total_time_iteraction)])
+# plt.plot(total_time_iteraction)
+plt.legend(["Video - Iteraction"])
+plt.xlabel("Video")
+plt.ylabel("Frames")
+plt.title("Time execution")
+plt.show()
+
+fig1.savefig(save_path+'/TEST_execution_time_v2.jpg')
+
+fig1 = plt.figure(figsize=(15, 6))
+
+
+plt.plot(total_reward_energy_ep)
+
+plt.legend(["Energy reward"])
+plt.xlabel("Video")
+plt.ylabel("Reward")
+plt.title("Reward")
+plt.show()
+
+fig1.savefig(save_path+'/TEST_energy_reward.jpg')
+
+fig1 = plt.figure(figsize=(15, 6))
+
+
+plt.plot(total_reward_time_ep)
+
+plt.legend(["Time reward"])
+plt.xlabel("Video")
+plt.ylabel("Reward")
+plt.title("Reward")
+plt.show()
+
+fig1.savefig(save_path+'/TEST_time_reward.jpg')

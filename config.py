@@ -3,14 +3,15 @@
 #DQN PARAMETERS ------
 #---------------------------------------------------------------------------------
 
-REPLAY_MEMORY = 1000 #Size of replay memory (deque object)
+REPLAY_MEMORY = 2048 #Size of replay memory (deque object)
 
-NUM_EPISODES = 2000 #"Number of training epochs"
-BATCH_SIZE = 64
+NUM_EPOCH = 5000
+NUM_EPISODES = 61 #"Number of training epochs"
+BATCH_SIZE = 1024
 GAMMA = 0.1 #Discount rate for future rewards
 EPS_START = 0.99 #Initial exporation rate
 EPS_END = 0.01 #Final exploration rate
-EPS_DECAY = NUM_EPISODES #Exploration rate decay factor
+EPS_DECAY = NUM_EPOCH #Exploration rate decay factor
 TARGET_UPDATE = 10 #Episodes between target network update (policy net parameters -> target net)
 LR = 1e-4 #Learning rate
 
@@ -21,7 +22,7 @@ SAVE_EPISODE = 100
 LOAD_MODEL = False
 LOAD_EPISODE = 0
 
-
+DECISION_RATE = 20 
 #ENVIRONMENT PARAMETERS ------
 #---------------------------------------------------------------------------------
 
@@ -146,32 +147,58 @@ ROBOT_ACTIONS_MEANINGS = {
 
 #In frames
 ROBOT_ACTION_DURATIONS = {
-	0: 174, 
-	1: 122, 
-	2: 87, 
-	3: 131, 
-	4: 147, 
-	5: 231, 
-	6: 229, 
-	7: 171, 
-	8: 142, 
-	9: 196, 
-	10: 221, 
-	11: 193, 
-	12: 196, 
-	13: 142, 
-	14: 111, 
-	15: 131, 
-	16: 169, 
-	17: 221, 
-	18: 0, 
-	19: 86, 
-	20: 121, 
-	21: 125, 
-	22: 123, 
-	23: 164
+ 	0: 174, 
+ 	1: 122, 
+ 	2: 87, 
+ 	3: 131, 
+ 	4: 147, 
+ 	5: 231, 
+ 	6: 229, 
+ 	7: 171, 
+ 	8: 142, 
+ 	9: 196, 
+ 	10: 221, 
+ 	11: 193, 
+ 	12: 196, 
+ 	13: 142, 
+ 	14: 111, 
+ 	15: 131, 
+ 	16: 169, 
+ 	17: 221, 
+ 	18: 0, 
+ 	19: 86, 
+ 	20: 121, 
+ 	21: 125, 
+ 	22: 123, 
+ 	23: 164
 }
 
+# ROBOT_ACTION_DURATIONS = {
+# 	0: 1740, 
+# 	1: 1220, 
+# 	2: 870, 
+# 	3: 1310, 
+# 	4: 1470, 
+# 	5: 2310, 
+# 	6: 2290, 
+# 	7: 1710, 
+# 	8: 1420, 
+# 	9: 1960, 
+# 	10: 2210, 
+# 	11: 1930, 
+# 	12: 1960, 
+# 	13: 1420, 
+# 	14: 1110, 
+# 	15: 1310, 
+# 	16: 1690, 
+# 	17: 2210, 
+# 	18: 0, 
+# 	19: 860, 
+# 	20: 1210, 
+# 	21: 1250, 
+# 	22: 1230, 
+# 	23: 1640
+# }
 
 
 

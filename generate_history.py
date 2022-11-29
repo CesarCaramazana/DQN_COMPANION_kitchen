@@ -1,7 +1,7 @@
 import numpy as np
 import wavedrom
 import math
-
+import os
 
 resolution = 30 #Subsampling factor
 
@@ -91,7 +91,7 @@ def generate_signal(history):
 
 
 
-def create_graph(file_id):
+def create_graph(save_path, file_id):
 	"""
 	Reads a file name/file id, in the format .npz, containing the history of an interaction between robot and human, and generates a plot representing the states of both agents during the course of the interaction. 
 	
@@ -105,8 +105,14 @@ def create_graph(file_id):
 	
 	global resolution
 	
-	savepath = "./results/Graphs/" + str(file_id) +".png"
-	readpath = "./results/History_Arrays/" + str(file_id) + ".npz" 
+	path = "./results/History_Arrays/"
+	
+	full_path = save_path + "/Visualization/"
+	
+	if not os.path.exists(full_path): os.mkdir(full_path)
+	
+	savepath = full_path + str(file_id) +".png"
+	readpath = path + str(file_id) + ".npz" 
 	history = np.load(readpath)
 	
 	human = history['h_history'] 
@@ -144,56 +150,14 @@ def create_graph(file_id):
 
 Main
 
-"""
+
+
+path = "./results/History_Arrays/"
 
 for i in range(10):
 	try:
-		create_graph(i)
+		create_graph(path)
 	except:
 		print("No file with ID ", i)	
 
-
-
 """
-file_id = 9
-readpath = "./results/History_Arrays/" + str(file_id) + ".npz"
-
-history = np.load(readpath)
-
-human = history['h_history']
-robot = history['r_history']
-
-
-r_history=[robot[i].item() for i in range(0,len(robot),resolution)]
-h_history=[human[i].item() for i in range(0,len(human),resolution)]
-
-human_history = generate_action_duration(h_history)
-robot_history = generate_action_duration(r_history)
-
-print("HUMAN HISTORY\n", human_history)
-print()
-
-print("\n\nHUMAN")
-h_actions, h_waveform = generate_signal(human_history)
-
-print("")
-
-print("ROBOT HISTORY\n", robot_history)
-
-print("ROBOT")
-r_actions, r_waveform = generate_signal(robot_history)
-
-
-d = { "signal": [
-	{ "name": "Human", "wave": h_waveform, "data": h_actions},
-	{ "name": "Robot",  "wave": r_waveform ,"data": r_actions }]}
-	
-svg = wavedrom.render(str(d))
-
-savepath = "./results/Graphs/" + str(file_id) +".png"	
-svg.saveas(savepath)
-"""
-
-
-	
-

@@ -3,14 +3,15 @@
 #DQN PARAMETERS ------
 #---------------------------------------------------------------------------------
 
-REPLAY_MEMORY = 1000 #Size of replay memory (deque object)
+REPLAY_MEMORY = 2048 #Size of replay memory (deque object)
 
-NUM_EPISODES = 2000 #"Number of training epochs"
-BATCH_SIZE = 64
+NUM_EPOCH = 5000
+NUM_EPISODES = 61 #"Number of training epochs"
+BATCH_SIZE = 1024
 GAMMA = 0.1 #Discount rate for future rewards
 EPS_START = 0.99 #Initial exporation rate
 EPS_END = 0.01 #Final exploration rate
-EPS_DECAY = NUM_EPISODES #Exploration rate decay factor
+EPS_DECAY = NUM_EPOCH #Exploration rate decay factor
 TARGET_UPDATE = 10 #Episodes between target network update (policy net parameters -> target net)
 LR = 1e-4 #Learning rate
 
@@ -21,7 +22,7 @@ SAVE_EPISODE = 100
 LOAD_MODEL = False
 LOAD_EPISODE = 0
 
-
+DECISION_RATE = 30 
 #ENVIRONMENT PARAMETERS ------
 #---------------------------------------------------------------------------------
 
@@ -146,33 +147,31 @@ ROBOT_ACTIONS_MEANINGS = {
 
 #In frames
 ROBOT_ACTION_DURATIONS = {
-	0: 174, 
-	1: 122, 
-	2: 87, 
-	3: 131, 
-	4: 147, 
-	5: 231, 
-	6: 229, 
-	7: 171, 
-	8: 142, 
-	9: 196, 
-	10: 221, 
-	11: 193, 
-	12: 196, 
-	13: 142, 
-	14: 111, 
-	15: 131, 
-	16: 169, 
-	17: 221, 
-	18: 0, 
-	19: 86, 
-	20: 121, 
-	21: 125, 
-	22: 123, 
-	23: 164
+ 	0: 174, 
+ 	1: 122, 
+ 	2: 87, 
+ 	3: 131, 
+ 	4: 147, 
+ 	5: 231, 
+ 	6: 229, 
+ 	7: 171, 
+ 	8: 142, 
+ 	9: 196, 
+ 	10: 221, 
+ 	11: 193, 
+ 	12: 196, 
+ 	13: 142, 
+ 	14: 111, 
+ 	15: 131, 
+ 	16: 169, 
+ 	17: 221, 
+ 	18: 0, 
+ 	19: 86, 
+ 	20: 121, 
+ 	21: 125, 
+ 	22: 123, 
+ 	23: 164
 }
-
-
 
 
 
@@ -201,7 +200,7 @@ def print_setup(args):
 	print("="*39)
 	print("  Training parameters")
 	print("="*39)
-	print("| NUMBER OF EPISODES        | {0:<6g}".format(args.num_episodes), " |")
+	print("| NUMBER OF EPOCHS          | {0:<6g}".format(args.num_epochs), " |")
 	print("| BATCH SIZE                | {0:<6g}".format(args.batch_size), " |")
 	print("| LEARNING RATE             | {0:<6g}".format(args.lr), " |")
 	print("| SAVE MODEL                | {0:<6g}".format(args.save_model), " |")

@@ -7,7 +7,7 @@ import glob
 import time
 import os
 
-
+import matplotlib.pyplot as plt
 import config as cfg
 
 
@@ -68,7 +68,8 @@ def softmax(x):
 	
 	return e_x / e_x.sum(axis=0)	
 
-
+def moving_average(x, w):
+    return np.convolve(x, np.ones(w), 'valid') / w
 
 def concat_vectors(a, b):
 	"""
@@ -264,6 +265,74 @@ def reward_confirmation_perform(action):
 	
 	return reward
 
+def plot_detailed_results (n, total_results, save_path, MODE): 
+    
+    total_CA_intime = total_results[0]
+    total_CA_late = total_results[1]
+    total_IA_intime = total_results[2]
+    total_IA_late = total_results[3]
+    total_UA_intime = total_results[4]
+    total_UA_late = total_results[5]
+    total_CI = total_results[6]
+    total_II = total_results[7]
+    
+    x_axis = np.arange(0,len(total_CA_intime),n).tolist()
+    n_total_CA_intime = [sum(total_CA_intime[i:i+n])/n for i in range(0,len(total_CA_intime)-1,n)]
+    n_total_CA_late = [sum(total_CA_late[i:i+n])/n for i in range(0,len(total_CA_late)-1,n)]
+    n_total_IA_intime = [sum(total_IA_intime[i:i+n])/n for i in range(0,len(total_IA_intime)-1,n)]
+    n_total_IA_late = [sum(total_IA_late[i:i+n])/n for i in range(0,len(total_IA_late)-1,n)]
+    n_total_UA_intime = [sum(total_UA_intime[i:i+n])/n for i in range(0,len(total_UA_intime)-1,n)]
+    n_total_UA_late = [sum(total_UA_late[i:i+n])/n for i in range(0,len(total_UA_late)-1,n)]
+    n_total_CI = [sum(total_CI[i:i+n])/n for i in range(0,len(total_CI)-1,n)]
+    n_total_II = [sum(total_II[i:i+n])/n for i in range(0,len(total_II)-1,n)]
+
+
+    fig3 = plt.figure(figsize=(28, 12))
+    plt.suptitle("Amount of actions taken averaging every "+str(n)+" epochs",fontsize=20)
+    plt.subplot(241)
+    plt.title("Correct actions (in time)",fontsize=14)
+    plt.plot(x_axis,n_total_CA_intime)
+    plt.xlabel("Epoch")
+    plt.ylabel("Amount action")
+    plt.subplot(242)
+    plt.title("Correct actions (late)",fontsize=14)
+    plt.plot(x_axis,n_total_CA_late)
+    plt.xlabel("Epoch")
+    plt.ylabel("Amount action")
+    plt.subplot(243)
+    plt.title("Incorrect actions (in time)",fontsize=14)
+    plt.plot(x_axis,n_total_IA_intime)
+    plt.xlabel("Epoch")
+    plt.ylabel("Amount action")
+    plt.subplot(244)
+    plt.title("Incorrect actions (late)",fontsize=14)
+    plt.plot(x_axis,n_total_IA_late)
+    plt.xlabel("Epoch")
+    plt.ylabel("Amount action")
+    plt.subplot(245)
+    plt.title("Unnecessary actions (in time)",fontsize=14)
+    plt.plot(x_axis,n_total_UA_intime)
+    plt.xlabel("Epoch")
+    plt.ylabel("Amount action")
+    plt.subplot(246)
+    plt.title("Unnecessary actions (late)",fontsize=14)
+    plt.plot(x_axis,n_total_UA_late)
+    plt.xlabel("Epoch")
+    plt.ylabel("Amount action")
+    plt.subplot(247)
+    plt.title("Correct inactions",fontsize=14)
+    plt.plot(x_axis,n_total_CI)
+    plt.xlabel("Epoch")
+    plt.ylabel("Amount action")
+    plt.subplot(248)
+    plt.title("Incorrect inactions",fontsize=14)
+    plt.plot(x_axis,n_total_II)
+    plt.xlabel("Epoch")
+    plt.ylabel("Amount action")
+    plt.show()
+
+    fig3.savefig(save_path+'/'+MODE+'_detailed_results_each_'+str(n)+'.jpg')
+    
 def get_sentiment_keyboard():
 	"""
 	Returns an integer reward value extracted from the sentiment analysis of an input sentence.

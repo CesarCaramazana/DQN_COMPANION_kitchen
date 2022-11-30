@@ -302,8 +302,8 @@ for i_epoch in range (0,NUM_EPOCH):
     
     print("| ----------- EPOCH " + str(i_epoch) + " ----------- ")
     for i_episode in range(LOAD_EPISODE, NUM_EPISODES):
-        #if(args.display): print("| EPISODE #", i_episode , end='\n')
-        #else: print("| EPISODE #", i_episode , end='\r')
+        if(args.display): print("| EPISODE #", i_episode , end='\n')
+        else: print("| EPISODE #", i_episode , end='\r')
     
         state = torch.tensor(env.reset(), dtype=torch.float, device=device).unsqueeze(0)
     
@@ -387,7 +387,7 @@ for i_epoch in range (0,NUM_EPOCH):
                 total_CI.append(env.CI)
                 total_II.append(env.II)
                 # pdb.set_trace()
-                print("")
+
                 break #Finish episode
     
         #print(scheduler.optimizer.param_groups[0]['lr']) #Print LR (to check scheduler)

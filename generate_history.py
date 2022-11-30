@@ -140,8 +140,7 @@ def create_graph(save_path, file_id):
 	human_history = generate_action_duration(h_history)
 	robot_history = generate_action_duration(r_history)
 	reward_history = generate_action_duration(rwd_history)
-	
-	print(reward_history)
+
 	
 	h_actions, h_waveform = generate_signal(human_history)
 	r_actions, r_waveform = generate_signal(robot_history)

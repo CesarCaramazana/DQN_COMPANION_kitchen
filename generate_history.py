@@ -46,6 +46,7 @@ def generate_signal(history, rwd_format=False):
 	
 	Input:
 		history: (list) of tuples [action name (str), action duration (int)].
+		rwd_format: (bool) if set to True, applies the format for reward values.
 	
 	Output:
 		actions: (list) of action names.
@@ -73,6 +74,8 @@ def generate_signal(history, rwd_format=False):
 		else:
 			if action[0] == 'do nothing':
 				color_code = "x"
+				color_code = "8"
+				actions.append(action[0])
 			
 			elif action[0] == 'other manipulation':
 				color_code = "5"
@@ -80,8 +83,8 @@ def generate_signal(history, rwd_format=False):
 
 			elif action[0] == 'Predicting...':
 				color_code = "6"
-				#actions.append(action[0])
-				actions.append("...")
+				actions.append(action[0])
+				#actions.append("...")
 			
 			elif action[0] == 'Waiting for evaluation...' or action[0] == 'Waiting for robot action...':
 				color_code = "9"

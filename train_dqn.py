@@ -302,8 +302,8 @@ for i_epoch in range (0,NUM_EPOCH):
     
     print("| ----------- EPOCH " + str(i_epoch) + " ----------- ")
     for i_episode in range(LOAD_EPISODE, NUM_EPISODES):
-        if(args.display): print("| EPISODE #", i_episode , end='\n')
-        else: print("| EPISODE #", i_episode , end='\r')
+        #if(args.display): print("| EPISODE #", i_episode , end='\n')
+        #else: print("| EPISODE #", i_episode , end='\r')
     
         state = torch.tensor(env.reset(), dtype=torch.float, device=device).unsqueeze(0)
     
@@ -537,7 +537,7 @@ for i_epoch in range (0,NUM_EPOCH):
     fig1 = plt.figure(figsize=(15, 6))
     plt.plot(total_time_execution_epoch)
     plt.plot(total_time_video_epoch)
-    plt.legend(["Iteraction","Video"])
+    plt.legend(["Interaction","Video"])
     plt.xlabel("Epoch")
     plt.ylabel("Frames")
     plt.title("Time")

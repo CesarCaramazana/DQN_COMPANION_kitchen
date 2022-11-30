@@ -293,15 +293,9 @@ for idx, val in enumerate(total_time_video):
 
 
 
-
-
-
+#Generate
 for i in range(10):
 	create_graph(save_path, i)
-
-
-
-
 
 
 

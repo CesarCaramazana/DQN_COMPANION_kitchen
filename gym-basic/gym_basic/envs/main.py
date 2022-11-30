@@ -60,7 +60,7 @@ class BasicEnv(gym.Env):
         
         self.flags = {'freeze state': False, 'decision': False, 'threshold': " ",'evaluation': "Not evaluated", 'action robot': False,'break':False,'pdb': False}
         
-        self.person_state = "Other manipulation"
+        self.person_state = "other manipulation"
         self.robot_state = "Predicting..."
         
         self.reward_energy = 0
@@ -90,6 +90,7 @@ class BasicEnv(gym.Env):
         
         self.r_history = []
         self.h_history = []
+        self.rwd_history = []
     
     def get_action_meanings(self):
         return self.action_repertoire
@@ -524,7 +525,7 @@ class BasicEnv(gym.Env):
                     if annotations['frame_init'][action_idx-1] <= frame <= annotations['frame_end'][action_idx-1]:
                         self.person_state = ATOMIC_ACTIONS_MEANINGS[annotations['label'][action_idx-1]]
                     else:
-                        self.person_state = "Other manipulation"
+                        self.person_state = "other manipulation"
                     
 
                     # print("NO decision yet")
@@ -547,7 +548,7 @@ class BasicEnv(gym.Env):
                         if annotations['frame_init'][action_idx-1] <= frame <= annotations['frame_end'][action_idx-1]:
                             self.person_state = ATOMIC_ACTIONS_MEANINGS[annotations['label'][action_idx-1]]
                         else:
-                            self.person_state = "Other manipulation"
+                            self.person_state = "other manipulation"
                         if frame > fr_execution: 
                             self.robot_state = "Waiting for evaluation..."
                     elif fr_execution > fr_end: 
@@ -558,14 +559,14 @@ class BasicEnv(gym.Env):
                             if annotations['frame_init'][action_idx-1] <= frame <= annotations['frame_end'][action_idx-1]:
                                 self.person_state = ATOMIC_ACTIONS_MEANINGS[annotations['label'][action_idx-1]]
                             else:
-                                self.person_state = "Other manipulation"
+                                self.person_state = "other manipulation"
                                 
                 
                 # print('Frame: ', frame)
                 # print('Estado persona: ', self.person_state)
                 # print('Estado robot: ', self.robot_state)
                 
-                
+                self.rwd_history.append([reward])
                 self.h_history.append([self.person_state])
                 self.r_history.append([self.robot_state])
                 
@@ -598,6 +599,8 @@ class BasicEnv(gym.Env):
         #     self.prints_terminal(action, frame_prev, frame_post, reward)
         # # pdb.set_trace()
         # print(str(self.flags))
+        
+        
         self.total_reward += reward 
         # print("Execution times: ",self.time_execution)
         return prev_state, next_state, reward, done, optim,  self.flags['pdb'], self.reward_time, self.reward_energy, execution_times       
@@ -609,7 +612,7 @@ class BasicEnv(gym.Env):
     		print("SAVING HISTORY")
     		path = './results/History_Arrays/'
     		file_name = "{0}.npz".format(video_idx)
-    		np.savez(os.path.join(path, file_name), h_history=self.h_history, r_history=self.r_history)
+    		np.savez(os.path.join(path, file_name), h_history=self.h_history, r_history=self.r_history, rwd_history=self.rwd_history)
     
     def get_total_reward(self):
         return self.total_reward
@@ -668,6 +671,7 @@ class BasicEnv(gym.Env):
         
         self.r_history = []
         self.h_history = []
+        self.rwd_history = []
         
         return self.state
 

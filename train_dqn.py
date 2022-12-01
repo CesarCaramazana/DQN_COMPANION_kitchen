@@ -53,7 +53,6 @@ args = parser.parse_args()
 
 
 SAVE_MODEL = args.save_model
-SAVE_EPISODE = cfg.SAVE_EPISODE
 EXPERIMENT_NAME = args.experiment_name
 LOAD_MODEL = args.load_model
 LOAD_EPISODE = args.load_episode
@@ -301,7 +300,7 @@ for i_epoch in range (0,NUM_EPOCH):
     steps_done += 1
     
     print("| ----------- EPOCH " + str(i_epoch) + " ----------- ")
-    for i_episode in range(LOAD_EPISODE, NUM_EPISODES):
+    for i_episode in range(0, NUM_EPISODES):
         if(args.display): print("| EPISODE #", i_episode , end='\n')
         else: print("| EPISODE #", i_episode , end='\r')
     
@@ -397,7 +396,7 @@ for i_epoch in range (0,NUM_EPOCH):
         
         # if SAVE_MODEL:
         #     if i_episode % SAVE_EPISODE == 0 and i_episode != 0: 
-    if i_epoch % (cfg.NUM_EPOCH*0.01) == 0:
+    if i_epoch % (cfg.SAVE_EVERY) == 0:
 
         path = os.path.join(ROOT, EXPERIMENT_NAME + '_' + dt_string + '_DECISION_RATE_' + str(cfg.DECISION_RATE))
         save_path = os.path.join(path, "Graphics") 
@@ -441,7 +440,7 @@ for i_epoch in range (0,NUM_EPOCH):
     total_time_execution_epoch.append(sum(total_time_iteraction))
     
     data = {'video': total_time_video,
-	'iteraction': total_time_iteraction,
+	'interaction': total_time_iteraction,
     'CA_intime': total_CA_intime,
     'CA_late':total_CA_late,
     'IA_intime': total_IA_intime,
@@ -561,6 +560,7 @@ for i_epoch in range (0,NUM_EPOCH):
     plt.title("Reward")
     # plt.show()
     fig1.savefig(save_path+'/train_time_reward_'+dt_string+'.jpg')
+    
 
     # pdb.set_trace()
     
@@ -665,9 +665,9 @@ keys_video = df['video'][0:cfg.NUM_EPISODES]
 iteraction_x = []
 video_x = []
 
-"""
+
 for idx_key,val_key in enumerate(keys_video):
-    iteraction_x.append(list(df[df['video']==val_key]['iteraction']))
+    iteraction_x.append(list(df[df['video']==val_key]['interaction']))
     video_x.append([val_key]*cfg.NUM_EPOCH)
         
 for idx_plt in range(0,cfg.NUM_EPISODES):
@@ -682,7 +682,7 @@ for idx_plt in range(0,cfg.NUM_EPISODES):
     plt.title("Time Video "+str(idx_plt), fontsize=14)
     plt.plot(iteraction_x[idx_plt])
     plt.plot(video_x[idx_plt])
-    plt.legend(["Iteraction", "Video"])   
+    plt.legend(["Interaction", "Video"])   
     plt.xlabel("Epoch")
     plt.ylabel("Frames")
     
@@ -706,13 +706,13 @@ total_time_video_epoch = [sum(total_time_video)]*len(total_time_execution_epoch)
 plt.plot(total_time_execution_epoch)
 plt.plot(total_time_video_epoch)
 
-plt.legend(["Iteraction","Video"])
+plt.legend(["Interaction","Video"])
 plt.xlabel("Epoch")
 plt.ylabel("Frames")
 plt.title("Time")
 plt.show()
 
-"""
+
 fig1 = plt.figure(figsize=(15, 6))
 
 

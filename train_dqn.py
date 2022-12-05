@@ -166,7 +166,20 @@ def select_action(state):
             return out.max(1)[1].view(1,1)
 
     else: #If the random number is lower than the current exploration rate, return a random action.
-        return torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long)
+        """
+        UPDATED 5/12/22
+        """
+        out = policy_net(state).detach().cpu().numpy().squeeze()
+        
+        probability = softmax(out+ 0.5) #Add constant to avoid softmax of array with negative values        
+     
+        value = np.random.choice(out, p=probability) #Sample an action from the probability distribution
+        idx = np.where(out==value)[0][0]
+        
+        action_from_pdf = torch.tensor([[idx]], device=device, dtype=torch.long) #Action selected from the probability distribution of the output
+        #action_from_uniform = torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long) #Action selected from an uniform probability distribution
+
+        return action_from_pdf
 
 
 def action_rate(decision_cont,state):
@@ -202,16 +215,16 @@ def optimize_model():
     
     state_batch = torch.cat(batch.state)
     action_batch = torch.cat(batch.action)
-    reward_batch = torch.cat(batch.reward)    
-    
+    reward_batch = torch.cat(batch.reward)      
  
     
-    out = policy_net(state_batch)
+    #out = policy_net(state_batch)    
     
     state_action_values = policy_net(state_batch).gather(1, action_batch) #Forward pass on the policy network -> Q values for every action -> Keep only Qvalue for the action that we took when exploring (action_batch), for which we have the reward (reward_batch) and the transition (non_final_next_states).
     
     next_state_values = torch.zeros(t_batch_size, device=device)
     next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0].detach() #Get Q value for next state with the Target Network. Q(s')
+    
     
     expected_state_action_values = (next_state_values * GAMMA) + reward_batch #Get Q value for current state as R + Q(s')
     
@@ -467,6 +480,9 @@ for i_epoch in range (0,NUM_EPOCH):
     total_CI_epoch.append(sum(total_CI))
     total_II_epoch.append(sum(total_II))
     
+    plt.close('all')
+    
+    """
     fig1 = plt.figure(figsize=(20, 6))
     plt.subplot(131)
     plt.title("Loss")
@@ -485,8 +501,9 @@ for i_epoch in range (0,NUM_EPOCH):
     plt.xlabel("Epoch")
     plt.ylabel("Epsilon")
     plt.plot(ex_rate)
-    fig1.savefig(save_path+'/train_results_epoch'+dt_string+'.jpg')
     
+    fig1.savefig(save_path+'/train_results_epoch'+dt_string+'.jpg')
+    plt.close('all')
     
     fig3 = plt.figure(figsize=(20, 12))
     plt.subplot(241)
@@ -529,6 +546,7 @@ for i_epoch in range (0,NUM_EPOCH):
     plt.plot(total_II_epoch)
     plt.xlabel("Epoch")
     plt.ylabel("Amount action")
+    plt.close('all')
     # plt.show()
     fig3.savefig(save_path+'/train_detailed_results_epoch_'+dt_string+'.jpg')
     
@@ -540,6 +558,7 @@ for i_epoch in range (0,NUM_EPOCH):
     plt.xlabel("Epoch")
     plt.ylabel("Frames")
     plt.title("Time")
+    plt.close('all')
     # plt.show()
     fig1.savefig(save_path+'/train_time_execution_'+dt_string+'.jpg')
 
@@ -551,6 +570,7 @@ for i_epoch in range (0,NUM_EPOCH):
     plt.title("Reward")
     # plt.show()
     fig1.savefig(save_path+'/train_energy_reward_'+dt_string+'.jpg')
+    plt.close('all')
 
     fig1 = plt.figure(figsize=(15, 6))
     plt.plot(total_reward_time_epoch)
@@ -560,7 +580,8 @@ for i_epoch in range (0,NUM_EPOCH):
     plt.title("Reward")
     # plt.show()
     fig1.savefig(save_path+'/train_time_reward_'+dt_string+'.jpg')
-    
+    plt.close('all')
+    """
 
     # pdb.set_trace()
     
@@ -578,7 +599,7 @@ print("\nTraining completed in {:.1f}".format(t2), "seconds.\n")
 
 # pdb.set_trace()
 
-
+plt.close('all')
 
 fig1 = plt.figure(figsize=(20, 6))
 plt.subplot(131)
@@ -644,6 +665,8 @@ plt.xlabel("Epoch")
 plt.ylabel("Amount action")
 plt.show()
 
+plt.close('all')
+
 fig3.savefig(save_path+'/train_detailed_results_epoch'+dt_string+'.jpg')
 
 
@@ -658,7 +681,7 @@ plot_detailed_results(n, total_results, save_path, 'TRAIN')
 n = int(cfg.NUM_EPOCH*0.2)
 plot_detailed_results(n, total_results, save_path, 'TRAIN')
 
-
+plt.close('all')
 
 keys_video = df['video'][0:cfg.NUM_EPISODES]
 
@@ -698,7 +721,7 @@ for idx_plt in range(0,cfg.NUM_EPISODES):
         plt.suptitle("Time execution", fontsize=20)
         
         cont = 0
-   
+
 
 fig1 = plt.figure(figsize=(15, 6))
 
@@ -739,5 +762,5 @@ plt.show()
 
 fig1.savefig(save_path+'/train_time_reward_'+dt_string+'.jpg')
 
-
+plt.close('all')
 

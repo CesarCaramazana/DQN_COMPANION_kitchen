@@ -102,6 +102,8 @@ policy_net = DQN(n_states, n_actions).to(device)
 #LOAD MODEL from 'EXPERIMENT_NAME' folder
 path = os.path.join(ROOT, EXPERIMENT_NAME)
 
+print("PATH: ", path)
+
 
 # Get all the .pt files in the folder 
 pt_extension = path + "/*.pt"
@@ -258,6 +260,10 @@ epoch_test = sorted(epoch_test)
 
 
 
+save_path = os.path.join(path, "Graphics") 
+if not os.path.exists(save_path): os.makedirs(save_path)
+
+
 fig = plt.figure(figsize=(20, 15))
 plt.subplot(241)
 plt.title("Correct actions (in time) [through epochs]")
@@ -301,6 +307,7 @@ plt.xlabel("Epochs")
 
 plt.show()
 
+fig.savefig(save_path+'/00_testEPOCHS.jpg')
 
 
 

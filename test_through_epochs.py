@@ -127,6 +127,7 @@ epoch_UA_late = []
 epoch_CI = []
 epoch_II = []
 
+epoch_reward = []
 
 for f in pt_files:
 	print(f)
@@ -209,6 +210,7 @@ for f in pt_files:
 	    		total_reward_energy_ep.append(reward_energy_ep)
 	    		total_reward_time_ep.append(reward_time_ep)
 	    		total_reward.append(env.get_total_reward())
+	    		
 	    		total_CA_intime.append(env.CA_intime)
 	    		total_CA_late.append(env.CA_late)
 	    		total_IA_intime.append(env.IA_intime)
@@ -242,6 +244,8 @@ for f in pt_files:
 	epoch_UA_late.append(np.sum(total_UA_late))
 	epoch_CI.append(np.sum(total_CI))
 	epoch_II.append(np.sum(total_II))
+	
+	epoch_reward.append(np.sum(total_reward))
  
 
 
@@ -307,12 +311,22 @@ plt.xlabel("Epochs")
 
 plt.show()
 
-fig.savefig(save_path+'/00_testEPOCHS.jpg')
+fig.savefig(save_path+'/00_testEPOCHS_actions.jpg')
 
 
+fig2 = plt.figure()
 
+plt.title("Reward")
+plt.plot(epoch_test, epoch_reward)
+plt.xlabel("Epochs")
+
+plt.show()
+
+fig2.savefig(save_path+'/00_testEPOCHS_reward.jpg')
 
 #-----------------------------
+
+plt.close()
 
 
 

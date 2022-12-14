@@ -1,3 +1,15 @@
+
+"""
+
+This script runs the test for a model that was saved in different training epochs.
+The only required parameter is the "experiment_name", which should be the name of the folder where the different checkpoints were saved.
+The checkpoints are named as "model_#epoch.pt". 
+
+"""
+
+
+
+
 import gym
 from gym import error, spaces, utils
 from gym.utils import seeding
@@ -20,8 +32,6 @@ import config as cfg
 from aux import *
 from natsort import natsorted, ns
 
-from generate_history import *
-#from test_dqn import select_action, action_rate
 
 #ARGUMENTS
 import config as cfg
@@ -37,6 +47,7 @@ parser.add_argument('--root', type=str, default=cfg.ROOT, help="(str) Name of th
 parser.add_argument('--eps_test', type=float, default=0.0, help="(float) Exploration rate for the action-selection during test. For example: 0.05")
 parser.add_argument('--display', action='store_true', default=False, help="Display environment info as [Current state, action taken, transitioned state, immediate reward, total reward].")
 parser.add_argument('--cuda', action='store_true', default=True, help="Use GPU if available.")
+parser.add_argument('--train', action='store_true', default=False, help="Test set (True) or Training set (False).")
 args = parser.parse_args()
 
 
@@ -85,15 +96,25 @@ EPS_TEST = args.eps_test
 
 device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
 
-NUM_EPISODES = len(glob.glob("./video_annotations/test/*")) #Run the test only once for every video in the testset
+
+
+
 
 
 #TEST 
 #----------------
 #Environment - Custom basic environment for kitchen recipes
-env = gym.make("gym_basic:basic-v0", display=args.display, test=True, disable_env_checker=True)
+env = gym.make("gym_basic:basic-v0", display=args.display, test=not args.train, disable_env_checker=True)
 
 
+if env.test: 
+	NUM_EPISODES = len(glob.glob("./video_annotations/test/*")) #Run the test only once for every video in the testset
+	print("Test set")
+else:
+	NUM_EPISODES = len(glob.glob("./video_annotations/train/*"))
+	print("Train set")
+	
+	
 n_actions = env.action_space.n
 n_states = env.observation_space.n
 
@@ -138,9 +159,7 @@ for f in pt_files:
 	
 	checkpoint = torch.load(f)
 	policy_net.load_state_dict(checkpoint['model_state_dict'])
-	policy_net.eval()
-	
-		
+	policy_net.eval()		
 	
 	steps_done = 0
 	
@@ -252,6 +271,7 @@ for f in pt_files:
 
 # SORT LISTS in ascending order of epoch
 
+"""
 epoch_CA_intime = [x for y, x in sorted(zip(epoch_test, epoch_CA_intime))]
 epoch_CA_late = [x for y, x in sorted(zip(epoch_test, epoch_CA_late))]
 epoch_IA_intime = [x for y, x in sorted(zip(epoch_test, epoch_IA_intime))]
@@ -261,7 +281,7 @@ epoch_UA_late = [x for y, x in sorted(zip(epoch_test, epoch_UA_late))]
 epoch_CI = [x for y, x in sorted(zip(epoch_test, epoch_CI))]
 epoch_II = [x for y, x in sorted(zip(epoch_test, epoch_II))]
 epoch_test = sorted(epoch_test)
-
+"""
 
 
 save_path = os.path.join(path, "Graphics") 
@@ -311,8 +331,8 @@ plt.xlabel("Epochs")
 
 plt.show()
 
-fig.savefig(save_path+'/00_testEPOCHS_actions.jpg')
-
+if env.test: fig.savefig(save_path+'/00_testEPOCHS_actions.jpg')
+else: fig.savefig(save_path+'/00_trainEPOCHS_actions.jpg')
 
 fig2 = plt.figure()
 
@@ -322,8 +342,8 @@ plt.xlabel("Epochs")
 
 plt.show()
 
-fig2.savefig(save_path+'/00_testEPOCHS_reward.jpg')
-
+if env.test: fig2.savefig(save_path+'/00_testEPOCHS_reward.jpg')
+else: fig2.savefig(save_path+'/00_trainEPOCHS_reward.jpg')
 #-----------------------------
 
 plt.close()

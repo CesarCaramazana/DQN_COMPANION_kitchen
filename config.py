@@ -18,7 +18,7 @@ LR = 1e-4 #Learning rate
 ROOT = './Checkpoints/'
 EXPERIMENT_NAME = "first_DQN"
 SAVE_MODEL = False
-SAVE_EPISODE = 100
+SAVE_EVERY = 10
 LOAD_MODEL = False
 LOAD_EPISODE = 0
 

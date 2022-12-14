@@ -293,6 +293,7 @@ total_II_epoch = []
 steps_done = 0 #esto antes no estaba
 
 for i_epoch in range (0,NUM_EPOCH):
+    plt.close('all')
     total_loss = []
     total_reward_vs_optim = []
     total_reward = []
@@ -482,7 +483,7 @@ for i_epoch in range (0,NUM_EPOCH):
     
     plt.close('all')
     
-    """
+    
     fig1 = plt.figure(figsize=(20, 6))
     plt.subplot(131)
     plt.title("Loss")
@@ -581,7 +582,7 @@ for i_epoch in range (0,NUM_EPOCH):
     # plt.show()
     fig1.savefig(save_path+'/train_time_reward_'+dt_string+'.jpg')
     plt.close('all')
-    """
+    
 
     # pdb.set_trace()
     

@@ -292,7 +292,7 @@ total_II_epoch = []
 
 steps_done = 0 #esto antes no estaba
 
-for i_epoch in range (0,NUM_EPOCH):
+for i_epoch in range (args.load_episode,NUM_EPOCH):
     plt.close('all')
     total_loss = []
     total_reward_vs_optim = []
@@ -412,7 +412,8 @@ for i_epoch in range (0,NUM_EPOCH):
         #     if i_episode % SAVE_EPISODE == 0 and i_episode != 0: 
     if i_epoch % (cfg.SAVE_EVERY) == 0:
 
-        path = os.path.join(ROOT, EXPERIMENT_NAME + '_' + dt_string + '_DECISION_RATE_' + str(cfg.DECISION_RATE))
+        #path = os.path.join(ROOT, EXPERIMENT_NAME + '_' + dt_string + '_DECISION_RATE_' + str(cfg.DECISION_RATE))
+        path = os.path.join(ROOT, EXPERIMENT_NAME)
         save_path = os.path.join(path, "Graphics") 
         model_name = 'model_' + str(i_epoch) + '.pt'
         if not os.path.exists(path): os.makedirs(path)
@@ -427,13 +428,13 @@ for i_epoch in range (0,NUM_EPOCH):
         'steps': steps_done            
         }, os.path.join(path, model_name))
 
-        
+        """
         if episode_loss:
             if mean(episode_loss) < best_loss[1]:
                 best_loss[1] = mean(episode_loss)
                 best_loss[0] = i_epoch
                 with open(ROOT + EXPERIMENT_NAME  + '_' + dt_string + '_DECISION_RATE_' + str(cfg.DECISION_RATE) + '/best_episode.txt', 'w') as f: f.write(str(best_loss[0]))
-
+	"""
     # total_loss_epoch.append()
     # epoch_loss.append(running_loss/cfg.NUM_EPOCH)
     # total_reward_epoch_v2.append(running_reward/cfg.NUM_EPOCH)
@@ -465,7 +466,7 @@ for i_epoch in range (0,NUM_EPOCH):
     'II': total_II
     }
     
-    if i_epoch == 0: 
+    if i_epoch == args.load_episode: 
         df = pd.DataFrame(data)
     else:
         df_new = pd.DataFrame(data)
@@ -547,9 +548,10 @@ for i_epoch in range (0,NUM_EPOCH):
     plt.plot(total_II_epoch)
     plt.xlabel("Epoch")
     plt.ylabel("Amount action")
-    plt.close('all')
+
     # plt.show()
     fig3.savefig(save_path+'/train_detailed_results_epoch_'+dt_string+'.jpg')
+    plt.close('all')
     
     total_time_video_epoch = [sum(total_time_video)]*len(total_time_execution_epoch)
     fig1 = plt.figure(figsize=(15, 6))
@@ -559,9 +561,10 @@ for i_epoch in range (0,NUM_EPOCH):
     plt.xlabel("Epoch")
     plt.ylabel("Frames")
     plt.title("Time")
-    plt.close('all')
+
     # plt.show()
     fig1.savefig(save_path+'/train_time_execution_'+dt_string+'.jpg')
+    plt.close('all')
 
     fig1 = plt.figure(figsize=(15, 6))
     plt.plot(total_reward_energy_epoch)

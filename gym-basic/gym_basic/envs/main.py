@@ -609,7 +609,7 @@ class BasicEnv(gym.Env):
     def save_history(self):
     	
     	if len(self.h_history) > 0 and self.test:
-    		print("SAVING HISTORY")
+
     		path = './results/History_Arrays/'
     		file_name = "{0}.npz".format(video_idx)
     		np.savez(os.path.join(path, file_name), h_history=self.h_history, r_history=self.r_history, rwd_history=self.rwd_history)
@@ -634,7 +634,7 @@ class BasicEnv(gym.Env):
             video_idx += 1
         else:
             video_idx = 0
-            print("EPOCH COMPLETED.")
+            #print("EPOCH COMPLETED.")
             # pdb.set_trace()
         
         action_idx = 1   #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! START AT 0 OR 1? 

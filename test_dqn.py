@@ -334,7 +334,7 @@ save_path = os.path.join(path, "Graphics")
 if not os.path.exists(save_path): os.makedirs(save_path)
 
 
-fig = plt.figure(figsize=(20, 15))
+fig = plt.figure(figsize=(34, 12))
 plt.subplot(2,5,1)
 plt.title("Correct actions (in time)")
 plt.plot(epoch_test, epoch_CA_intime)

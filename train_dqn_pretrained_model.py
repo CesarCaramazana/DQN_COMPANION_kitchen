@@ -438,7 +438,7 @@ for i_epoch in range (0,NUM_EPOCH):
                     total_CI.append(env.CI)
                     total_II.append(env.II)
               
-                    print("")
+
                     break #Finish episode
         
             #print(scheduler.optimizer.param_groups[0]['lr']) #Print LR (to check scheduler)
@@ -491,7 +491,9 @@ for i_epoch in range (0,NUM_EPOCH):
                 else:
                     name_reward = ''
                     
-                path = os.path.join(ROOT, EXPERIMENT_NAME + '_' + dt_string +name_reward + str(cfg.DECISION_RATE) +'_LR_'+str(LR)+ pre + freeze + '_GAMMA_'+str(GAMMA) + '(change_in_saving_state)')
+                #path = os.path.join(ROOT, EXPERIMENT_NAME + '_' + dt_string +name_reward + str(cfg.DECISION_RATE) +'_LR_'+str(LR)+ pre + freeze + '_GAMMA_'+str(GAMMA) + '(change_in_saving_state)')
+                
+                path = os.path.join(ROOT, EXPERIMENT_NAME)
                 save_path = os.path.join(path, "Graphics") 
                 model_name = 'model_' + str(i_epoch) + '.pt'
                 if not os.path.exists(path): os.makedirs(path)
@@ -505,13 +507,7 @@ for i_epoch in range (0,NUM_EPOCH):
                 'loss': total_loss,
                 'steps': steps_done            
                 }, os.path.join(path, model_name))
-        
-                
-                if episode_loss:
-                    if mean(episode_loss) < best_loss[1]:
-                        best_loss[1] = mean(episode_loss)
-                        best_loss[0] = i_epoch
-                        with open(path +'/best_episode.txt', 'w') as f: f.write(str(best_loss[0]))
+
         
     
             ex_rate.append(EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY))

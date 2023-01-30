@@ -336,24 +336,24 @@ if not os.path.exists(save_path): os.makedirs(save_path)
 
 fig = plt.figure(figsize=(34, 12))
 plt.subplot(2,5,1)
-plt.title("Correct actions (in time)")
+plt.title("Correct (in time)")
 plt.plot(epoch_test, epoch_CA_intime)
 plt.xlabel("Epochs")
 
 plt.subplot(2,5,2)
-plt.title("Incorrect actions (in time)")
+plt.title("Incorrect (in time)")
 plt.plot(epoch_test, epoch_IA_intime)
 plt.xlabel("Epochs")
 
 
 plt.subplot(2,5,3)
-plt.title("Unnecessary actions correct (in time)")
+plt.title("Unnecessary correct (in time)")
 plt.plot(epoch_test, epoch_UAC_intime)
 plt.xlabel("Epochs")
 
 
 plt.subplot(2,5,4)
-plt.title("Unnecessary actions incorrect (in time)")
+plt.title("Unnecessary incorrect (in time)")
 plt.plot(epoch_test, epoch_UAI_intime)
 plt.xlabel("Epochs")
 
@@ -365,25 +365,25 @@ plt.xlabel("Epochs")
 
 
 plt.subplot(2,5,6)
-plt.title("Correct actions (late)")
+plt.title("Correct (late)")
 plt.plot(epoch_test, epoch_CA_late)
 plt.xlabel("Epochs")
 
 
 plt.subplot(2,5,7)
-plt.title("Incorrect actions (late)")
+plt.title("Incorrect (late)")
 plt.plot(epoch_test, epoch_IA_late)
 plt.xlabel("Epochs")
 
 
 plt.subplot(2,5,8)
-plt.title("Unnecessary actions correct (late)")
+plt.title("Unnecessary correct (late)")
 plt.plot(epoch_test, epoch_UAC_late)
 plt.xlabel("Epochs")
 
 
 plt.subplot(2,5,9)
-plt.title("Unnecessary actions incorrect (late)")
+plt.title("Unnecessary incorrect (late)")
 plt.plot(epoch_test, epoch_UAI_late)
 plt.xlabel("Epochs")
 

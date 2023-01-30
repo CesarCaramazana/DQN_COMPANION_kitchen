@@ -28,8 +28,6 @@ from datetime import datetime
 # import sched, time
 
 
-
-
 parser = argparse.ArgumentParser()
 parser.add_argument('--pretrained', action='store_true', default=False, help="(bool) Inizializate the model with a pretrained moddel")
 parser.add_argument('--freeze', type=str, default='False', help="(bool) Inizializate the model with a pretrained moddel freezing the layers but the last one")
@@ -101,8 +99,8 @@ target_net = DQN(n_states, n_actions).to(device)
 child_counter = 0
 
 if PRETRAINED:
-   
-    path_model = '/Pretrained/model_360.pt' #Path al modelo pre-entrenado
+    path_model = './Pretrained/pretrained_model.pt' #Path al modelo pre-entrenado
+    
     policy_net.load_state_dict(torch.load(path_model))
     policy_net.to(device)
 

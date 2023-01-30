@@ -23,7 +23,7 @@ SAVE_EPISODE = 100
 LOAD_MODEL = False
 LOAD_EPISODE = 0
 
-DECISION_RATE = 20 
+DECISION_RATE = 30 
 #ENVIRONMENT PARAMETERS ------
 #---------------------------------------------------------------------------------
 

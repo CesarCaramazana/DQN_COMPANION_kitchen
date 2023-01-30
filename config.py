@@ -5,18 +5,19 @@
 
 REPLAY_MEMORY = 2048 #Size of replay memory (deque object)
 
-NUM_EPOCH = 5000
+NUM_EPOCH = 20
 NUM_EPISODES = 61 #"Number of training epochs"
 BATCH_SIZE = 1024
-GAMMA = 0.1 #Discount rate for future rewards
+GAMMA = 0.99 #Discount rate for future rewards
 EPS_START = 0.99 #Initial exporation rate
 EPS_END = 0.01 #Final exploration rate
 EPS_DECAY = NUM_EPOCH #Exploration rate decay factor
 TARGET_UPDATE = 10 #Episodes between target network update (policy net parameters -> target net)
-LR = 1e-4 #Learning rate
+LR = 0 #Learning rate
+POSITIVE_REWARD = 0
 
 ROOT = './Checkpoints/'
-EXPERIMENT_NAME = "first_DQN"
+EXPERIMENT_NAME = "DQN"
 SAVE_MODEL = False
 SAVE_EPISODE = 100
 LOAD_MODEL = False
@@ -26,12 +27,13 @@ DECISION_RATE = 20
 #ENVIRONMENT PARAMETERS ------
 #---------------------------------------------------------------------------------
 
-VERSION = 2 #If VERSION == 1, the STATE is the NEXT ATOMIC ACTION. If VERSION == 2, the STATE is the concatenation of the NEXT ATOMIC ACTION and the VISUAL WORKING MEMORY. So far, in both cases the reward only depends on the action taken considering only the NEXT ACTION. VERSION == 3, STATE = NA + VWM + AO
+VERSION = 3 #If VERSION == 1, the STATE is the NEXT ATOMIC ACTION. If VERSION == 2, the STATE is the concatenation of the NEXT ATOMIC ACTION and the VISUAL WORKING MEMORY. So far, in both cases the reward only depends on the action taken considering only the NEXT ACTION. VERSION == 3, STATE = NA + VWM + AO
 
 N_ATOMIC_ACTIONS = 33 #Number of total atomic actions. 33 = 31 actions + 1 'other manipulation' + 1 Terminal state
 N_OBJECTS = 23 #Number of objects. Input variables: "Active Object" and "VWM" (Visual Working Memory)
 ACTION_SPACE = 24 #Number of robot actions. Output variable
 
+INTERACTIVE_OBJECTS_ROBOT = ['butter','jam','milk','nutella','tomato sauce']
 
 ATOMIC_ACTIONS_MEANINGS = {
 	0: 'other manipulation',
@@ -110,9 +112,33 @@ OBJECTS_MEANINGS = {
 	20: 'toaster',
 	21: 'tomato sauce',
 	22: 'water'
-
 }
 
+OBJECTS_INIT_STATE = {
+    'background': 0,
+	'bowl': 1,
+	'butter': 0,
+	'cereals': 1,
+	'coffee': 1,
+	'cup': 1,
+	'cutting board': 1,
+	'fork': 1,
+	'fridge': 1,
+	'jam': 0,
+	'knife': 1,
+	'microwave': 1,
+	'milk': 0,
+	'nesquik': 1,
+	'nutella': 0,
+	'olive oil': 1,
+	'plate': 1,
+	'sliced bread': 1,
+	'spoon': 1,
+	'sugar': 1,
+	'toaster': 1,
+	'tomato sauce': 0,
+	'water': 1
+    } 
 
 
 
@@ -138,11 +164,40 @@ ROBOT_ACTIONS_MEANINGS = {
 	18: 'do nothing',
 	19: 'put jam fridge',
 	20: 'put butter fridge',
-	21: 'put tomato fridge',
+	21: 'put tomato sauce fridge',
 	22: 'put nutella fridge',
 	23: 'put milk fridge'
 
 }
+
+
+
+ROBOT_POSSIBLE_INIT_ACTIONS = {
+    0: 0,
+	1: 1,
+	2: 0,
+	3: 0,
+	4: 0,
+	5: 0,
+	6: 1,
+	7: 0,
+	8: 1,
+	9: 0,
+	10: 1,
+	11: 0,
+	12: 0,
+	13: 0,
+	14: 0,
+	15: 0,
+	16: 1,
+	17: 0,
+	18: 1,
+	19: 0,
+	20: 0,
+	21: 0,
+	22: 0,
+	23: 0
+    }
 
 
 #In frames

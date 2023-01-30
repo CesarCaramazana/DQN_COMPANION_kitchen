@@ -124,7 +124,15 @@ def undo_concat_state(state):
         return next_action, ao, oit
     
 
+"""
 
+MOVING AVERAGE
+
+
+"""
+
+def moving_average(x, w):
+    return np.convolve(x, np.ones(w), 'valid') / w
 
 
 # 3) GET REWARDS    

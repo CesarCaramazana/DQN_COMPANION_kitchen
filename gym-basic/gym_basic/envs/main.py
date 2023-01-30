@@ -68,6 +68,8 @@ class BasicEnv(gym.Env):
         
         self.display = display
         
+        self.test = test
+        
         self.flags = {'freeze state': False, 'decision': False, 'threshold': " ",'evaluation': "Not evaluated", 'action robot': False,'break':False,'pdb': False}
         
         self.person_state = "Other manipulation"
@@ -83,7 +85,7 @@ class BasicEnv(gym.Env):
         
         global root, videos, total_videos, annotations
         
-        if test:
+        if self.test:
             print("==== TEST SET ====")
             root = "./video_annotations/test/*"
             videos = glob.glob(root)
@@ -95,8 +97,7 @@ class BasicEnv(gym.Env):
         self.CA_late = 0
         self.IA_intime = 0
         self.IA_late = 0    
-        # self.UA_intime = 0
-        # self.UA_late = 0
+
         self.UAC_intime = 0
         self.UAC_late = 0
         self.UAI_intime = 0
@@ -1336,10 +1337,10 @@ class BasicEnv(gym.Env):
             p = random.uniform(0, 1)
             
             diff = (annotations['frame_init'][action_idx] - frame)/annotations['frame_init'][action_idx] 
-            var = diff**3 #Noise variance
+            var = 0.5*diff**4 #Noise variance
             
             # 5% chance of erroneously coding another action that does not correspond to the annotations.
-            if p>0.97:
+            if p>1:
                 # na = random.randint(0, N_ATOMIC_ACTIONS-2) #Random label with 5% prob (from action 0 to N_AA-2, to avoid coding the TERMINAL STATE)
                 na = random.randint(0, N_ATOMIC_ACTIONS-2)
                 na_prev = na
@@ -1350,6 +1351,11 @@ class BasicEnv(gym.Env):
                 
             na = one_hot(na, N_ATOMIC_ACTIONS) #From int to one-hot vector.
             na_prev = one_hot(na_prev, N_ATOMIC_ACTIONS)
+
+            
+            #Para eliminar ruido
+            #var = 0
+            
             
             # Generate gaussian noise with 0 mean and 1 variance.
             # noise = np.random.normal(0, 1, N_ATOMIC_ACTIONS)

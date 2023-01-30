@@ -27,26 +27,11 @@ import pdb
 from datetime import datetime
 # import sched, time
 
-"""
-
-MOVING AVERAGE
-
-
-"""
-
-def moving_average(x, w):
-    return np.convolve(x, np.ones(w), 'valid') / w
-
-
-
-
-
-
 
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--pretrained', type=str, default='True', help="(bool) Inizializate the model with a pretrained moddel")
+parser.add_argument('--pretrained', action='store_true', default=False, help="(bool) Inizializate the model with a pretrained moddel")
 parser.add_argument('--freeze', type=str, default='False', help="(bool) Inizializate the model with a pretrained moddel freezing the layers but the last one")
 parser.add_argument('--experiment_name', type=str, default=cfg.EXPERIMENT_NAME, help="(str) Name of the experiment. Used to name the folder where the model is saved. For example: my_first_DQN.")
 parser.add_argument('--save_model', action='store_true', default=False, help="Save a checkpoint in the EXPERIMENT_NAME folder.")
@@ -115,7 +100,7 @@ target_net = DQN(n_states, n_actions).to(device)
 
 child_counter = 0
 
-if PRETRAINED == 'True':
+if PRETRAINED:
     
     if POSITIVE_REWARD == 0:
         # anterior asignacion de rewards 
@@ -447,33 +432,7 @@ for i_epoch in range (0,NUM_EPOCH):
                 
                  
                 if optim: #Only train if we have taken an action (f==30)
-                    # print("Action: ", cfg.ROBOT_ACTIONS_MEANINGS[action])
-                    
-                    # objects_prev_print = []
-                    # for key,value in cfg.OBJECTS_MEANINGS.items():
-                    #     if prev_state_[56:][key] == 1: 
-                    #         objects_prev_print.append(value)
-                        
-                    # objects_print = []
-                    # for key,value in cfg.OBJECTS_MEANINGS.items():
-                    #     if next_state_[56:][key] == 1: 
-                    #         objects_print.append(value)
-                            
-                    # set1 = set(objects_prev_print)
-                    # set2 = set(objects_print)
-                    
-                    # missing = list(sorted(set1 - set2))
-                    # added = list(sorted(set2 - set1))
-                  
-                    # if len(missing) > 0:
-                    #     print("------> MISSING: ", str(missing))
-                    # if len(added) > 0:
-                    #     print("------> ADDED: ", str(added))
-                        
-                    
-                    # print(prev_state)
-                    # print(next_state)
-                    # pdb.set_trace()
+
                     
                     memory.push(prev_state, action_, next_state, reward)
                     optimize_model(phase)

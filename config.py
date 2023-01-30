@@ -13,7 +13,7 @@ EPS_START = 0.99 #Initial exporation rate
 EPS_END = 0.01 #Final exploration rate
 EPS_DECAY = NUM_EPOCH #Exploration rate decay factor
 TARGET_UPDATE = 10 #Episodes between target network update (policy net parameters -> target net)
-LR = 0 #Learning rate
+LR = 1e-7 #Learning rate
 POSITIVE_REWARD = 0
 
 ROOT = './Checkpoints/'

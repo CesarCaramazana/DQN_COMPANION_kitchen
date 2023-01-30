@@ -101,40 +101,19 @@ target_net = DQN(n_states, n_actions).to(device)
 child_counter = 0
 
 if PRETRAINED:
-    
-    if POSITIVE_REWARD == 0:
-        # anterior asignacion de rewards 
-        # path_model_LfD = '/home/sabal/DQN_COMPANION_kitchen-main/results_LfD/13_12__13h_34min'
-        # path_model_LfD = '/home/sabal/DQN_COMPANION_kitchen-main/results_LfD/reward_change_energy_reward26_1__16h_27min'
-        # path_model_LfD = '/home/sabal/DQN_COMPANION_kitchen-main/results_LfD/reward_change_energy_reward27_1__10h_29min'
-        path_model_LfD = '/home/sabal/DQN_COMPANION_kitchen-main/results_LfD/reward_change_energy_reward_(change_in_saving_state)30_1__10h_12min'
-        
-    elif POSITIVE_REWARD == 1:
-        # dando reward = 1 - energia - espera a las acciones que hace el robot bien
-        path_model_LfD = '/home/sabal/DQN_COMPANION_kitchen-main/results_LfD/reward_positive_one_4_1__11h_22min'
-        
-    policy_net.load_state_dict(torch.load(path_model_LfD + '/models_epoch/model_360.pt'))
+   
+    path_model = '/Pretrained/model_360.pt' #Path al modelo pre-entrenado
+    policy_net.load_state_dict(torch.load(path_model))
     policy_net.to(device)
-    
-    if FREEZE == 'True':
-        for param in policy_net.parameters():
-            if child_counter < 2:
-                param.requires_grad = False
-                child_counter += 1
+
 else:
     policy_net.apply(init_weights) # si no hay pretained
 
 
-
-# print("Children counte: ",child_counter)
-
 target_net.eval()
 
 
-optimizer = optim.Adam(filter(lambda p: p.requires_grad, policy_net.parameters()), lr=LR) # if frozen layers 
-#optimizer = optim.RMSprop(policy_net.parameters(), lr=LR)
-# optimizer = optim.Adam(policy_net.parameters(), lr=LR)
-
+optimizer = optim.Adam(policy_net.parameters(), lr=LR) 
 # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size= 800, gamma= 0.99)
 
 memory = ReplayMemory(REPLAY_MEMORY)
@@ -285,15 +264,9 @@ def optimize_model(phase):
         optimizer.zero_grad()
         loss.backward()
         
-        if child_counter > 0:
-            child_count = 0
-            for param in policy_net.parameters():
-                if child_count >= 2:
-                    param.grad.data.clamp_(-1, 1)
-                child_count += 1
-        else:
-            for param in policy_net.parameters():
-                param.grad.data.clamp_(-1, 1)
+        for param in policy_net.parameters():
+        	param.grad.data.clamp_(-1,1)
+
         optimizer.step()
     # scheduler.step()    
 
@@ -555,8 +528,6 @@ for i_epoch in range (0,NUM_EPOCH):
             total_CA_late_epoch_train.append(sum(total_CA_late))
             total_IA_intime_epoch_train.append(sum(total_IA_intime))
             total_IA_late_epoch_train.append(sum(total_IA_late))
-            # total_UA_intime_epoch_train.append(sum(total_UA_intime))
-            # total_UA_late_epoch_train.append(sum(total_UA_late))
             total_UAC_intime_epoch_train.append(sum(total_UAC_intime))
             total_UAC_late_epoch_train.append(sum(total_UAC_late))
             total_UAI_intime_epoch_train.append(sum(total_UAI_intime))
@@ -605,8 +576,6 @@ for i_epoch in range (0,NUM_EPOCH):
             total_CA_late_epoch_val.append(sum(total_CA_late))
             total_IA_intime_epoch_val.append(sum(total_IA_intime))
             total_IA_late_epoch_val.append(sum(total_IA_late))
-            # total_UA_intime_epoch_val.append(sum(total_UA_intime))
-            # total_UA_late_epoch_val.append(sum(total_UA_late))
             total_UAC_intime_epoch_val.append(sum(total_UAC_intime))
             total_UAC_late_epoch_val.append(sum(total_UAC_late))
             total_UAI_intime_epoch_val.append(sum(total_UAI_intime))

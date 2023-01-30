@@ -37,13 +37,13 @@ root = "./video_annotations/train/*"
 videos = glob.glob(root)
 random.shuffle(videos)
 total_videos = len(videos)
-print(total_videos)
+
 video_idx = 0 #Index of current video
 action_idx = 0 #Index of next_action
 frame = 0 #Current frame
 
 annotations = np.load(videos[video_idx], allow_pickle=True)
-print(annotations)
+
 
 class BasicEnv(gym.Env):
     message = "Custom environment for recipe preparation scenario."

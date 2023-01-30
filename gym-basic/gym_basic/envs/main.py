@@ -933,7 +933,7 @@ class BasicEnv(gym.Env):
             video_idx += 1
         else:
             video_idx = 0
-            print("EPOCH COMPLETED.")
+            #print("EPOCH COMPLETED.")
             # pdb.set_trace()
         
         action_idx = 1   #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! START AT 0 OR 1? 

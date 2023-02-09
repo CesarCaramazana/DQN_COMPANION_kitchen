@@ -126,9 +126,6 @@ device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cp
 
 
 
-
-
-
 #TEST 
 #----------------
 #Environment - Custom basic environment for kitchen recipes
@@ -136,10 +133,10 @@ env = gym.make("gym_basic:basic-v0", display=args.display, test=not args.train, 
 
 
 if env.test: 
-	NUM_EPISODES = len(glob.glob("./video_annotations/test/*")) #Run the test only once for every video in the testset
+	NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/test/*")) #Run the test only once for every video in the testset
 	print("Test set")
 else:
-	NUM_EPISODES = len(glob.glob("./video_annotations/train/*"))
+	NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/train/*"))
 	print("Train set")
 	
 	

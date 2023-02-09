@@ -3,14 +3,19 @@ import torch.nn as nn
 import random
 from collections import namedtuple, deque
 
+
 class DQN(nn.Module):
 	
 	def __init__(self, input_size, output_size):
 		super(DQN, self).__init__()
 		
-		self.input_layer = nn.Sequential(nn.Linear(input_size, 256), nn.ReLU())
+		self.feature_dim = 133 #First features and Z variable separated
 		
-		self.hidden_layer = nn.Sequential(nn.Linear(256, 256), nn.ReLU())
+		self.input_layer1 = nn.Sequential(nn.Linear(self.feature_dim, 256), nn.ReLU())
+		self.input_layer2 = nn.Sequential(nn.Linear(input_size-self.feature_dim, 256), nn.ReLU())
+		
+		
+		self.hidden_layer = nn.Sequential(nn.Linear(512, 256), nn.ReLU())
 				
 		self.output_layer = nn.Linear(256, output_size)
 		
@@ -22,7 +27,15 @@ class DQN(nn.Module):
 		#print("\nInput states\n", x)
 		#print("")
 		
-		x = self.input_layer(x)
+		# Separate input tensor
+		input1 = x[:, 0:self.feature_dim]
+		input2 = x[:, self.feature_dim:]
+
+		x1 = self.input_layer1(input1)
+		x2 = self.input_layer2(input2)
+
+		x = torch.cat((x1, x2), 1) #Concat after 1st layer pass
+		
 		x = self.hidden_layer(x)
 		x = self.output_layer(x)
 		
@@ -34,6 +47,7 @@ class DQN(nn.Module):
 		#print("OUTPUT TYPE: ", x.dtype)
 		
 		return x
+
 
 def init_weights(m):
     if isinstance(m, nn.Linear):

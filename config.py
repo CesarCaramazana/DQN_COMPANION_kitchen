@@ -3,7 +3,7 @@
 #DQN PARAMETERS ------
 #---------------------------------------------------------------------------------
 
-REPLAY_MEMORY = 2048 #Size of replay memory (deque object)
+REPLAY_MEMORY = 1024 #Size of replay memory (deque object)
 
 NUM_EPOCH = 2000
 NUM_EPISODES = 61 #"Number of training epochs"

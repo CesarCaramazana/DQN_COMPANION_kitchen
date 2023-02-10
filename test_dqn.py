@@ -32,6 +32,7 @@ import config as cfg
 from aux import *
 from natsort import natsorted, ns
 
+from generate_history import *
 
 #ARGUMENTS
 import config as cfg
@@ -247,17 +248,14 @@ for f in pt_files:
 	    		action = action.item()
 	    	
 	    	array_action = [action,flag_decision, 'val']
-	    	prev_state, next_state, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times = env.step(array_action)
+	    	next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times, correct_action = env.step(array_action)
 	    	
 	    	
 	    	reward = torch.tensor([reward], device=device)
 	    	reward_energy_ep += reward_energy
 	    	reward_time_ep += reward_time
-	    	
-	    	#print("Reward: ", reward)
-	    	
-	    	prev_state = torch.tensor([prev_state], dtype=torch.float,device=device)
-	    	next_state = torch.tensor([next_state], dtype=torch.float,device=device)
+
+	    	next_state = torch.tensor([next_state_], dtype=torch.float,device=device)
 	    	
 	    	if not done: 
 	    		state = next_state
@@ -329,6 +327,10 @@ epoch_test = sorted(epoch_test)
 
 save_path = os.path.join(path, "Graphics") 
 if not os.path.exists(save_path): os.makedirs(save_path)
+
+
+for i in range(NUM_EPISODES):
+	create_graph(save_path, i)
 
 
 fig = plt.figure(figsize=(34, 12))

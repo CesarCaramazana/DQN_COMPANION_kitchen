@@ -203,6 +203,9 @@ def select_action(state, phase):
             with torch.no_grad():
                 out = policy_net(state)
                 action = post_processed_possible_actions(out,index_posible_actions,posible_actions)
+                
+                print("INITIAL Q-values\n", out)
+                
                 # pdb.set_trace()
                 return action
     
@@ -288,8 +291,6 @@ print("\nTraining...")
 print("_"*30)
 
 
-
-
 now = datetime.now()
 dt_string = now.strftime("%d-%m-%Y_%H:%M:%S")
 
@@ -316,8 +317,6 @@ total_CA_intime_epoch_train = []
 total_CA_late_epoch_train = []
 total_IA_intime_epoch_train = []
 total_IA_late_epoch_train = []
-# total_UA_intime_epoch_train = []
-# total_UA_late_epoch_train = []
 total_UAC_intime_epoch_train = []
 total_UAC_late_epoch_train = []
 total_UAI_intime_epoch_train = []
@@ -336,8 +335,6 @@ total_CA_intime_epoch_val = []
 total_CA_late_epoch_val = []
 total_IA_intime_epoch_val = []
 total_IA_late_epoch_val = []
-# total_UA_intime_epoch_val = []
-# total_UA_late_epoch_val = []
 total_UAC_intime_epoch_val = []
 total_UAC_late_epoch_val = []
 total_UAI_intime_epoch_val = []
@@ -345,7 +342,7 @@ total_UAI_late_epoch_val = []
 total_CI_epoch_val = []
 total_II_epoch_val = []
 
-steps_done = 0 #esto antes no estaba
+steps_done = 0 
 
 for i_epoch in range (args.load_episode,NUM_EPOCH):
 
@@ -394,7 +391,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             reward_time_ep = 0
             
             for t in count(): 
-                # action = select_action(state).item()
+
                 decision_cont += 1
                 action, flag_decision = action_rate(decision_cont, state, phase)
                 
@@ -403,38 +400,33 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                     action = action.item()
                     
                     if to_optim:
-                    	#print("\nI take an action in state: ", np.argmax(state[0:33].cpu()))
                     	decision_state = state
                     	to_optim = False
                     	
                 
                 array_action = [action,flag_decision,phase]
-                prev_state_, next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times = env.step(array_action)
+                next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times, correct_action = env.step(array_action)
       
                     
                 reward = torch.tensor([reward], device=device)
-                #prev_state = torch.tensor(np.array([prev_state_]), dtype=torch.float,device=device)
-                #next_state = torch.tensor(np.array([next_state_]), dtype=torch.float,device=device)
+
                 next_state = torch.tensor(env.state, dtype=torch.float, device=device).unsqueeze(0)
                 reward_energy_ep += reward_energy
                 reward_time_ep += reward_time
                 
                  
-                if optim: #Only train if we have taken an action (f==30)
-                   
+                if optim: #Only train if we have taken an action (f==30)                  
                     
                     reward = torch.tensor([reward], device=device)
-                    prev_state = torch.tensor(np.array([prev_state_]), dtype=torch.float, device=device)
-                    #next_state = torch.tensor(np.array([next_state_]), dtype=torch.float, device=device)
 
-                    
-                    #print("When optim: prev: ", np.argmax(prev_state[0:33].cpu()))
-                    #print("When optim: decision: ", np.argmax(decision_state[0:33].cpu()))
-                    #memory.push(decision_state, action_, next_state, reward)
-                    to_optim = True
-                    
-                    #memory.push(prev_state, action_, next_state, reward)
+                    to_optim = True                    
+
                     memory.push(decision_state, action_, next_state, reward)
+                    
+                    # Semi -supervised case where the correction is also taken into account to train the DQN
+                    #if (action != correct_action):
+                    #	memory.push(decision_state, torch.tensor([[correct_action]], device=device), next_state, torch.tensor([0], device=device))
+                    
                     optimize_model(phase)
                     num_optim += 1
                     
@@ -446,8 +438,6 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                     next_state = None 
                 
                 if done: 
-                    
-                    print("Am I in done?")
                     if episode_loss: 
   
                         total_reward.append(env.get_total_reward())

@@ -11,14 +11,15 @@ class DQN(nn.Module):
 		
 		self.feature_dim = 133 #First features and Z variable separated
 		
-		self.input_layer1 = nn.Sequential(nn.Linear(self.feature_dim, 256), nn.ReLU())
-		self.input_layer2 = nn.Sequential(nn.Linear(input_size-self.feature_dim, 256), nn.ReLU())
+		self.input_layer1 = nn.Linear(self.feature_dim, 256)
 		
-		
-		self.hidden_layer = nn.Sequential(nn.Linear(512, 256), nn.ReLU())
+		self.input_layer2 = nn.Linear(input_size-self.feature_dim, 256)
+			
+		self.hidden_layer = nn.Linear(512, 256)
 				
 		self.output_layer = nn.Linear(256, output_size)
 		
+		self.relu = nn.ReLU()
 		
 		
 			
@@ -31,12 +32,12 @@ class DQN(nn.Module):
 		input1 = x[:, 0:self.feature_dim]
 		input2 = x[:, self.feature_dim:]
 
-		x1 = self.input_layer1(input1)
-		x2 = self.input_layer2(input2)
+		x1 = self.relu(self.input_layer1(input1))
+		x2 = self.relu(self.input_layer2(input2))
 
 		x = torch.cat((x1, x2), 1) #Concat after 1st layer pass
 		
-		x = self.hidden_layer(x)
+		x = self.relu(self.hidden_layer(x))
 		x = self.output_layer(x)
 		
 		

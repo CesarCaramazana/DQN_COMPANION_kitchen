@@ -204,8 +204,6 @@ def select_action(state, phase):
                 out = policy_net(state)
                 action = post_processed_possible_actions(out,index_posible_actions,posible_actions)
                 
-                print("INITIAL Q-values\n", out)
-                
                 # pdb.set_trace()
                 return action
     

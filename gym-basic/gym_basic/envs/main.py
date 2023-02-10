@@ -34,19 +34,15 @@ POSITIVE_REWARD = cfg.POSITIVE_REWARD
 INTERACTIVE_OBJECTS_ROBOT = cfg.INTERACTIVE_OBJECTS_ROBOT
 
 #ANNOTATION-RELATED VARIABLES
-root = "./video_annotations/train/*"
+
 root_realData = "./video_annotations/Real_data/train/*" #!
 
 #List of videos
-videos = glob.glob(root)
 videos_realData = glob.glob(root_realData) #Folders
 
-
-random.shuffle(videos)
 random.shuffle(videos_realData)
 
-total_videos = len(videos)
-total_videos_realData = len(videos_realData)
+total_videos = len(videos_realData)
 
 
 video_idx = 0 #Index of current video
@@ -138,17 +134,13 @@ class BasicEnv(gym.Env):
         
         if self.test:
             print("==== TEST SET ====")
-            root = "./video_annotations/test/*"
+
             root_realData = "./video_annotations/Real_data/test/*" #!
-            
-            videos = glob.glob(root)            
             videos_realData = glob.glob(root_realData)           
 
-            random.shuffle(videos)
             random.shuffle(videos_realData)
             
-            total_videos = len(videos)
-            total_videos_realData = len(videos_realData)
+            total_videos = len(videos_realData)
             
             labels_pkl = 'labels_margins'
             path_labels_pkl = os.path.join(videos_realData[video_idx], labels_pkl)
@@ -884,6 +876,8 @@ class BasicEnv(gym.Env):
             # print("Threshold: ",threshold)
 
 
+        prev_state = self.prev_state
+        
         if frame >= annotations['frame_init'].iloc[-1]:
   
             print("Action index when surpassed init of last acton: ", action_idx)
@@ -970,6 +964,8 @@ class BasicEnv(gym.Env):
                     self.flags['freeze state']  = False
     
                 self.transition() #Transition to a new state
+                
+                next_state = self.state
 
                 
                 #PRINT STATE-ACTION TRANSITION & REWARD
@@ -1001,7 +997,7 @@ class BasicEnv(gym.Env):
 
         #print("Reward: ", reward)
         
-        prev_state = 0
+        #prev_state = 0
 
         return prev_state, self.state, reward, done, optim,  self.flags['pdb'], self.reward_time, self.reward_energy, execution_times       
         
@@ -1025,8 +1021,8 @@ class BasicEnv(gym.Env):
         
         
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #if video_idx+1 < total_videos:
-        if video_idx+1 < total_videos_realData:
+
+        if video_idx+1 < total_videos:
             video_idx += 1
 
         else:
@@ -1425,39 +1421,51 @@ class BasicEnv(gym.Env):
         	# 2) !!!!!!!!!!!! GET STATE FROM REAL DATA --------- !!!!!!!!!!!
         	
         	# 2.1 ) Read the pickle
-        	frame_to_read = int(np.floor(frame/6)) 
-        	frame_pkl = 'frame_' + str(frame_to_read).zfill(4) # Name of the pickle (without the .pkl extension)
-        	path_frame_pkl = os.path.join(videos_realData[video_idx], frame_pkl) # Path to pickle as ./root_realData/videos_realData[video_idx]/frame_pkl
+        frame_to_read = int(np.floor(frame/6)) 
+        frame_pkl = 'frame_' + str(frame_to_read).zfill(4) # Name of the pickle (without the .pkl extension)
+        path_frame_pkl = os.path.join(videos_realData[video_idx], frame_pkl) # Path to pickle as ./root_realData/videos_realData[video_idx]/frame_pkl
         	
         	#print("This is the path to the frame picke: ", path_frame_pkl)
         	
-        	read_state = np.load(path_frame_pkl, allow_pickle=True) # Contents of the pickle. In this case, a 110 dim vector with the Pred Ac., Reg. Ac and VWM
+        read_state = np.load(path_frame_pkl, allow_pickle=True) # Contents of the pickle. In this case, a 110 dim vector with the Pred Ac., Reg. Ac and VWM
         	
         	#print("Contenido del pickle en el frame", frame, "\n", read_state)
         	
-        	data = read_state['data']
-        	z = read_state['z']
-        	pre_softmax = read_state['pre_softmax'] 
+        data = read_state['data']
+        z = read_state['z']
+        pre_softmax = read_state['pre_softmax'] 
         	
-        	data[0:33] = pre_softmax    
+        data[0:33] = pre_softmax    
         	
         	# 2.2 ) Generate state
         	
         	# OBJECTS IN TABLE
         	
-        	variations_in_table = len(memory_objects_in_table)
-        	if variations_in_table < 2:
-        		oit_prev = memory_objects_in_table[0]
-        		oit = memory_objects_in_table[0]
-        	else:
-        		oit_prev = memory_objects_in_table[variations_in_table-2]
-        		oit = memory_objects_in_table[variations_in_table-1]
+        variations_in_table = len(memory_objects_in_table)
+        if variations_in_table < 2:
+        	oit_prev = memory_objects_in_table[0]
+        	oit = memory_objects_in_table[0]
+        else:
+        	oit_prev = memory_objects_in_table[variations_in_table-2]
+        	oit = memory_objects_in_table[variations_in_table-1]
         		
-        	prev_state = concat_3_vectors(data, oit_prev, z)
-        	state = concat_3_vectors(data, oit, z)
+        #prev_state = concat_3_vectors(data, oit_prev, z)
+        state = concat_3_vectors(data, oit, z)
+        
+        
+        
+        # OLD WAY OF OBTAINING PREV_STATE
+        
+        
+        na_prev = one_hot(annotations['label'][action_idx-1], N_ATOMIC_ACTIONS)
+        
+        data[0:33] = na_prev
+        
+        prev_state = concat_3_vectors(data, oit_prev, z)
+        
         	
-        	self.state = state
-        	self.prev_state = prev_state
+        self.state = state
+        self.prev_state = prev_state
 
 
 

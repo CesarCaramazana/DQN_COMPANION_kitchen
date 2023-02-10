@@ -8,12 +8,12 @@ REPLAY_MEMORY = 1024 #Size of replay memory (deque object)
 NUM_EPOCH = 2000
 NUM_EPISODES = 61 #"Number of training epochs"
 BATCH_SIZE = 1024
-GAMMA = 0.2 #Discount rate for future rewards
+GAMMA = 0.0 #Discount rate for future rewards
 EPS_START = 0.99 #Initial exporation rate
 EPS_END = 0.01 #Final exploration rate
 EPS_DECAY = NUM_EPOCH #Exploration rate decay factor
 TARGET_UPDATE = 10 #Episodes between target network update (policy net parameters -> target net)
-LR = 1e-7 #Learning rate
+LR = 5e-4 #Learning rate
 POSITIVE_REWARD = 0
 
 ROOT = './Checkpoints/'
@@ -28,7 +28,6 @@ DECISION_RATE = 30
 #---------------------------------------------------------------------------------
 
 VERSION = 4 
-#If VERSION == 1, the STATE is the NEXT ATOMIC ACTION. If VERSION == 2, the STATE is the concatenation of the NEXT ATOMIC ACTION and the VISUAL WORKING MEMORY. So far, in both cases the reward only depends on the action taken considering only the NEXT ACTION. VERSION == 3, STATE = NA + VWM + AO
 
 N_ATOMIC_ACTIONS = 33 #Number of total atomic actions. 33 = 31 actions + 1 'other manipulation' + 1 Terminal state
 N_OBJECTS = 23 #Number of objects. Input variables: "Active Object" and "VWM" (Visual Working Memory)
@@ -287,7 +286,6 @@ def print_setup(args):
 	print("| NUMBER OF EPISODES        | {0:<6g}".format(args.num_episodes), " |")
 	print("| BATCH SIZE                | {0:<6g}".format(args.batch_size), " |")
 	print("| LEARNING RATE             | {0:<6g}".format(args.lr), " |")
-	print("| SAVE MODEL                | {0:<6g}".format(args.save_model), " |")
 	print("| LOAD MODEL                | {0:<6g}".format(args.load_model), " |")
 	print("| LOAD EPISODE              | {0:<6g}".format(args.load_episode), " |")
 	

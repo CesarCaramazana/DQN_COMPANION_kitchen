@@ -25,14 +25,14 @@ from aux import *
 import argparse
 import pdb
 from datetime import datetime
-# import sched, time
+
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--pretrained', action='store_true', default=False, help="(bool) Inizializate the model with a pretrained moddel")
-parser.add_argument('--freeze', type=str, default='False', help="(bool) Inizializate the model with a pretrained moddel freezing the layers but the last one")
+parser.add_argument('--pretrained', action='store_true', default=False, help="(bool) Inizializate the model with a pretrained model.")
+parser.add_argument('--freeze', type=str, default='False', help="(bool) Inizializate the model with a pretrained moddel freezing the layers but the last one.")
 parser.add_argument('--experiment_name', type=str, default=cfg.EXPERIMENT_NAME, help="(str) Name of the experiment. Used to name the folder where the model is saved. For example: my_first_DQN.")
-parser.add_argument('--save_model', action='store_true', default=False, help="Save a checkpoint in the EXPERIMENT_NAME folder.")
+
 parser.add_argument('--load_model', action='store_true', help="Load a checkpoint from the EXPERIMENT_NAME folder. If no episode is specified (LOAD_EPISODE), it loads the latest created file.")
 parser.add_argument('--load_episode', type=int, default=0, help="(int) Number of episode to load from the EXPERIMENT_NAME folder, as the sufix added to the checkpoints when the save files are created. For example: 500, which will load 'model_500.pt'.")
 parser.add_argument('--batch_size', type=int, default=cfg.BATCH_SIZE, help="(int) Batch size for the training of the network. For example: 64.")
@@ -52,9 +52,7 @@ args = parser.parse_args()
 PRETRAINED = args.pretrained
 # print(PRETRAINED)
 FREEZE = args.freeze
-# pdb.set_trace()
-SAVE_MODEL = args.save_model
-SAVE_EPISODE = cfg.SAVE_EPISODE
+
 EXPERIMENT_NAME = args.experiment_name
 LOAD_MODEL = args.load_model
 LOAD_EPISODE = args.load_episode
@@ -79,7 +77,6 @@ device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cp
 #Lists to debug training
 total_loss = [] #List to save the mean values of the episode losses.
 episode_loss = [] #List to save every loss value during a single episode.
-best_loss = [0, 9999]
 
 total_reward = [] #List to save the total reward gathered each episode.
 ex_rate = [] #List to save the epsilon value after each episode.
@@ -103,7 +100,6 @@ n_actions = env.action_space.n #Dimensionality of the output of the DQN
 policy_net = DQN(n_states, n_actions).to(device)
 target_net = DQN(n_states, n_actions).to(device)
 
-child_counter = 0
 
 if PRETRAINED:
     path_model = './Pretrained/noise099.pt' #Path al modelo pre-entrenado
@@ -122,7 +118,7 @@ target_net.eval()
 
 
 optimizer = optim.Adam(policy_net.parameters(), lr=LR) 
-# scheduler = optim.lr_scheduler.StepLR(optimizer, step_size= 800, gamma= 0.99)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size= 20, gamma= 0.99)
 
 memory = ReplayMemory(REPLAY_MEMORY)
 
@@ -345,7 +341,8 @@ steps_done = 0
 for i_epoch in range (args.load_episode,NUM_EPOCH):
 
     
-    steps_done += 1
+    steps_done += 1   
+    
     # Each epoch has a training and validation phase
     print("| ----------- EPOCH " + str(i_epoch) + " ----------- ")
     #for phase in ['train', 'val']:
@@ -422,8 +419,8 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                     memory.push(decision_state, action_, next_state, reward)
                     
                     # Semi -supervised case where the correction is also taken into account to train the DQN
-                    #if (action != correct_action):
-                    #	memory.push(decision_state, torch.tensor([[correct_action]], device=device), next_state, torch.tensor([0], device=device))
+                    if (action != correct_action):
+                    	memory.push(decision_state, torch.tensor([[correct_action]], device=device), next_state, torch.tensor([0], device=device))
                     
                     optimize_model(phase)
                     num_optim += 1
@@ -464,6 +461,8 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             
             if i_episode % TARGET_UPDATE == 0: #Copy the Policy Network parameters into Target Network
                 target_net.load_state_dict(policy_net.state_dict())
+                scheduler.step()
+                
 
                             
         total_time_video = list(list(zip(*total_times_execution))[0])
@@ -527,11 +526,9 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                 'steps': steps_done            
                 }, os.path.join(path, model_name))
 
-        
-    
+
             ex_rate.append(EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY))
-            # print(len(total_loss))
-            # pdb.set_trace()
+
             total_loss_epoch_train.append(sum(total_loss))
             total_reward_epoch_train.append(sum(total_reward))
             total_reward_energy_epoch_train.append(sum(total_reward_energy_ep))
@@ -552,7 +549,10 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_results_train = [total_CA_intime_epoch_train,total_CA_late_epoch_train,total_IA_intime_epoch_train,total_IA_late_epoch_train,total_UAC_intime_epoch_train,total_UAC_late_epoch_train,total_UAI_intime_epoch_train,total_UAI_late_epoch_train,total_CI_epoch_train,total_II_epoch_train]
            
             
-            plot_each_epoch(i_epoch, phase,save_path, total_results_train,total_loss_epoch_train,total_reward_epoch_train,total_time_video,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate)
+            #plot_each_epoch(i_epoch, phase,save_path, total_results_train,total_loss_epoch_train,total_reward_epoch_train,total_time_video,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate)
+            
+            
+            
             # if i_epoch == NUM_EPOCH-1:
             data_train = {
             'CA_intime': total_CA_intime_epoch_train,
@@ -599,7 +599,11 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_CI_epoch_val.append(sum(total_CI))
             total_II_epoch_val.append(sum(total_II))
             total_results = [total_CA_intime_epoch_val,total_CA_late_epoch_val,total_IA_intime_epoch_val,total_IA_late_epoch_val,total_UAC_intime_epoch_val,total_UAC_late_epoch_val,total_UAI_intime_epoch_val,total_UAI_late_epoch_val,total_CI_epoch_val,total_II_epoch_val]
+            
+            
             plot_each_epoch(i_epoch, phase,save_path, total_results,total_loss_epoch_val,total_reward_epoch_val,total_time_video,total_time_execution_epoch_val,total_reward_energy_epoch_val,total_reward_time_epoch_val)
+            
+            
             plot_each_epoch_together(i_epoch,save_path, total_results_train,total_loss_epoch_train,total_reward_epoch_train,total_time_video,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate,total_results,total_loss_epoch_val,total_reward_epoch_val,total_time_execution_epoch_val,total_reward_energy_epoch_val,total_reward_time_epoch_val)
             
             # if i_epoch == NUM_EPOCH-1:
@@ -618,74 +622,14 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             'II': total_II_epoch_val
             }
             
-            # if i_epoch == 0: 
+
             df_val = pd.DataFrame(data_val)
-            # else:
-            #     df_new_val = pd.DataFrame(data_val)
-            #     df_val = pd.concat([df_val,df_new_val])
-            
-            
             df_val.to_csv(save_path+'/data_val.csv')
             
-    
-"""                
-#Save best episode in a text file
-if SAVE_MODEL:
-    with open(ROOT + EXPERIMENT_NAME + '/best_episode.txt', 'w') as f:
-        f.write(str(best_loss[0]))
-"""
+
 t2 = time.time() - t1 #Tak
 
 
 print("\nTraining completed in {:.1f}".format(t2), "seconds.\n")
 
 
-# keys_video = df['video'][0:cfg.NUM_EPISODES]
-
-# iteraction_x = []
-# video_x = []
-# for idx_key,val_key in enumerate(keys_video):
-#     iteraction_x.append(list(df[df['video']==val_key]['iteraction']))
-#     video_x.append([val_key]*cfg.NUM_EPOCH)
-        
-# for idx_plt in range(0,cfg.NUM_EPISODES):
-#     if idx_plt == 0:
-#         cont = idx_plt + 1
-#         fig3 = plt.figure(figsize=(28, 12))
-#         plt.suptitle("Time execution", fontsize=20)
-#     else: 
-#         cont += 1
-    
-#     plt.subplot(240 + cont)
-#     plt.title("Time Video "+str(idx_plt), fontsize=14)
-#     plt.plot(iteraction_x[idx_plt])
-#     plt.plot(video_x[idx_plt])
-#     plt.legend(["Iteraction", "Video"])   
-#     plt.xlabel("Epoch")
-#     plt.ylabel("Frames")
-    
-#     if idx_plt == cfg.NUM_EPISODES - 1:
-#         fig3.savefig(save_path+'/train_time_results_per_video'+str(idx_plt)+'.jpg')
-
-#         # plt.show()
-#     if cont==8:
-#         fig3.savefig(save_path+'/train_time_results_per_video'+str(idx_plt)+'.jpg')
-
-#         # plt.show()
-#         fig3 = plt.figure(figsize=(28, 12))
-#         plt.suptitle("Time execution", fontsize=20)
-        
-#         cont = 0
-   
-
-
-
-# total_times_execution
-
-# plt.plot()
-#print("GLOBAL: ", steps_done)
-#print("EXPLORATION RATE: ", (EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY)))
-
-#print("Memory again? ", memory.show_batch(20))
-
-# ----------------------------------

@@ -329,8 +329,6 @@ save_path = os.path.join(path, "Graphics")
 if not os.path.exists(save_path): os.makedirs(save_path)
 
 
-for i in range(NUM_EPISODES):
-	create_graph(save_path, i)
 
 
 fig = plt.figure(figsize=(34, 12))
@@ -428,5 +426,7 @@ else: fig3.savefig(save_path+'/00_trainEPOCHS_time.jpg')
 plt.close()
 
 
-
+if env.test: 
+	for i in range(NUM_EPISODES):
+		create_graph(save_path, i)
 

@@ -419,8 +419,8 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                     memory.push(decision_state, action_, next_state, reward)
                     
                     # Semi -supervised case where the correction is also taken into account to train the DQN
-                    if (action != correct_action):
-                    	memory.push(decision_state, torch.tensor([[correct_action]], device=device), next_state, torch.tensor([0], device=device))
+                    #if (action != correct_action):
+                    #	memory.push(decision_state, torch.tensor([[correct_action]], device=device), next_state, torch.tensor([0], device=device))
                     
                     optimize_model(phase)
                     num_optim += 1

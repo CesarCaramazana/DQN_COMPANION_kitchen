@@ -49,6 +49,8 @@ video_idx = 0 #Index of current video
 action_idx = 0 #Index of next_action
 frame = 0 #Current frame
 
+correct_action = -1
+
 
 labels_pkl = 'labels_margins'
 path_labels_pkl = os.path.join(videos_realData[video_idx], labels_pkl)
@@ -65,16 +67,8 @@ class BasicEnv(gym.Env):
     
     def __init__(self, display=False, test=False):
         self.action_space = gym.spaces.Discrete(ACTION_SPACE) #[0, ACTION_SPACE-1]
-        
-        if VERSION == 1:
-            self.observation_space = gym.spaces.Discrete(N_ATOMIC_ACTIONS) #State as Next Action
-        elif VERSION == 2:
-            self.observation_space = gym.spaces.Discrete(N_ATOMIC_ACTIONS+N_OBJECTS) #State as Next Action + VWM     
-        elif VERSION == 3:
-            self.observation_space = gym.spaces.Discrete(N_ATOMIC_ACTIONS+N_OBJECTS*2)
-        
-        elif VERSION == 4:
-        	self.observation_space = gym.spaces.Discrete(1157) # Next Action + Action Recog + VWM + Obj in table + Z 
+
+        self.observation_space = gym.spaces.Discrete(1157) # Next Action + Action Recog + VWM + Obj in table + Z 
             
         self.state = [] #One hot encoded state        
         self.total_reward = 0
@@ -479,7 +473,7 @@ class BasicEnv(gym.Env):
         return threshold, fr_execution, fr_end 
     
     def evaluation(self, action, fr_execution, fr_end, frame_post):
-        global frame, action_idx, inaction, new_energy
+        global frame, action_idx, inaction, new_energy, correct_action
         
         optim = True
         simple_reward = self._take_action(action)
@@ -783,7 +777,7 @@ class BasicEnv(gym.Env):
             done: (bool) True if the episode is finished (the recipe has reached its end).
             info:    
         """
-        global frame, action_idx, annotations, inaction, memory_objects_in_table
+        global frame, action_idx, annotations, inaction, memory_objects_in_table, correct_action
         
 
         

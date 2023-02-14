@@ -25,29 +25,14 @@ from aux import *
 import argparse
 import pdb
 from datetime import datetime
-# import sched, time
-
-"""
-
-MOVING AVERAGE
-
-
-"""
-
-def moving_average(x, w):
-    return np.convolve(x, np.ones(w), 'valid') / w
-
-
-
-
-
-
 
 
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--pretrained', action='store_true', default=False, help="(bool) Inizializate the model with a pretrained model.")
+parser.add_argument('--freeze', type=str, default='False', help="(bool) Inizializate the model with a pretrained moddel freezing the layers but the last one.")
 parser.add_argument('--experiment_name', type=str, default=cfg.EXPERIMENT_NAME, help="(str) Name of the experiment. Used to name the folder where the model is saved. For example: my_first_DQN.")
-parser.add_argument('--save_model', action='store_true', default=False, help="Save a checkpoint in the EXPERIMENT_NAME folder.")
+
 parser.add_argument('--load_model', action='store_true', help="Load a checkpoint from the EXPERIMENT_NAME folder. If no episode is specified (LOAD_EPISODE), it loads the latest created file.")
 parser.add_argument('--load_episode', type=int, default=0, help="(int) Number of episode to load from the EXPERIMENT_NAME folder, as the sufix added to the checkpoints when the save files are created. For example: 500, which will load 'model_500.pt'.")
 parser.add_argument('--batch_size', type=int, default=cfg.BATCH_SIZE, help="(int) Batch size for the training of the network. For example: 64.")
@@ -64,9 +49,10 @@ parser.add_argument('--display', action='store_true', default=False, help="Displ
 parser.add_argument('--cuda', action='store_true', default=True, help="Use GPU if available.")
 args = parser.parse_args()
 
+PRETRAINED = args.pretrained
+# print(PRETRAINED)
+FREEZE = args.freeze
 
-SAVE_MODEL = args.save_model
-SAVE_EPISODE = cfg.SAVE_EPISODE
 EXPERIMENT_NAME = args.experiment_name
 LOAD_MODEL = args.load_model
 LOAD_EPISODE = args.load_episode
@@ -80,6 +66,8 @@ EPS_END = args.eps_end
 EPS_DECAY = args.eps_decay
 TARGET_UPDATE = args.target_update
 LR = args.lr
+POSITIVE_REWARD = cfg.POSITIVE_REWARD
+NO_ACTION_PROBABILITY = cfg.NO_ACTION_PROBABILITY
 
 ROOT = args.root
 
@@ -91,16 +79,20 @@ device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cp
 #Lists to debug training
 total_loss = [] #List to save the mean values of the episode losses.
 episode_loss = [] #List to save every loss value during a single episode.
-best_loss = [0, 9999]
 
 total_reward = [] #List to save the total reward gathered each episode.
 ex_rate = [] #List to save the epsilon value after each episode.
 
 
-
-
 #Environment - Custom basic environment for kitchen recipes
 env = gym.make("gym_basic:basic-v0", display=args.display, disable_env_checker=True)
+
+
+if env.test:
+    NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/test/*"))
+else:
+    NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/train/*"))
+
 env.reset() #Set initial state
 
 n_states = env.observation_space.n #Dimensionality of the input of the DQN
@@ -109,14 +101,26 @@ n_actions = env.action_space.n #Dimensionality of the output of the DQN
 #Networks and optimizer
 policy_net = DQN(n_states, n_actions).to(device)
 target_net = DQN(n_states, n_actions).to(device)
-policy_net.apply(init_weights)
+
+
+if PRETRAINED:
+    path_model = './Pretrained/model_real_data.pt' #Path al modelo pre-entrenado
+    
+    print("USING PRETRAINED MODEL---------------")
+    
+    policy_net.load_state_dict(torch.load(path_model))
+    policy_net.to(device)
+   
+
+else:
+    policy_net.apply(init_weights) # si no hay pretained
+
 
 target_net.eval()
-policy_net.train()
 
-#optimizer = optim.RMSprop(policy_net.parameters(), lr=LR)
-optimizer = optim.Adam(policy_net.parameters(), lr=LR)
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size= 800, gamma= 0.99)
+
+optimizer = optim.Adam(policy_net.parameters(), lr=LR) 
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size= 20, gamma= 0.99)
 
 memory = ReplayMemory(REPLAY_MEMORY)
 
@@ -128,13 +132,15 @@ steps_done = 0
 
 # ----------------------------------
 
-if LOAD_MODEL:    
+if LOAD_MODEL:  
+    # pdb.set_trace()
     path = os.path.join(ROOT, EXPERIMENT_NAME)
     if LOAD_EPISODE: 
         model_name = 'model_' + str(LOAD_EPISODE) + '.pt' #If an episode is specified
         full_path = os.path.join(path, model_name)
 
     else:
+        pdb.set_trace()
         list_of_files = glob.glob(path+ '/*') 
         full_path = max(list_of_files, key=os.path.getctime) #Get the latest file in directory
 
@@ -150,19 +156,49 @@ if LOAD_MODEL:
     steps_done = checkpoint['steps']
     print("-"*30)
 
+
 target_net.load_state_dict(policy_net.state_dict())
 
+def post_processed_possible_actions(out,index_posible_actions):
+    """
+    Function that performs a post-processing of the neural network output. 
+    In case the output is an action that is not available, either because 
+    of the object missing or left on the table, the most likely possible action will be selected 
+    from the output of the neural network,
+
+    Parameters
+    ----------
+    out : (tensor)
+        DQN output.
+    index_posible_actions : (list)
+        Posible actions taken by the robot according to the objects available.
+
+    Returns
+    -------
+    (tensor)
+        Action to be performed by the robot.
+
+    """
+    action_pre_processed = out.max(1)[1].view(1,1)
+     
+    if action_pre_processed.item() in index_posible_actions:
+        return action_pre_processed
+    else:
+        out = out.cpu().numpy()
+        out = out[0]
+   
+        idx = np.argmax(out[index_posible_actions])
+        action = index_posible_actions[idx]
+
+        return torch.tensor([[action]], device=device, dtype=torch.long)
     
 
-
-
-
-
-
 #Action taking
-def select_action(state):
+def select_action(state, phase):
     """
     Function that chooses which action to take in a given state based on the exploration-exploitation paradigm.
+    This action will always be what is referred to as a possible action; the actions possible by the robot are 
+    defined by the objects available in its environment.
     Input:
         state: (tensor) current state of the environment.
     Output:
@@ -171,35 +207,79 @@ def select_action(state):
     global steps_done
     sample = random.random() #Generate random number [0, 1]
     eps_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY) #Get current exploration rate
-
-    if sample > eps_threshold: #If the random number is higher than the current exploration rate, the policy network determines the best action.
+    
+    posible_actions = env.possible_actions_taken_robot()
+    index_posible_actions = [i for i, x in enumerate(posible_actions) if x == 1]
+    
+    if phase == 'val':
         with torch.no_grad():
             out = policy_net(state)
+            action = post_processed_possible_actions(out,index_posible_actions)
+            # pdb.set_trace()
+            return action
+    else:
+         if sample > eps_threshold: #If the random number is higher than the current exploration rate, the policy network determines the best action.
+             with torch.no_grad():
+                 out = policy_net(state)
+                 action = post_processed_possible_actions(out,index_posible_actions)
+                 # pdb.set_trace()
+                 return action
+         else:
+             
+             if NO_ACTION_PROBABILITY != 0:
+                 index_no_action = index_posible_actions.index(18)
+                 
+                 weights = [10]*len(index_posible_actions)
+                 weights[index_no_action] = cfg.NO_ACTION_PROBABILITY
+             
+                 # print(index_action)
+                 # pdb.set_trace()
+                 action = random.choices(index_posible_actions, weights, k=1)[0]
+             else:
+                 index_action = random.randrange(len(index_posible_actions))
+                 action = index_posible_actions[index_action]
+    
+                
+                # pdb.set_trace()
+             return torch.tensor([[action]], device=device, dtype=torch.long)
 
-            return out.max(1)[1].view(1,1)
 
-    else: #If the random number is lower than the current exploration rate, return a random action.
-        return torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long)
+def action_rate(decision_cont,state,phase,prev_decision_rate):
+    """
+    Function that sets the rate at which the robot makes decisions.
 
-
-def action_rate(decision_cont,state):
-   
-    if decision_cont % cfg.DECISION_RATE == 0: 
-        action_selected = select_action(state)
+    """
+    if cfg.DECISION_RATE == "random":
+        
+        if phase == 'train':
+            if decision_cont == 1:
+                decision_rate = random.randrange(10,150)
+                prev_decision_rate = decision_rate
+            else:
+                 decision_rate = prev_decision_rate
+        else:
+            decision_rate = 20
+             
+    else:
+        decision_rate = cfg.DECISION_RATE
+        prev_decision_rate = " "
+        
+    if decision_cont % decision_rate == 0:  
+        action_selected = select_action(state,phase)
         flag_decision = True 
     else:
         action_selected = 18
         flag_decision = False
-    
-    return action_selected, flag_decision
-
+    # print("RANDOM NUMBER: ",decision_rate)
+    # pdb.set_trace()
+    return action_selected, flag_decision, prev_decision_rate
     
 
 # TRAINING OPTIMIZATION FUNCTION
 # ----------------------------------
 
 
-def optimize_model():
+def optimize_model(phase):
     # print(len(memory))
     
         #print("Memory capacity is lower than the batch size")
@@ -217,12 +297,13 @@ def optimize_model():
     action_batch = torch.cat(batch.action)
     reward_batch = torch.cat(batch.reward)    
     
- 
-    
+    # print(state_batch)
+    # pdb.set_trace()
     out = policy_net(state_batch)
     
     state_action_values = policy_net(state_batch).gather(1, action_batch) #Forward pass on the policy network -> Q values for every action -> Keep only Qvalue for the action that we took when exploring (action_batch), for which we have the reward (reward_batch) and the transition (non_final_next_states).
     
+    # pdb.set_trace()
     next_state_values = torch.zeros(t_batch_size, device=device)
     next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0].detach() #Get Q value for next state with the Target Network. Q(s')
     
@@ -235,11 +316,14 @@ def optimize_model():
     #print("LOSS: ", loss)
     episode_loss.append(loss.detach().item())
     
-    optimizer.zero_grad()
-    loss.backward()
-    for param in policy_net.parameters():
-        param.grad.data.clamp_(-1, 1)
-    optimizer.step()
+    if phase == 'train':
+        optimizer.zero_grad()
+        loss.backward()
+        
+        for param in policy_net.parameters():
+            param.grad.data.clamp_(-1,1)
+
+        optimizer.step()
     # scheduler.step()    
 
 
@@ -252,8 +336,6 @@ print("\nTraining...")
 print("_"*30)
 
 
-
-
 now = datetime.now()
 dt_string = now.strftime("%d-%m-%Y_%H:%M:%S")
 
@@ -264,669 +346,477 @@ decision_cont = 0
 
 now = datetime.now()
 dt_string = now.strftime("%d-%m-%Y_%H:%M")
-total_times_execution = []
-total_reward_energy_ep = []
-total_reward_time_ep = []
 
-total_time_execution_epoch = []
-total_reward_epoch = []
-total_reward_energy_epoch = []
-total_reward_time_epoch = []
 
 NUM_EPOCH = cfg.NUM_EPOCH
 epoch_loss = []
 
-total_loss_epoch =[]
-total_reward_vs_optim = []
-total_reward_epoch_vs_optim = []
+total_loss_epoch_train =[]
 
+total_time_execution_epoch_train = []
+total_reward_epoch_train = []
+total_reward_energy_epoch_train = []
+total_reward_time_epoch_train = []
 
-total_CA_intime_epoch = []
-total_CA_late_epoch = []
-total_IA_intime_epoch = []
-total_IA_late_epoch = []
-total_UA_intime_epoch = []
-total_UA_late_epoch = []
-total_CI_epoch = []
-total_II_epoch = []
+total_CA_intime_epoch_train = []
+total_CA_late_epoch_train = []
+total_IA_intime_epoch_train = []
+total_IA_late_epoch_train = []
+total_UAC_intime_epoch_train = []
+total_UAC_late_epoch_train = []
+total_UAI_intime_epoch_train = []
+total_UAI_late_epoch_train = []
+total_CI_epoch_train = []
+total_II_epoch_train = []
 
-steps_done = 0 #esto antes no estaba
+total_loss_epoch_val =[]
 
-for i_epoch in range (0,NUM_EPOCH):
-    total_loss = []
-    total_reward_vs_optim = []
-    total_reward = []
-    total_reward_energy_ep = []
-    total_reward_time_ep = []
+total_time_execution_epoch_val = []
+total_reward_epoch_val = []
+total_reward_energy_epoch_val = []
+total_reward_time_epoch_val = []
+
+total_CA_intime_epoch_val = []
+total_CA_late_epoch_val = []
+total_IA_intime_epoch_val = []
+total_IA_late_epoch_val = []
+total_UAC_intime_epoch_val = []
+total_UAC_late_epoch_val = []
+total_UAI_intime_epoch_val = []
+total_UAI_late_epoch_val = []
+total_CI_epoch_val = []
+total_II_epoch_val = []
+
+prev_decision_rate = 1
+steps_done = 0 
+
+for i_epoch in range (args.load_episode,NUM_EPOCH):
+
     
-    total_CA_intime = []
-    total_CA_late = []
-    total_IA_intime = []
-    total_IA_late = []
-    total_UA_intime = []
-    total_UA_late = []
-    total_CI = []
-    total_II = []
-    
-    total_times_execution = []
-    
-    steps_done += 1
-    
+    steps_done += 1   
+    decision_index_histogram_TRAIN = []
+    decision_action_index_histogram_TRAIN = []
+
+    good_reward_TRAIN = []
+    good_reward_action_TRAIN = []
+    good_reward_noaction_TRAIN = []
+    bad_reward_TRAIN = []
+
+    decision_index_histogram_VAL = []
+    decision_action_index_histogram_VAL = []
+
+    good_reward_VAL = []
+    good_reward_action_VAL = []
+    good_reward_noaction_VAL = []
+    bad_reward_VAL = []
+    # Each epoch has a training and validation phase
     print("| ----------- EPOCH " + str(i_epoch) + " ----------- ")
-    for i_episode in range(LOAD_EPISODE, NUM_EPISODES):
-        if(args.display): print("| EPISODE #", i_episode , end='\n')
-        else: print("| EPISODE #", i_episode , end='\r')
-    
-        state = torch.tensor(env.reset(), dtype=torch.float, device=device).unsqueeze(0)
-    
-        episode_loss = []
-        done = False
+    for phase in ['train', 'val']:
+    # for phase in ['train']:
+        total_loss = []
+        total_reward = []
+        total_reward_energy_ep = []
+        total_reward_time_ep = []
+        total_reward_error_pred = []
+       
         
+        total_CA_intime = []
+        total_CA_late = []
+        total_IA_intime = []
+        total_IA_late = []
+        total_UAC_intime = []
+        total_UAC_late = []
+        total_UAI_intime = []
+        total_UAI_late = []
+        total_CI = []
+        total_II = []
         
-        num_optim = 0
-            
-        reward_energy_ep = 0
-        reward_time_ep = 0
+        total_times_execution = []
+        if phase == 'train':
+            policy_net.train()  # Set model to training mode
+        else:
+            policy_net.eval()   # Set model to evaluate mode
+
+        for i_episode in range(0, NUM_EPISODES):
+            if(args.display): print("| EPISODE #", i_episode , end='\n')
+            else: print("| EPISODE #", i_episode , end='\r')
         
-        
-        for t in count(): 
-            # action = select_action(state).item()
-            decision_cont += 1
-            action, flag_decision = action_rate(decision_cont, state)
+            state = torch.tensor(env.reset(), dtype=torch.float, device=device).unsqueeze(0)
+            # pdb.set_trace()
+            episode_loss = []
+            done = False
+            to_optim = True
             
-            if flag_decision: 
-                action_ = action
-                action = action.item()
+            decision_state = state
             
-            array_action = [action,flag_decision]
-            prev_state, next_state, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times = env.step(array_action)
-            
-            reward = torch.tensor([reward], device=device)
-            prev_state = torch.tensor([prev_state], dtype=torch.float,device=device)
-            next_state = torch.tensor([next_state], dtype=torch.float,device=device)
-            # next_state = torch.tensor(env.state, dtype=torch.float, device=device).unsqueeze(0)
-            reward_energy_ep += reward_energy
-            reward_time_ep += reward_time
+            num_optim = 0
+            reward_energy_ep = 0
+            reward_time_ep = 0
+            error_pred_ep = 0
+            total_pred_ep = 0
+                 
+            for t in count(): 
+
+                decision_cont += 1
+                action, flag_decision, prev_decision_rate = action_rate(decision_cont, state, phase, prev_decision_rate)
+                
+                if flag_decision: 
+                    action_ = action
+                    action = action.item()
+                    frame_decision = env.get_frame()
+                    action_idx = env.get_action_idx()
+                    annotations = env.get_annotations()
+                    decision_cont = 0
+                    
+                    if to_optim:
+                        decision_state = state
+                        to_optim = False
+                        
+                
+                array_action = [action,flag_decision,phase]
+                next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times, correct_action, type_threshold, error_pred, total_pred = env.step(array_action)
+      
+                    
+                reward = torch.tensor([reward], device=device)
+
+                next_state = torch.tensor(env.state, dtype=torch.float, device=device).unsqueeze(0)
+                reward_energy_ep += reward_energy
+                reward_time_ep += reward_time
+                error_pred_ep += error_pred
+                total_pred_ep += total_pred
+                 
+                if optim: #Only train if we have taken an action (f==30)                  
+                    
+                    reward = torch.tensor([reward], device=device)
+
+                    to_optim = True                    
+
+                    memory.push(decision_state, action_, next_state, reward)
+                    
+                    # Semi -supervised case where the correction is also taken into account to train the DQN
+                    #if (action != correct_action):
+                    #    memory.push(decision_state, torch.tensor([[correct_action]], device=device), next_state, torch.tensor([0], device=device))
+                    
+                    optimize_model(phase)
+                    num_optim += 1
+                    
+                    # DECISION FRAME HISTOGRAM
+                    if type_threshold != "second":
+                        fr_init_prev = annotations['frame_end'][action_idx-1]
+                        if action_idx > len(annotations):
+                            action_idx = len(annotations)-1
                             
-            if optim: #Only train if we have taken an action (f==30)
-                #print("OPTIMIZE NOW")
-                # print("\n------------- TRAIN -------------") 
-                # print("State: ", cfg.ATOMIC_ACTIONS_MEANINGS[undo_one_hot(prev_state[0][:33])])
-                # print("Next State: ",cfg.ATOMIC_ACTIONS_MEANINGS[undo_one_hot(next_state[0][:33])])
-                # print("Acción Robot: ",cfg.ROBOT_ACTIONS_MEANINGS[action])
-                # print("Reward: ",reward)
+                        if action_idx < 2:
+                            fr_init_prev = 0
+                        else:
+                            fr_init_prev = annotations['frame_end'][action_idx-2]
+                       
+    
+                        fr_init = annotations['frame_init'][action_idx]
+                        if type_threshold == "first":
+                            fr_init = annotations['frame_end'][action_idx-1]
+                        
+                        index_frame_decision = 1 - ((fr_init-frame_decision)/(fr_init-fr_init_prev))
+                    if phase=='train':
+                        decision_index_histogram_TRAIN.append(index_frame_decision)
+                        if action != 18:
+                            decision_action_index_histogram_TRAIN.append(index_frame_decision)
+                        
+                        if reward < 0:
+                            bad_reward_TRAIN.append(index_frame_decision)
+                        else:
+                            if action != 18:
+                                good_reward_action_TRAIN.append(index_frame_decision)
+                            else:
+                                good_reward_noaction_TRAIN.append(index_frame_decision)
+                    else:
+                        decision_index_histogram_VAL.append(index_frame_decision)
+                        if action != 18:
+                            decision_action_index_histogram_VAL.append(index_frame_decision)
+                        
+                        if reward < 0:
+                            bad_reward_VAL.append(index_frame_decision)
+                        else:
+                            if action != 18:
+                                good_reward_action_VAL.append(index_frame_decision)
+                            else:
+                                good_reward_noaction_VAL.append(index_frame_decision)
+
+                if not done: 
+                    state = next_state
+        
+                else: 
+                    next_state = None 
                 
-                # if flag_pdb: 
-                #     pdb.set_trace()
-    
-                memory.push(prev_state, action_, next_state, reward)
-                optimize_model()
-                num_optim += 1
-    
-    
-            if not done: 
-                state = next_state
-    
-            else: 
-                next_state = None
-                
+                if done: 
+                    if episode_loss: 
+  
+                        total_reward.append(env.get_total_reward())
+                        total_loss.append(mean(episode_loss))
+                        total_reward_energy_ep.append(reward_energy_ep)
+                        total_reward_time_ep.append(reward_time_ep)
+                        total_reward_error_pred.append(error_pred_ep/total_pred_ep)
+                       
+                        
+                        
+                    total_times_execution.append(execution_times)
+                    total_CA_intime.append(env.CA_intime)
+                    total_CA_late.append(env.CA_late)
+                    total_IA_intime.append(env.IA_intime)
+                    total_IA_late.append(env.IA_late)
+                    total_UAC_intime.append(env.UAC_intime)
+                    total_UAC_late.append(env.UAC_late)
+                    total_UAI_intime.append(env.UAI_intime)
+                    total_UAI_late.append(env.UAI_late)
+                    total_CI.append(env.CI)
+                    total_II.append(env.II)
+                    
+                    #memory.show_batch(10)
+              
+
+                    break #Finish episode
+        
+            #print(scheduler.optimizer.param_groups[0]['lr']) #Print LR (to check scheduler)
             
-            if done: 
-                if episode_loss: 
-                    #print("Count t: ", t)
-                    #total_reward.append(env.get_total_reward()/(t+1))
-    
-                    # print("Memory:  ", memory.show_batch(20))
-                    # print(env.get_total_reward())
-                   
-                    total_reward.append(env.get_total_reward())
-                    # total_reward_vs_optim.append(env.get_total_reward()/num_optim)
-                    
-                    total_loss.append(mean(episode_loss))
-                    # running_loss += mean(episode_loss)
-                    # running_reward += env.get_total_reward()
+            if i_episode % TARGET_UPDATE == 0: #Copy the Policy Network parameters into Target Network
+                target_net.load_state_dict(policy_net.state_dict())
+                scheduler.step()
                 
-                    total_reward_energy_ep.append(reward_energy_ep)
-                    total_reward_time_ep.append(reward_time_ep)
+
+                            
+        total_time_video = list(list(zip(*total_times_execution))[0])
+        total_time_iteraction = list(list(zip(*total_times_execution))[1])
+            
+        data = {'video': total_time_video,
+        'iteraction': total_time_iteraction,
+        'CA_intime': total_CA_intime,
+        'CA_late':total_CA_late,
+        'IA_intime': total_IA_intime,
+        'IA_late':total_IA_late,
+
+        'UAC_intime': total_UAC_intime,
+        'UAC_late': total_UAC_late,
+        'UAI_intime': total_UAI_intime,
+        'UAI_late': total_UAI_late,
+        'CI': total_CI,
+        'II': total_II,
+        
+        'prediction error': total_reward_error_pred
+        }
+        
+        if i_epoch == 0: 
+            df = pd.DataFrame(data)
+        else:
+            df_new = pd.DataFrame(data)
+            df = pd.concat([df,df_new])
+            
+        if phase == 'train':
+            if i_epoch % 5 == 0:
+                # print(PRETRAINED)
+               
+                if PRETRAINED == True:
+                    pre = '_Using_pretained_model'
+                else:
+                    pre = ''
                     
-                total_times_execution.append(execution_times)
-                total_CA_intime.append(env.CA_intime)
-                total_CA_late.append(env.CA_late)
-                total_IA_intime.append(env.IA_intime)
-                total_IA_late.append(env.IA_late)
-                total_UA_intime.append(env.UA_intime)
-                total_UA_late.append(env.UA_late)
-                total_CI.append(env.CI)
-                total_II.append(env.II)
-                # pdb.set_trace()
-                print("")
-                break #Finish episode
-    
-        #print(scheduler.optimizer.param_groups[0]['lr']) #Print LR (to check scheduler)
+                if FREEZE == True:
+                    freeze = '_Freezing_layers'
+                else: 
+                    freeze = ''
+                if NO_ACTION_PROBABILITY == 0:
+                    weight_prob = ' '
+                else:
+                    weight_prob = '_NO_ACTION_PROBABILITY_EXPLORATION_' + str(cfg.NO_ACTION_PROBABILITY)
+                    
+                if cfg.DECISION_RATE == 'random':
+                    decision_rate_name = '_DECISION_RATE_random_'
+                else:
+                    decision_rate_name = '_DECISION_RATE_'+str(cfg.DECISION_RATE)
+                    
+
+                path = os.path.join(ROOT, EXPERIMENT_NAME + '_' + dt_string + '_EPS_START_'+str(cfg.EPS_START) + decision_rate_name +weight_prob +'_LR_'+str(LR)+ pre + freeze + '_GAMMA_'+str(GAMMA))
+                    
+                
+                # path = os.path.join(ROOT, EXPERIMENT_NAME)
+                save_path = os.path.join(path, "Graphics") 
+                save_path_hist = os.path.join(save_path, "Histograms") 
+                model_name = 'model_' + str(i_epoch) + '.pt'
+                if not os.path.exists(path): os.makedirs(path)
+                if not os.path.exists(save_path): os.makedirs(save_path)
+                if not os.path.exists(save_path_hist): os.makedirs(save_path_hist)
+ 
+         
+                print("Saving model at ", os.path.join(path, model_name))
+                torch.save({
+                'model_state_dict': policy_net.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'epoch': i_epoch,
+                'loss': total_loss,
+                'steps': steps_done            
+                }, os.path.join(path, model_name))
+
+
+            ex_rate.append(EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY))
+
+            total_loss_epoch_train.append(sum(total_loss))
+            total_reward_epoch_train.append(sum(total_reward))
+            total_reward_energy_epoch_train.append(sum(total_reward_energy_ep))
+            total_reward_time_epoch_train.append(sum(total_reward_time_ep))
+
+            total_time_execution_epoch_train.append(sum(total_time_iteraction))
+
+            total_CA_intime_epoch_train.append(sum(total_CA_intime))
+            total_CA_late_epoch_train.append(sum(total_CA_late))
+            total_IA_intime_epoch_train.append(sum(total_IA_intime))
+            total_IA_late_epoch_train.append(sum(total_IA_late))
+            total_UAC_intime_epoch_train.append(sum(total_UAC_intime))
+            total_UAC_late_epoch_train.append(sum(total_UAC_late))
+            total_UAI_intime_epoch_train.append(sum(total_UAI_intime))
+            total_UAI_late_epoch_train.append(sum(total_UAI_late))
+            total_CI_epoch_train.append(sum(total_CI))
+            total_II_epoch_train.append(sum(total_II))
+            total_results_train = [total_CA_intime_epoch_train,total_CA_late_epoch_train,total_IA_intime_epoch_train,total_IA_late_epoch_train,total_UAC_intime_epoch_train,total_UAC_late_epoch_train,total_UAI_intime_epoch_train,total_UAI_late_epoch_train,total_CI_epoch_train,total_II_epoch_train]
+           
+            
+            plot_each_epoch(i_epoch, phase,save_path, total_results_train,total_loss_epoch_train,total_reward_epoch_train,total_time_video,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate)
+            
+            
+            
+            # if i_epoch == NUM_EPOCH-1:
+            data_train = {
+            'CA_intime': total_CA_intime_epoch_train,
+            'CA_late':total_CA_late_epoch_train,
+            'IA_intime': total_IA_intime_epoch_train,
+            'IA_late':total_IA_late_epoch_train,
+            # 'UA_intime': total_UA_intime_epoch_train,
+            # 'UA_late': total_UA_late_epoch_train,
+            'UAC_intime': total_UAC_intime_epoch_train,
+            'UAC_late': total_UAC_late_epoch_train,
+            'UAI_intime': total_UAI_intime_epoch_train,
+            'UAI_late': total_UAI_late_epoch_train,
+            'CI': total_CI_epoch_train,
+            'II': total_II_epoch_train,
+            'prediction error': np.mean(total_reward_error_pred)
+            }
         
-        if i_episode % TARGET_UPDATE == 0: #Copy the Policy Network parameters into Target Network
-            target_net.load_state_dict(policy_net.state_dict())
-        
-        # if SAVE_MODEL:
-        #     if i_episode % SAVE_EPISODE == 0 and i_episode != 0: 
-    if i_epoch % (cfg.NUM_EPOCH*0.01) == 0:
+            # if i_epoch == 0: 
+            #     df_train = pd.DataFrame(data_train)
+            # else:
+            #     df_new_train = pd.DataFrame(data_train)
+            # df_train = pd.concat([df_train,df_new_train])
+            df_train = pd.DataFrame(data_train)
+            df_train.to_csv(save_path+'/data_train.csv')
+            
+            # HISTOGRAMS
+            fig1 = plt.figure(figsize=(12, 7))
+            plt.hist(decision_index_histogram_TRAIN, bins = 100, edgecolor="black")
+            plt.title("DECISION FRAME (ALL ACTIONS)")
+            fig1.savefig(save_path_hist+'/train_hist_epoch_'+str(i_epoch)+'.jpg')
+            # plt.show()
+            plt.close()
 
-        path = os.path.join(ROOT, EXPERIMENT_NAME + '_' + dt_string + '_DECISION_RATE_' + str(cfg.DECISION_RATE))
-        save_path = os.path.join(path, "Graphics") 
-        model_name = 'model_' + str(i_epoch) + '.pt'
-        if not os.path.exists(path): os.makedirs(path)
-        if not os.path.exists(save_path): os.makedirs(save_path)
+            fig1 = plt.figure(figsize=(12, 7))
+            plt.hist(good_reward_action_TRAIN, bins = 100, edgecolor="black")
+            plt.title("DECISION FRAME (ONLY ACTIONS, GOOD REWARD)")
+            fig1.savefig(save_path_hist+'/train_GOOD_action_hist_epoch_'+str(i_epoch)+'.jpg')
+            plt.close()
 
-        print("Saving model at ", os.path.join(path, model_name))
-        torch.save({
-        'model_state_dict': policy_net.state_dict(),
-        'optimizer_state_dict': optimizer.state_dict(),
-        'epoch': i_epoch,
-        'loss': total_loss,
-        'steps': steps_done            
-        }, os.path.join(path, model_name))
 
-        
-        if episode_loss:
-            if mean(episode_loss) < best_loss[1]:
-                best_loss[1] = mean(episode_loss)
-                best_loss[0] = i_epoch
-                with open(ROOT + EXPERIMENT_NAME  + '_' + dt_string + '_DECISION_RATE_' + str(cfg.DECISION_RATE) + '/best_episode.txt', 'w') as f: f.write(str(best_loss[0]))
+            fig1 = plt.figure(figsize=(12, 7))
+            plt.hist(bad_reward_TRAIN, bins = 100, edgecolor="black")
+            plt.title("DECISION FRAME (BAD REWARD)")
+            fig1.savefig(save_path_hist+'/train_BAD_hist_epoch_'+str(i_epoch)+'.jpg')
+            plt.close()
 
-    # total_loss_epoch.append()
-    # epoch_loss.append(running_loss/cfg.NUM_EPOCH)
-    # total_reward_epoch_v2.append(running_reward/cfg.NUM_EPOCH)
-    ex_rate.append(EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY))
-    
-    # total_reward_epoch_vs_optim.append(sum(total_reward_vs_optim))
-    
-    total_loss_epoch.append(sum(total_loss))
-    total_reward_epoch.append(sum(total_reward))
-    total_reward_energy_epoch.append(sum(total_reward_energy_ep))
-    total_reward_time_epoch.append(sum(total_reward_time_ep))
-    
-    total_time_video = list(list(zip(*total_times_execution))[0])
-    total_time_iteraction = list(list(zip(*total_times_execution))[1])
-    
-    # print(total_time_video)
-    # print(len(total_time_video))
-    total_time_execution_epoch.append(sum(total_time_iteraction))
-    
-    data = {'video': total_time_video,
-	'iteraction': total_time_iteraction,
-    'CA_intime': total_CA_intime,
-    'CA_late':total_CA_late,
-    'IA_intime': total_IA_intime,
-    'IA_late':total_IA_late,
-    'UA_intime': total_UA_intime,
-    'UA_late': total_UA_late,
-    'CI': total_CI,
-    'II': total_II
-    }
-    
-    if i_epoch == 0: 
-        df = pd.DataFrame(data)
-    else:
-        df_new = pd.DataFrame(data)
-        df = pd.concat([df,df_new])
-        
-    
-    total_CA_intime_epoch.append(sum(total_CA_intime))
-    total_CA_late_epoch.append(sum(total_CA_late))
-    total_IA_intime_epoch.append(sum(total_IA_intime))
-    total_IA_late_epoch.append(sum(total_IA_late))
-    total_UA_intime_epoch.append(sum(total_UA_intime))
-    total_UA_late_epoch.append(sum(total_UA_late))
-    total_CI_epoch.append(sum(total_CI))
-    total_II_epoch.append(sum(total_II))
-    
-    fig1 = plt.figure(figsize=(20, 6))
-    plt.subplot(131)
-    plt.title("Loss")
-    plt.xlabel("Epoch")
-    plt.ylabel("Average MSE")
-    plt.plot(total_loss_epoch, 'r')
+            # pdb.set_trace()
+            fig1 = plt.figure(figsize=(12, 7))
+            plt.hist(decision_action_index_histogram_TRAIN, bins = 100, edgecolor="black")
+            plt.title("DECISION FRAME (ALL ACTIONS BUT NO ACTION(18))")
+            fig1.savefig(save_path_hist+'/train_hist_action_epoch_'+str(i_epoch)+'.jpg')
+            plt.close()
+            # plt.show()
+            
+            print("\n(train) PREDICTION ERROR: %.2f%%" %(np.mean(total_reward_error_pred)*100))
+        elif phase=='val':
+            # print(len(total_loss))
+            # pdb.set_trace()
+            total_loss_epoch_val.append(sum(total_loss))
+            total_reward_epoch_val.append(sum(total_reward))
+            total_reward_energy_epoch_val.append(sum(total_reward_energy_ep))
+            total_reward_time_epoch_val.append(sum(total_reward_time_ep))
 
-    plt.subplot(132)
-    plt.title("Reward")
-    plt.xlabel("Epoch")
-    plt.ylabel("Episode reward")
-    plt.plot(total_reward_epoch)
+            total_time_execution_epoch_val.append(sum(total_time_iteraction))
 
-    plt.subplot(133)
-    plt.title("Exploration rate")
-    plt.xlabel("Epoch")
-    plt.ylabel("Epsilon")
-    plt.plot(ex_rate)
-    fig1.savefig(save_path+'/train_results_epoch'+dt_string+'.jpg')
+            total_CA_intime_epoch_val.append(sum(total_CA_intime))
+            total_CA_late_epoch_val.append(sum(total_CA_late))
+            total_IA_intime_epoch_val.append(sum(total_IA_intime))
+            total_IA_late_epoch_val.append(sum(total_IA_late))
+            total_UAC_intime_epoch_val.append(sum(total_UAC_intime))
+            total_UAC_late_epoch_val.append(sum(total_UAC_late))
+            total_UAI_intime_epoch_val.append(sum(total_UAI_intime))
+            total_UAI_late_epoch_val.append(sum(total_UAI_late))
+            total_CI_epoch_val.append(sum(total_CI))
+            total_II_epoch_val.append(sum(total_II))
+            total_results = [total_CA_intime_epoch_val,total_CA_late_epoch_val,total_IA_intime_epoch_val,total_IA_late_epoch_val,total_UAC_intime_epoch_val,total_UAC_late_epoch_val,total_UAI_intime_epoch_val,total_UAI_late_epoch_val,total_CI_epoch_val,total_II_epoch_val]
+            
+            
+            plot_each_epoch(i_epoch, phase,save_path, total_results,total_loss_epoch_val,total_reward_epoch_val,total_time_video,total_time_execution_epoch_val,total_reward_energy_epoch_val,total_reward_time_epoch_val)
+            
+            
+            plot_each_epoch_together(i_epoch,save_path, total_results_train,total_loss_epoch_train,total_reward_epoch_train,total_time_video,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate,total_results,total_loss_epoch_val,total_reward_epoch_val,total_time_execution_epoch_val,total_reward_energy_epoch_val,total_reward_time_epoch_val)
+            
+            # if i_epoch == NUM_EPOCH-1:
+            data_val = {
+            'CA_intime': total_CA_intime_epoch_val,
+            'CA_late':total_CA_late_epoch_val,
+            'IA_intime': total_IA_intime_epoch_val,
+            'IA_late':total_IA_late_epoch_val,
+            # 'UA_intime': total_UA_intime_epoch_val,
+            # 'UA_late': total_UA_late_epoch_val,
+            'UAC_intime': total_UAC_intime_epoch_val,
+            'UAC_late': total_UAC_late_epoch_val,
+            'UAI_intime': total_UAI_intime_epoch_val,
+            'UAI_late': total_UAI_late_epoch_val,
+            'CI': total_CI_epoch_val,
+            'II': total_II_epoch_val,
+            'prediction error': np.mean(total_reward_error_pred)
+            }
+            
     
-    
-    fig3 = plt.figure(figsize=(20, 12))
-    plt.subplot(241)
-    plt.title("Correct actions (in time)")
-    plt.plot(total_CA_intime_epoch)
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
-    plt.subplot(242)
-    plt.title("Correct actions (late)")
-    plt.plot(total_CA_late_epoch)
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
-    plt.subplot(243)
-    plt.title("Incorrect actions (in time)")
-    plt.plot(total_IA_intime_epoch)
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
-    plt.subplot(244)
-    plt.title("Incorrect actions (late)")
-    plt.plot(total_IA_late_epoch)
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
-    plt.subplot(245)
-    plt.title("Unnecessary actions (in time)")
-    plt.plot(total_UA_intime_epoch)
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
-    plt.subplot(246)
-    plt.title("Unnecessary actions (late)")
-    plt.plot(total_UA_late_epoch)
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
-    plt.subplot(247)
-    plt.title("Correct inactions")
-    plt.plot(total_CI_epoch)
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
-    plt.subplot(248)
-    plt.title("Incorrect inactions")
-    plt.plot(total_II_epoch)
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
-    # plt.show()
-    fig3.savefig(save_path+'/train_detailed_results_epoch_'+dt_string+'.jpg')
-    
-    total_time_video_epoch = [sum(total_time_video)]*len(total_time_execution_epoch)
-    fig1 = plt.figure(figsize=(15, 6))
-    plt.plot(total_time_execution_epoch)
-    plt.plot(total_time_video_epoch)
-    plt.legend(["Iteraction","Video"])
-    plt.xlabel("Epoch")
-    plt.ylabel("Frames")
-    plt.title("Time")
-    # plt.show()
-    fig1.savefig(save_path+'/train_time_execution_'+dt_string+'.jpg')
+            df_val = pd.DataFrame(data_val)
+            df_val.to_csv(save_path+'/data_val.csv')
+            
+            fig1 = plt.figure(figsize=(12, 7))
+            plt.hist(decision_index_histogram_VAL, bins = 100, edgecolor="black")
+            plt.title("DECISION FRAME (ALL ACTIONS)")
+            fig1.savefig(save_path_hist+'/val_hist_epoch_'+str(i_epoch)+'.jpg')
+            # plt.show()
+            plt.close()
 
-    fig1 = plt.figure(figsize=(15, 6))
-    plt.plot(total_reward_energy_epoch)
-    plt.legend(["Energy reward"])
-    plt.xlabel("Epoch")
-    plt.ylabel("Reward")
-    plt.title("Reward")
-    # plt.show()
-    fig1.savefig(save_path+'/train_energy_reward_'+dt_string+'.jpg')
+            fig1 = plt.figure(figsize=(12, 7))
+            plt.hist(decision_action_index_histogram_VAL, bins = 100, edgecolor="black")
+            plt.title("DECISION FRAME (ALL ACTIONS BUT NO ACTION(18))")
+            fig1.savefig(save_path_hist+'/val_hist_action_epoch_'+str(i_epoch)+'.jpg')
+            plt.close()
 
-    fig1 = plt.figure(figsize=(15, 6))
-    plt.plot(total_reward_time_epoch)
-    plt.legend(["Time reward"])
-    plt.xlabel("Epoch")
-    plt.ylabel("Reward")
-    plt.title("Reward")
-    # plt.show()
-    fig1.savefig(save_path+'/train_time_reward_'+dt_string+'.jpg')
+            fig1 = plt.figure(figsize=(12, 7))
+            plt.hist(good_reward_action_VAL, bins = 100, edgecolor="black")
+            plt.title("DECISION FRAME (ONLY ACTIONS, GOOD REWARD)")
+            fig1.savefig(save_path_hist+'/val_GOOD_action_hist_epoch_'+str(i_epoch)+'.jpg')
+            plt.close()
 
-    # pdb.set_trace()
-    
-    
-"""                
-#Save best episode in a text file
-if SAVE_MODEL:
-    with open(ROOT + EXPERIMENT_NAME + '/best_episode.txt', 'w') as f:
-        f.write(str(best_loss[0]))
-"""
+
+            fig1 = plt.figure(figsize=(12, 7))
+            plt.hist(bad_reward_VAL, bins = 100, edgecolor="black")
+            plt.title("DECISION FRAME (BAD REWARD)")
+            fig1.savefig(save_path_hist+'/val_BAD_hist_epoch_'+str(i_epoch)+'.jpg')
+            plt.close()
+            print("(val) PREDICTION ERROR: %.2f%%\n" %(np.mean(total_reward_error_pred)*100))
+            
+
 t2 = time.time() - t1 #Tak
 
 
 print("\nTraining completed in {:.1f}".format(t2), "seconds.\n")
 
-# pdb.set_trace()
 
-
-
-fig1 = plt.figure(figsize=(20, 6))
-plt.subplot(131)
-plt.title("Loss")
-plt.xlabel("Epoch")
-plt.ylabel("Average MSE")
-plt.plot(total_loss_epoch, 'r')
-
-plt.subplot(132)
-plt.title("Reward")
-plt.xlabel("Epoch")
-plt.ylabel("Episode reward")
-plt.plot(total_reward_epoch)
-
-plt.subplot(133)
-plt.title("Exploration rate")
-plt.xlabel("Epoch")
-plt.ylabel("Epsilon")
-plt.plot(ex_rate)
-fig1.savefig(save_path+'/train_results_epoch'+dt_string+'.jpg')
-
-
-fig3 = plt.figure(figsize=(20, 12))
-plt.subplot(241)
-plt.title("Correct actions (in time)")
-plt.plot(total_CA_intime_epoch)
-plt.xlabel("Epoch")
-plt.ylabel("Amount action")
-plt.subplot(242)
-plt.title("Correct actions (late)")
-plt.plot(total_CA_late_epoch)
-plt.xlabel("Epoch")
-plt.ylabel("Amount action")
-plt.subplot(243)
-plt.title("Incorrect actions (in time)")
-plt.plot(total_IA_intime_epoch)
-plt.xlabel("Epoch")
-plt.ylabel("Amount action")
-plt.subplot(244)
-plt.title("Incorrect actions (late)")
-plt.plot(total_IA_late_epoch)
-plt.xlabel("Epoch")
-plt.ylabel("Amount action")
-plt.subplot(245)
-plt.title("Unnecessary actions (in time)")
-plt.plot(total_UA_intime_epoch)
-plt.xlabel("Epoch")
-plt.ylabel("Amount action")
-plt.subplot(246)
-plt.title("Unnecessary actions (late)")
-plt.plot(total_UA_late_epoch)
-plt.xlabel("Epoch")
-plt.ylabel("Amount action")
-plt.subplot(247)
-plt.title("Correct inactions")
-plt.plot(total_CI_epoch)
-plt.xlabel("Epoch")
-plt.ylabel("Amount action")
-plt.subplot(248)
-plt.title("Incorrect inactions")
-plt.plot(total_II_epoch)
-plt.xlabel("Epoch")
-plt.ylabel("Amount action")
-plt.show()
-
-fig3.savefig(save_path+'/train_detailed_results_epoch'+dt_string+'.jpg')
-
-
-total_results = [total_CA_intime_epoch,total_CA_late_epoch,total_IA_intime_epoch,total_IA_late_epoch,total_UA_intime_epoch,total_UA_late_epoch,total_CI_epoch,total_II_epoch]
-
-n = int(cfg.NUM_EPOCH*0.1)
-plot_detailed_results(n, total_results, save_path, 'TRAIN')
-
-n = int(cfg.NUM_EPOCH*0.05)
-plot_detailed_results(n, total_results, save_path, 'TRAIN')
-
-n = int(cfg.NUM_EPOCH*0.2)
-plot_detailed_results(n, total_results, save_path, 'TRAIN')
-
-
-
-keys_video = df['video'][0:cfg.NUM_EPISODES]
-
-iteraction_x = []
-video_x = []
-for idx_key,val_key in enumerate(keys_video):
-    iteraction_x.append(list(df[df['video']==val_key]['iteraction']))
-    video_x.append([val_key]*cfg.NUM_EPOCH)
-        
-for idx_plt in range(0,cfg.NUM_EPISODES):
-    if idx_plt == 0:
-        cont = idx_plt + 1
-        fig3 = plt.figure(figsize=(28, 12))
-        plt.suptitle("Time execution", fontsize=20)
-    else: 
-        cont += 1
-    
-    plt.subplot(240 + cont)
-    plt.title("Time Video "+str(idx_plt), fontsize=14)
-    plt.plot(iteraction_x[idx_plt])
-    plt.plot(video_x[idx_plt])
-    plt.legend(["Iteraction", "Video"])   
-    plt.xlabel("Epoch")
-    plt.ylabel("Frames")
-    
-    if idx_plt == cfg.NUM_EPISODES - 1:
-        fig3.savefig(save_path+'/train_time_results_per_video'+str(idx_plt)+'.jpg')
-
-        plt.show()
-    if cont==8:
-        fig3.savefig(save_path+'/train_time_results_per_video'+str(idx_plt)+'.jpg')
-
-        plt.show()
-        fig3 = plt.figure(figsize=(28, 12))
-        plt.suptitle("Time execution", fontsize=20)
-        
-        cont = 0
-   
-
-fig1 = plt.figure(figsize=(15, 6))
-
-total_time_video_epoch = [sum(total_time_video)]*len(total_time_execution_epoch)
-plt.plot(total_time_execution_epoch)
-plt.plot(total_time_video_epoch)
-
-plt.legend(["Iteraction","Video"])
-plt.xlabel("Epoch")
-plt.ylabel("Frames")
-plt.title("Time")
-plt.show()
-
-
-fig1 = plt.figure(figsize=(15, 6))
-
-
-plt.plot(total_reward_energy_epoch)
-
-plt.legend(["Energy reward"])
-plt.xlabel("Epoch")
-plt.ylabel("Reward")
-plt.title("Reward")
-plt.show()
-
-fig1.savefig(save_path+'/train_energy_reward_'+dt_string+'.jpg')
-
-fig1 = plt.figure(figsize=(15, 6))
-
-
-plt.plot(total_reward_time_epoch)
-
-plt.legend(["Time reward"])
-plt.xlabel("Epoch")
-plt.ylabel("Reward")
-plt.title("Reward")
-plt.show()
-
-fig1.savefig(save_path+'/train_time_reward_'+dt_string+'.jpg')
-
-
-# fig1 = plt.figure(figsize=(15, 6))
-# total_time_video = list(list(zip(*total_times_execution))[0])
-# total_time_iteraction = list(list(zip(*total_times_execution))[1])
-
-
-# plt.plot(moving_average([x - y for x, y in zip(total_time_video, total_time_iteraction)],500))
-# # plt.plot(total_time_iteraction)
-# plt.legend(["Video - Iteraction"])
-# plt.xlabel("Episode")
-# plt.ylabel("Frames")
-# plt.title("Time execution")
-# plt.show()
-
-# fig1.savefig(save_path+'/train_execution_time_v2'+dt_string+'.jpg')
-
-
-
-# fig3 = plt.figure(figsize=(20, 12))
-# plt.subplot(241)
-# plt.title("Correct actions (in time)")
-# plt.plot(total_CA_intime)
-# plt.xlabel("Episode")
-# plt.ylabel("Amount action")
-# plt.subplot(242)
-# plt.title("Correct actions (late)")
-# plt.plot(total_CA_late)
-# plt.xlabel("Episode")
-# plt.ylabel("Amount action")
-# plt.subplot(243)
-# plt.title("Incorrect actions (in time)")
-# plt.plot(total_IA_intime)
-# plt.xlabel("Episode")
-# plt.ylabel("Amount action")
-# plt.subplot(244)
-# plt.title("Incorrect actions (late)")
-# plt.plot(total_IA_late)
-# plt.xlabel("Episode")
-# plt.ylabel("Amount action")
-# plt.subplot(245)
-# plt.title("Unnecessary actions (in time)")
-# plt.plot(total_UA_intime)
-# plt.xlabel("Episode")
-# plt.ylabel("Amount action")
-# plt.subplot(246)
-# plt.title("Unnecessary actions (late)")
-# plt.plot(total_UA_late)
-# plt.xlabel("Episode")
-# plt.ylabel("Amount action")
-# plt.subplot(247)
-# plt.title("Correct inactions")
-# plt.plot(total_CI)
-# plt.xlabel("Episode")
-# plt.ylabel("Amount action")
-# plt.subplot(248)
-# plt.title("Incorrect inactions")
-# plt.xlabel("Episode")
-# plt.ylabel("Amount action")
-# plt.plot(total_II)
-# plt.show()
-# fig3.savefig(save_path+'/train_detailed_results_episode'+dt_string+'.jpg')
-
-
-# total_results = [total_CA_intime,total_CA_late,total_IA_intime,total_IA_late,total_UA_intime,total_UA_late,total_CI,total_II]
-
-
-# n = int(cfg.NUM_EPOCH*0.1)
-# plot_detailed_results(n, total_results, save_path, 'TRAIN')
-
-# n = int(cfg.NUM_EPOCH*0.05)
-# plot_detailed_results(n, total_results, save_path, 'TRAIN')
-
-# n = int(cfg.NUM_EPOCH*0.2)
-# plot_detailed_results(n, total_results, save_path, 'TRAIN')
-
-# total_time_video = list(list(zip(*total_times_execution))[0])
-# total_time_iteraction = list(list(zip(*total_times_execution))[1])
-
-# lower_iteraction_time = [False]*len(total_time_video)
-
-# n = 200
-# x_axis = np.arange(0,cfg.NUM_EPISODES,n).tolist()
-# n_total_time_video = [sum(total_time_video[i:i+n])/n for i in range(0,len(total_time_video)-1,n)]
-# n_total_time_iteraction = [sum(total_time_iteraction[i:i+n])/n for i in range(0,len(total_time_iteraction)-1,n)]
-# n_lower_iteraction_time = [False]*len(x_axis)
-
-# for idx, val in enumerate(n_total_time_video):
-    
-#     if n_total_time_iteraction[idx] < val: 
-#         n_lower_iteraction_time[idx] = True
-        
-
-
-# fig3 = plt.figure(num=None, figsize=(20,10), dpi=80, facecolor='w', edgecolor='k')
-
-# colors = ['red','green']
-# plt.yticks([1.0, 0.0], ["Iteraction time < Video",
-#                         "Video > Iteraction time"])
-
-# colors = np.where(n_lower_iteraction_time, 'green', 'red')
-# plt.scatter(range(0,len(n_lower_iteraction_time)), n_lower_iteraction_time, c=colors)
-
-
-# # plt.scatter(x=range(0,len(lower_iteraction_time)),y = lower_iteraction_time, c= list(map(colors.get, lower_iteraction_time)), marker='d')#plt.cm.get_cmap('RdBu'))
-# plt.title("Time execution")
-# plt.xlabel("Episode")
-# plt.show()
-
-# fig3.savefig(save_path+'/train_time_execution_boolean_n_'+str(n)+dt_string+'.jpg')
-
-
-
-# for idx, val in enumerate(total_time_video):
-    
-#     if total_time_iteraction[idx] < val: 
-#         lower_iteraction_time[idx] = True
-        
-
-
-# fig3 = plt.figure(num=None, figsize=(20,10), dpi=80, facecolor='w', edgecolor='k')
-
-# # colors = ['red','green']
-# plt.yticks([1.0, 0.0], ["Iteraction time < Video",
-#                         "Video > Iteraction time"])
-
-# colors = np.where(lower_iteraction_time, 'green', 'red')
-# plt.scatter(range(0,len(lower_iteraction_time)), lower_iteraction_time, c=colors)
-
-
-# # plt.scatter(x=range(0,len(lower_iteraction_time)),y = lower_iteraction_time, c= list(map(colors.get, lower_iteraction_time)), marker='d')#plt.cm.get_cmap('RdBu'))
-# plt.title("Time execution")
-# plt.xlabel("Episode")
-# plt.show()
-
-# fig3.savefig(save_path+'/train_time_execution_boolean_'+dt_string+'.jpg')
-
-
-
-
-# fig3 = plt.figure(figsize=(20, 10))
-# plt.subplot(241)
-# plt.title("Correct actions (in time)")
-# plt.plot(moving_average(total_CA_intime_epoch,50))
-# plt.subplot(242)
-# plt.title("Correct actions (late)")
-# plt.plot(moving_average(total_CA_late_epoch,500))
-# plt.subplot(243)
-# plt.title("Incorrect actions (in time)")
-# plt.plot(moving_average(total_IA_intime_epoch,500))
-# plt.subplot(244)
-# plt.title("Incorrect actions (late)")
-# plt.plot(moving_average(total_IA_late_epoch,500))
-# plt.subplot(245)
-# plt.title("Unnecessary actions (in time)")
-# plt.plot(moving_average(total_UA_intime_epoch,500))
-# plt.subplot(246)
-# plt.title("Unnecessary actions (late)")
-# plt.plot(moving_average(total_UA_late_epoch,500))
-# plt.subplot(247)
-# plt.title("Correct inactions")
-# plt.plot(moving_average(total_CI_epoch,500))
-# plt.subplot(248)
-# plt.title("Incorrect inactions")
-# plt.plot(moving_average(total_II_epoch,500))
-# plt.show()
-
-# fig3.savefig(save_path+'/train_detailed_results_v4'+dt_string+'.jpg')
-
-
-
-
-
-# total_times_execution
-
-# plt.plot()
-#print("GLOBAL: ", steps_done)
-#print("EXPLORATION RATE: ", (EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY)))
-
-#print("Memory again? ", memory.show_batch(20))
-
-# ----------------------------------

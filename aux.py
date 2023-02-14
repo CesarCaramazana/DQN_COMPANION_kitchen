@@ -6,10 +6,10 @@ import PySimpleGUI as sg #Graphic Interface
 import glob
 import time
 import os
-
+from statistics import mean
 import matplotlib.pyplot as plt
 import config as cfg
-
+import pandas as pd
 
 N_ATOMIC_ACTIONS = cfg.N_ATOMIC_ACTIONS
 N_OBJECTS = cfg.N_OBJECTS
@@ -124,7 +124,15 @@ def undo_concat_state(state):
         return next_action, ao, oit
     
 
+"""
 
+MOVING AVERAGE
+
+
+"""
+
+def moving_average(x, w):
+    return np.convolve(x, np.ones(w), 'valid') / w
 
 
 # 3) GET REWARDS    
@@ -341,16 +349,6 @@ def plot_each_epoch(i_epoch, phase,save_path, total_results,total_loss_epoch,tot
     plt.plot(total_results[3])
     plt.xlabel("Epoch")
     plt.ylabel("Amount action")
-    # plt.subplot(245)
-    # plt.title("Unnecessary actions (in time)")
-    # plt.plot(total_results[4])
-    # plt.xlabel("Epoch")
-    # plt.ylabel("Amount action")
-    # plt.subplot(246)
-    # plt.title("Unnecessary actions (late)")
-    # plt.plot(total_results[5])
-    # plt.xlabel("Epoch")
-    # plt.ylabel("Amount action")
     plt.subplot2grid((2,5), (0,2))
     plt.title("Unnecessary actions correct (in time)")
     plt.plot(total_results[4])
@@ -390,7 +388,7 @@ def plot_each_epoch(i_epoch, phase,save_path, total_results,total_loss_epoch,tot
     fig1 = plt.figure(figsize=(15, 6))
     plt.plot(total_time_execution_epoch)
     plt.plot(total_time_video_epoch)
-    plt.legend(["Iteraction","Video"])
+    plt.legend(["Interaction","Video"])
     plt.xlabel("Epoch")
     plt.ylabel("Frames")
     plt.title(phase+" time")
@@ -476,20 +474,6 @@ def plot_each_epoch_together(i_epoch,save_path, total_results_train,total_loss_e
     plt.xlabel("Epoch")
     plt.ylabel("Amount action")
     plt.legend()
-    # plt.subplot(245)
-    # plt.title("Unnecessary actions (in time)")
-    # plt.plot(total_results_train[4],label='train')
-    # plt.plot(total_results[4],label='val')
-    # plt.xlabel("Epoch")
-    # plt.ylabel("Amount action")
-    # plt.legend()
-    # plt.subplot(246)
-    # plt.title("Unnecessary actions (late)")
-    # plt.plot(total_results_train[5],label='train')
-    # plt.plot(total_results[5],label='val')
-    # plt.xlabel("Epoch")
-    # plt.ylabel("Amount action")
-    # plt.legend()
     plt.subplot2grid((2,5), (0,2))
     plt.title("Unnecessary actions correct (in time)")
     plt.plot(total_results_train[4],label='train')
@@ -541,7 +525,7 @@ def plot_each_epoch_together(i_epoch,save_path, total_results_train,total_loss_e
     plt.plot(total_time_execution_epoch_train,label='train')
     plt.plot(total_time_execution_epoch_val,label='val')
     plt.plot(total_time_video_epoch)
-    plt.legend(["train Iteraction","val Iteraction","Video"])
+    plt.legend(["train Interaction","val Interaction","Video"])
     plt.xlabel("Epoch")
     plt.ylabel("Frames")
     plt.title("Train and validation time vs.epoch")
@@ -627,16 +611,6 @@ def plot_detailed_results (n, total_results, save_path, MODE):
     plt.plot(x_axis,n_total_IA_late)
     plt.xlabel("Epoch")
     plt.ylabel("Amount action")
-    # plt.subplot(245)
-    # plt.title("Unnecessary actions (in time)",fontsize=14)
-    # plt.plot(x_axis,n_total_UA_intime)
-    # plt.xlabel("Epoch")
-    # plt.ylabel("Amount action")
-    # plt.subplot(246)
-    # plt.title("Unnecessary actions (late)",fontsize=14)
-    # plt.plot(x_axis,n_total_UA_late)
-    # plt.xlabel("Epoch")
-    # plt.ylabel("Amount action")
     plt.subplot2grid((2,5), (0,2))
     plt.title("Unnecessary actions correct (in time)",fontsize=14)
     plt.plot(x_axis,n_total_UAC_intime)
@@ -671,7 +645,90 @@ def plot_detailed_results (n, total_results, save_path, MODE):
 
     fig3.savefig(save_path+'/'+MODE+'_detailed_results_each_'+str(n)+'.jpg')
     plt.close()
+ 
+def get_estimations_action_time_human():
     
+    # Get the list of all files and directories
+    path = os.path.abspath(os.getcwd())
+    dir_list = os.listdir(path+'/video_annotations/Real_data/train/')
+    
+    duration_action_compilation_list = [[] for _ in range(33)]
+    
+    print(dir_list)
+    
+    for idx in dir_list:
+        
+        with open(path+'/video_annotations/Real_data/train/'+idx+'/labels_margins', 'rb') as f:
+                data = np.load(f, allow_pickle=True)
+                for i in range(len(data)):
+                    frame_duration = data['frame_end'][i]-data['frame_init'][i]
+                    duration_action_compilation_list[data['label'][i]].append(frame_duration)
+                print(data)
+            
+    avg_list = []
+    for idx in range(len(duration_action_compilation_list)):
+        if duration_action_compilation_list[idx]: 
+            avg_list.append(mean(duration_action_compilation_list[idx]))
+        else: 
+            avg_list.append(0)
+            
+        
+    atomic_actions = ['other manipulation',
+                                'pour milk',
+                                'pour water',
+                                'pour coffee',
+                                'pour Nesquik',
+                                'pour sugar',
+                                'put microwave',
+                                'stir spoon',
+                                'extract milk fridge',
+                                'extract water fridge',
+                                'extract sliced bread',
+                                'put toaster',
+                                'extract butter fridge',
+                                'extract jam fridge',
+                                'extract tomato sauce fridge',
+                                'extract nutella fridge',
+                                'spread butter',
+                                'spread jam',
+                                'spread tomato sauce',
+                                'spread nutella',
+                                'pour olive oil',
+                                'put jam fridge',
+                                'put butter fridge',
+                                'put tomato sauce fridge',
+                                'put nutella fridge',
+                                'pour milk bowl',
+                                'pour cereals bowl',
+                                'pour nesquik bowl',
+                                'put bowl microwave',
+                                'stir spoon bowl',
+                                'put milk fridge',
+                                'put sliced bread plate',
+                                'TERMINAL STATE',
+                                ]
+            
+    # Calling DataFrame constructor after zipping
+    # both lists, with columns specified
+    df = pd.DataFrame(list(zip(atomic_actions, avg_list)),
+                    columns =['atomic_actions', 'avg_frame'])
+
+    ROBOT_ACTION_DURATIONS = {}
+    for idx in range(len(cfg.ROBOT_ACTIONS_MEANINGS)):
+        ROBOT_ACTION_DURATIONS[idx] = 0
+        
+    for idx_AR, value_AR in cfg.ROBOT_ACTIONS_MEANINGS.items():
+        current_object = value_AR.split(" ")[1]
+        for index, row in df.iterrows():
+            if current_object in row['atomic_actions']:
+                if 'bring' in value_AR:
+                    if 'extract' in row['atomic_actions']: 
+                        ROBOT_ACTION_DURATIONS[idx_AR] = row['avg_frame']
+                elif 'put' in (row['atomic_actions'] and value_AR):
+                    ROBOT_ACTION_DURATIONS[idx_AR] = row['avg_frame']
+                
+    return ROBOT_ACTION_DURATIONS
+                
 def get_sentiment_keyboard():
     """
     Returns an integer reward value extracted from the sentiment analysis of an input sentence.

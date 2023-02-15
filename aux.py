@@ -650,7 +650,7 @@ def get_estimations_action_time_human():
     
     # Get the list of all files and directories
     path = os.path.abspath(os.getcwd())
-    dir_list = os.listdir(path+'/video_annotations/Real_data/train/')
+    dir_list = os.listdir(path+'/video_annotations/Real_data/train_full/')
     
     duration_action_compilation_list = [[] for _ in range(33)]
     
@@ -658,7 +658,7 @@ def get_estimations_action_time_human():
     
     for idx in dir_list:
         
-        with open(path+'/video_annotations/Real_data/train/'+idx+'/labels_margins', 'rb') as f:
+        with open(path+'/video_annotations/Real_data/train_full/'+idx+'/labels_margins', 'rb') as f:
                 data = np.load(f, allow_pickle=True)
                 for i in range(len(data)):
                     frame_duration = data['frame_end'][i]-data['frame_init'][i]

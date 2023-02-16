@@ -57,8 +57,26 @@ action_dic = cfg.ROBOT_ACTIONS_MEANINGS
 
 
 
-def post_processed_possible_actions(out,index_posible_actions,posible_actions):
-    
+def post_processed_possible_actions(out,index_posible_actions):
+    """
+    Function that performs a post-processing of the neural network output. 
+    In case the output is an action that is not available, either because 
+    of the object missing or left on the table, the most likely possible action will be selected 
+    from the output of the neural network,
+
+    Parameters
+    ----------
+    out : (tensor)
+        DQN output.
+    index_posible_actions : (list)
+        Posible actions taken by the robot according to the objects available.
+
+    Returns
+    -------
+    (tensor)
+        Action to be performed by the robot.
+
+    """
     action_pre_processed = out.max(1)[1].view(1,1)
      
     if action_pre_processed.item() in index_posible_actions:
@@ -66,10 +84,13 @@ def post_processed_possible_actions(out,index_posible_actions,posible_actions):
     else:
         out = out.cpu().numpy()
         out = out[0]
-        posible_actions = np.asarray(posible_actions)
-        action = np.argmax(posible_actions * out)
+   
+        idx = np.argmax(out[index_posible_actions])
+        action = index_posible_actions[idx]
+
         return torch.tensor([[action]], device=device, dtype=torch.long)
     
+
 
 def select_action(state):
     
@@ -81,7 +102,7 @@ def select_action(state):
     with torch.no_grad():
     	out = policy_net(state)
     
-    best_action = post_processed_possible_actions(out, index_posible_actions, posible_actions)	
+    best_action = action = post_processed_possible_actions(out,index_posible_actions)
     #output = out.detach().cpu().numpy().squeeze()	
 
     #print("\nState: ", state_name)
@@ -96,7 +117,8 @@ def select_action(state):
     """
     return best_action
 
-        
+     
+
         
         
 def action_rate(decision_cont,state):

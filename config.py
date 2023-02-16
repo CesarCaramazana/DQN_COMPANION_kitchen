@@ -4,17 +4,17 @@
 #---------------------------------------------------------------------------------
 
 
-REPLAY_MEMORY = 1024 #Size of replay memory (deque object)
+REPLAY_MEMORY = 2048 #Size of replay memory (deque object)
 
-NUM_EPOCH = 50
+NUM_EPOCH = 20000
 NUM_EPISODES = 63 #"Number of training epochs"
 BATCH_SIZE = 1024
-GAMMA = 0.99 #Discount rate for future rewards
-EPS_START = 0.5 #Initial exporation rate
+GAMMA = 0.0 #Discount rate for future rewards
+EPS_START = 0.99 #Initial exporation rate
 EPS_END = 0.01 #Final exploration rate
 EPS_DECAY = NUM_EPOCH #Exploration rate decay factor
 TARGET_UPDATE = 10 #Episodes between target network update (policy net parameters -> target net)
-LR = 1e-7 #Learning rate
+LR = 1e-6 #Learning rate
 POSITIVE_REWARD = 0
 NO_ACTION_PROBABILITY = 70
 
@@ -142,7 +142,7 @@ OBJECTS_INIT_STATE = {
 	'water': 1
     } 
 
-
+"""
 
 ROBOT_ACTIONS_MEANINGS = {	
 	0: 'bring bowl',
@@ -171,9 +171,59 @@ ROBOT_ACTIONS_MEANINGS = {
 	23: 'put milk fridge'
 
 }
+"""
+
+#Reduced action repertoire
+ROBOT_ACTIONS_MEANINGS = {
+	0: 'bring butter',
+	1: 'bring jam',
+	2: 'bring milk',
+	3: 'bring nutella',
+	4: 'bring sliced bread',
+	5: 'bring tomato sauce',
+	6: 'do nothing',
+	7: 'put jam fridge',
+	8: 'put butter fridge',
+	9: 'put tomato sauce fridge',
+	10: 'put nutella fridge',
+	11: 'put milk fridge'
+
+}
+
+#Reduced action repertoire durations (from get_human_estimates)
+ROBOT_ACTION_DURATIONS = {
+	0: 29,
+	1: 33,
+	2: 31,
+	3: 39,
+	4: 57,
+	5: 45,
+	6: 0,
+	7: 15,
+	8: 19,
+	9: 20,
+	10: 28,
+	11: 25
+
+}
 
 
-
+ROBOT_POSSIBLE_INIT_ACTIONS = {
+	0: 1,
+	1: 1,
+	2: 1,
+	3: 1,
+	4: 1,
+	5: 1,
+	6: 1,
+	7: 0,
+	8: 0,
+	9: 0,
+	10: 0,
+	11: 0
+	
+}
+"""
 ROBOT_POSSIBLE_INIT_ACTIONS = {
     	0: 0,
 	1: 1,
@@ -199,8 +249,9 @@ ROBOT_POSSIBLE_INIT_ACTIONS = {
 	21: 0,
 	22: 0,
 	23: 0
-    }
 
+}
+"""
 
 #In frames
 # ROBOT_ACTION_DURATIONS = {
@@ -230,8 +281,8 @@ ROBOT_POSSIBLE_INIT_ACTIONS = {
 #  	23: 164
 # }
 
-from aux import *
-ROBOT_ACTION_DURATIONS = get_estimations_action_time_human()
+#from aux import *
+#ROBOT_ACTION_DURATIONS = get_estimations_action_time_human()
 # ROBOT_ACTION_DURATIONS = {
 # 	0: 1740, 
 # 	1: 1220, 

@@ -110,10 +110,12 @@ if PRETRAINED:
     
     policy_net.load_state_dict(torch.load(path_model))
     policy_net.to(device)
+    
+    EPS_START = 0.5
    
 
-else:
-    policy_net.apply(init_weights) # si no hay pretained
+#else:
+#    policy_net.apply(init_weights) # si no hay pretained
 
 
 target_net.eval()
@@ -227,7 +229,7 @@ def select_action(state, phase):
          else:
              
              if NO_ACTION_PROBABILITY != 0:
-                 index_no_action = index_posible_actions.index(18)
+                 index_no_action = index_posible_actions.index(6)
                  
                  weights = [10]*len(index_posible_actions)
                  weights[index_no_action] = cfg.NO_ACTION_PROBABILITY
@@ -268,7 +270,7 @@ def action_rate(decision_cont,state,phase,prev_decision_rate):
         action_selected = select_action(state,phase)
         flag_decision = True 
     else:
-        action_selected = 18
+        action_selected = 6
         flag_decision = False
     # print("RANDOM NUMBER: ",decision_rate)
     # pdb.set_trace()
@@ -297,10 +299,7 @@ def optimize_model(phase):
     action_batch = torch.cat(batch.action)
     reward_batch = torch.cat(batch.reward)    
     
-    # print(state_batch)
-    # pdb.set_trace()
-    out = policy_net(state_batch)
-    
+   
     state_action_values = policy_net(state_batch).gather(1, action_batch) #Forward pass on the policy network -> Q values for every action -> Keep only Qvalue for the action that we took when exploring (action_batch), for which we have the reward (reward_batch) and the transition (non_final_next_states).
     
     # pdb.set_trace()
@@ -411,8 +410,8 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
     bad_reward_VAL = []
     # Each epoch has a training and validation phase
     print("| ----------- EPOCH " + str(i_epoch) + " ----------- ")
-    for phase in ['train', 'val']:
-    # for phase in ['train']:
+    #for phase in ['train', 'val']:
+    for phase in ['train']:
         total_loss = []
         total_reward = []
         total_reward_energy_ep = []
@@ -494,8 +493,8 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                     memory.push(decision_state, action_, next_state, reward)
                     
                     # Semi -supervised case where the correction is also taken into account to train the DQN
-                    #if (action != correct_action):
-                    #    memory.push(decision_state, torch.tensor([[correct_action]], device=device), next_state, torch.tensor([0], device=device))
+                    if (action != correct_action):
+                        memory.push(decision_state, torch.tensor([[correct_action]], device=device), next_state, torch.tensor([0], device=device))
                     
                     optimize_model(phase)
                     num_optim += 1
@@ -519,25 +518,25 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                         index_frame_decision = 1 - ((fr_init-frame_decision)/(fr_init-fr_init_prev))
                     if phase=='train':
                         decision_index_histogram_TRAIN.append(index_frame_decision)
-                        if action != 18:
+                        if action != 6:
                             decision_action_index_histogram_TRAIN.append(index_frame_decision)
                         
                         if reward < 0:
                             bad_reward_TRAIN.append(index_frame_decision)
                         else:
-                            if action != 18:
+                            if action != 6:
                                 good_reward_action_TRAIN.append(index_frame_decision)
                             else:
                                 good_reward_noaction_TRAIN.append(index_frame_decision)
                     else:
                         decision_index_histogram_VAL.append(index_frame_decision)
-                        if action != 18:
+                        if action != 6:
                             decision_action_index_histogram_VAL.append(index_frame_decision)
                         
                         if reward < 0:
                             bad_reward_VAL.append(index_frame_decision)
                         else:
-                            if action != 18:
+                            if action != 6:
                                 good_reward_action_VAL.append(index_frame_decision)
                             else:
                                 good_reward_noaction_VAL.append(index_frame_decision)
@@ -580,7 +579,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             
             if i_episode % TARGET_UPDATE == 0: #Copy the Policy Network parameters into Target Network
                 target_net.load_state_dict(policy_net.state_dict())
-                scheduler.step()
+                #scheduler.step()
                 
 
                             
@@ -611,7 +610,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             df = pd.concat([df,df_new])
             
         if phase == 'train':
-            if i_epoch % 5 == 0:
+            if i_epoch % 50 == 0:
                 # print(PRETRAINED)
                
                 if PRETRAINED == True:
@@ -678,7 +677,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_results_train = [total_CA_intime_epoch_train,total_CA_late_epoch_train,total_IA_intime_epoch_train,total_IA_late_epoch_train,total_UAC_intime_epoch_train,total_UAC_late_epoch_train,total_UAI_intime_epoch_train,total_UAI_late_epoch_train,total_CI_epoch_train,total_II_epoch_train]
            
             
-            plot_each_epoch(i_epoch, phase,save_path, total_results_train,total_loss_epoch_train,total_reward_epoch_train,total_time_video,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate)
+            if i_epoch % 200 == 0: plot_each_epoch(i_epoch, phase,save_path, total_results_train,total_loss_epoch_train,total_reward_epoch_train,total_time_video,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate)
             
             
             
@@ -708,6 +707,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             df_train.to_csv(save_path+'/data_train.csv')
             
             # HISTOGRAMS
+            """
             fig1 = plt.figure(figsize=(12, 7))
             plt.hist(decision_index_histogram_TRAIN, bins = 100, edgecolor="black")
             plt.title("DECISION FRAME (ALL ACTIONS)")
@@ -735,8 +735,9 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             fig1.savefig(save_path_hist+'/train_hist_action_epoch_'+str(i_epoch)+'.jpg')
             plt.close()
             # plt.show()
+            """
             
-            print("\n(train) PREDICTION ERROR: %.2f%%" %(np.mean(total_reward_error_pred)*100))
+            #print("\n(train) PREDICTION ERROR: %.2f%%" %(np.mean(total_reward_error_pred)*100))
         elif phase=='val':
             # print(len(total_loss))
             # pdb.set_trace()
@@ -795,7 +796,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
 
             fig1 = plt.figure(figsize=(12, 7))
             plt.hist(decision_action_index_histogram_VAL, bins = 100, edgecolor="black")
-            plt.title("DECISION FRAME (ALL ACTIONS BUT NO ACTION(18))")
+            plt.title("DECISION FRAME (ALL ACTIONS BUT NO ACTION(6))")
             fig1.savefig(save_path_hist+'/val_hist_action_epoch_'+str(i_epoch)+'.jpg')
             plt.close()
 

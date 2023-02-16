@@ -347,10 +347,12 @@ class BasicEnv(gym.Env):
         # print(self.objects_in_table)
         # print(dict_bring)
         # print(dict_put)
-        possible_actions[18] = 1     
+        possible_actions[6] = 1     
         # pdb.set_trace()
-        if possible_actions[0] == 1: 
-            pdb.set_trace()
+        
+        
+        #if possible_actions[0] == 1: 
+        #    pdb.set_trace()
             
             
         return possible_actions
@@ -373,7 +375,7 @@ class BasicEnv(gym.Env):
         
         for idx, val in cfg.ROBOT_ACTION_DURATIONS.items(): 
             reward = self._take_action(idx)
-            if reward > -1 and idx!=18: 
+            if reward > -1 and idx!=6: 
                 correct_action = idx
                 duration_action = val
         
@@ -449,7 +451,7 @@ class BasicEnv(gym.Env):
         last_frame = int(annotations['frame_end'].iloc[-1])
         
         # pdb.set_trace()
-        if action != 18: 
+        if action != 6: 
 
             if fr_execution > last_frame: 
                 threshold = last_frame 
@@ -495,7 +497,7 @@ class BasicEnv(gym.Env):
         simple_reward = self._take_action(action)
         new_threshold = 0 
         reward = 0
-        correct_action = 0
+
         
         #print("IN EVALUATION\nFrame: ", frame)
         if self.flags['evaluation'] == 'Incorrect action' or self.flags['evaluation'] == "Incorrect inaction":   
@@ -563,7 +565,7 @@ class BasicEnv(gym.Env):
             
             
             else:  
-                if action != 18: 
+                if action != 6: 
                     # CORRECT ACTION
                     if simple_reward > -1: 
                         # In time
@@ -695,7 +697,6 @@ class BasicEnv(gym.Env):
                             # flag_pdb = True
                                
                         
-                # if action == 18 (no se hace nada)
                 else:
                     inaction.append([action, self.state, reward])
                     if self.flags['decision'] == True:
@@ -817,7 +818,7 @@ class BasicEnv(gym.Env):
         print("     ",state_prev)
         print("\nOBJECTS IN TABLE:")
         for obj in objects_prev_print: 
-            if obj == change and action != 18:
+            if obj == change and action != 6:
                 print('----> ' + obj + ', ')
             else:
                 print(obj + ', ')
@@ -827,7 +828,7 @@ class BasicEnv(gym.Env):
         print("     ",state)
         print("OBJECTS IN TABLE:")
         for obj in objects_print: 
-            if obj == change and action != 18:
+            if obj == change and action != 6:
             
                 print('----> ' + obj + ', ')
             else:
@@ -882,7 +883,7 @@ class BasicEnv(gym.Env):
         frame_post = []
         execution_times = []
         
-        if action != 18:
+        if action != 6:
             self.update_objects_in_table(action)
             memory_objects_in_table.append(list(self.objects_in_table.values()))
             # print("Threshold: ",threshold)
@@ -992,9 +993,9 @@ class BasicEnv(gym.Env):
         if self.flags['decision'] == True:
             self.state[110:133] = memory_objects_in_table[len(memory_objects_in_table)-1]
 	
-        if optim:
-                self.prints_terminal(action, frame_prev, frame_post, reward)
-                self.prints_debug(action)
+        #if optim:
+        #        self.prints_terminal(action, frame_prev, frame_post, reward)
+        #        self.prints_debug(action)
                
         #        pdb.set_trace()
              
@@ -1139,39 +1140,39 @@ class BasicEnv(gym.Env):
 
         if state == 1: #'pour milk'
             
-            if action == 18: #'bring milk'
+            if action == 6: #'bring milk'
                 reward = positive_reward
                 
             else: reward = -1    
         
         elif state == 2: #'pour water'
            
-            if action == 18: #'bring water'
+            if action == 6: #'bring water'
                 reward = positive_reward
             else: reward = -1
         
         elif state == 3: #'pour coffee'
-            if action == 18: #'do nothing' -> *coffee is at arm's reach
+            if action == 6: #'do nothing' -> *coffee is at arm's reach
                 reward = positive_reward
             else: reward = -1                    
         
         elif state == 4: #'pour Nesquik'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
         
         elif state == 5: #'pour sugar'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
         
         elif state == 6: #'put microwave'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1    
         
         elif state == 7: #'stir spoon
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
         
@@ -1179,7 +1180,7 @@ class BasicEnv(gym.Env):
             
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'milk'][0]
-            if action == 8:
+            if action == 2:
                 # print("ENTRA")
                 reward = positive_reward
            
@@ -1187,7 +1188,7 @@ class BasicEnv(gym.Env):
            
                 # print("AQUI TB")
                 self.flags["action robot"] = False
-                if action == 18: 
+                if action == 6: 
                     # self.update("action")
                     
                     reward = 5
@@ -1197,30 +1198,30 @@ class BasicEnv(gym.Env):
         
         elif state == 9: #'extract water fridge'
             self.flags["action robot"] = True
-            if action == 17:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
         
         elif state == 10: #'extract sliced bread'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
         
         elif state == 11: #'put toaster'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1    
         
         elif state == 12: #'extract butter fridge'
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'butter'][0]
-            if action == 1: #'bring butter'
+            if action == 0: #'bring butter'
                 reward = positive_reward
                 
             elif object_before_action[key] == 1:
                 # pdb.set_trace()
                 self.flags["action robot"] = False
-                if action == 18: 
+                if action == 6: 
                     reward = 5
                 else:
                     reward = -5
@@ -1229,13 +1230,13 @@ class BasicEnv(gym.Env):
         elif state == 13: #'extract jam fridge'
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'jam'][0]
-            if action == 6: #'bring jam'
+            if action == 1: #'bring jam'
                 reward = positive_reward
                 
             elif object_before_action[key] == 1:
                 # pdb.set_trace()
                 self.flags["action robot"] = False
-                if action == 18: 
+                if action == 6: 
                     reward = 5
                 else:
                     reward = -5
@@ -1244,13 +1245,13 @@ class BasicEnv(gym.Env):
         elif state == 14: #'extract tomato sauce fridge'
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'tomato sauce'][0]
-            if action == 16: #'bring tomato sauce'
+            if action == 5: #'bring tomato sauce'
                 reward = positive_reward
                 
             elif object_before_action[key] == 1:
                 # pdb.set_trace()
                 self.flags["action robot"] = False
-                if action == 18: 
+                if action == 6: 
                     reward = 5
                 else:
                     reward = -5
@@ -1259,53 +1260,53 @@ class BasicEnv(gym.Env):
         elif state == 15: #'extract nutella fridge'
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'nutella'][0]
-            if action == 10: #'bring nutella'
+            if action == 3: #'bring nutella'
                 reward = positive_reward
                 
             elif object_before_action[key] == 1:
                 # pdb.set_trace()
                 self.flags["action robot"] = False
-                if action == 18: 
+                if action == 6: 
                     reward = 5
                 else:
                     reward = -5
             else: reward = -1            
         
         elif state == 16: #'spread butter'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1    
         
         elif state == 17: #'spread jam'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
         
         elif state == 18: #'spread tomato sauce'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1                    
         
         elif state == 19: #'spread nutella'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
         
         elif state == 20: #'pour olive oil'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
             
         elif state == 21: #'put jam fridge'
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'jam'][0]
-            if action == 19:
+            if action == 7:
                 reward = positive_reward
                 
             elif object_before_action[key] == 0:
                 # pdb.set_trace()
                 self.flags["action robot"] = False
-                if action == 18: 
+                if action == 6: 
                     reward = 5
                 else:
                     reward = -5
@@ -1314,13 +1315,13 @@ class BasicEnv(gym.Env):
         elif state == 22: #'put butter fridge'
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'butter'][0]
-            if action == 20:
+            if action == 8:
                 reward = positive_reward
                
             elif object_before_action[key] == 0:
                 # pdb.set_trace()
                 self.flags["action robot"] = False
-                if action == 18: 
+                if action == 6: 
                     reward = 5
                 else:
                     reward = -5
@@ -1329,13 +1330,13 @@ class BasicEnv(gym.Env):
         elif state == 23: #'put tomato sauce fridge'
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'tomato sauce'][0]
-            if action == 21:
+            if action == 9:
                 reward = positive_reward
                 
             elif object_before_action[key] == 0:
                 # pdb.set_trace()
                 self.flags["action robot"] = False
-                if action == 18: 
+                if action == 6: 
                     reward = 5
                 else:
                     reward = -5
@@ -1344,64 +1345,64 @@ class BasicEnv(gym.Env):
         elif state == 24: #'put nutella fridge'
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'nutella'][0]
-            if action == 22:
+            if action == 10:
                 reward = positive_reward
                
             elif object_before_action[key] == 0:
                 # pdb.set_trace()
                 self.flags["action robot"] = False
-                if action == 18: 
+                if action == 6: 
                     reward = 5
                 else:
                     reward = -5
             else: reward = -1
         
         elif state == 25: #'pour milk bowl'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
             
         elif state == 26: #'pour cereals bowl'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1    
         
         elif state == 27: #'pour nesquik bowl'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
         
         elif state == 28: #'put bowl microwave'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1                    
         
         elif state == 29: #'stir spoon bowl'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
         
         elif state == 30: #'put milk fridge'
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'milk'][0]
-            if action == 23:
+            if action == 11:
                 reward = positive_reward
                 
             elif object_before_action[key] == 0:
                 self.flags["action robot"] = False
-                if action == 18: 
+                if action == 6: 
                     reward = 5
                 else:
                     reward = -5
             else: reward = -1
             
         elif state == 31: #'put sliced bread plate'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1    
         
         else:
-            if action == 18: #'do nothing'
+            if action == 6: #'do nothing'
                 reward = positive_reward
             else: reward = -1                    
 
@@ -1595,14 +1596,14 @@ class BasicEnv(gym.Env):
                                 action.append(correct_action)
                                 self.transition()
                         else:
-                            no_actions.append(18)
+                            no_actions.append(6)
                             no_action_state.append(self.state)
                             
                        
                             self.transition()
      
             else:
-                no_actions.append(18)
+                no_actions.append(6)
                 no_action_state.append(self.state)
                 self.transition()
                 
@@ -1724,3 +1725,4 @@ class BasicEnv(gym.Env):
     
     def close(self):
         pass
+

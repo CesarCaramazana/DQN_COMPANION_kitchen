@@ -105,7 +105,7 @@ def action_rate(decision_cont,state):
         action_selected = select_action(state)
         flag_decision = True 
     else:
-        action_selected = 18
+        action_selected = 6
         flag_decision = False
     
     return action_selected, flag_decision
@@ -248,7 +248,8 @@ for f in pt_files:
 	    		action = action.item()
 	    	
 	    	array_action = [action,flag_decision, 'val']
-	    	next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times, correct_action, _ = env.step(array_action)
+	    	#next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times, correct_action, _ = env.step(array_action)
+	    	next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times, correct_action, type_threshold, error_pred, total_pred = env.step(array_action)
 	    	
 	    	
 	    	reward = torch.tensor([reward], device=device)

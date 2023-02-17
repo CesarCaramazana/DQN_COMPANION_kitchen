@@ -49,13 +49,15 @@ video_idx = 0 #Index of current video
 action_idx = 0 #Index of next_action
 frame = 0 #Current frame
 
-correct_action = -1
+correct_action = -1 # esto para que es
 
 
 labels_pkl = 'labels_margins'
 path_labels_pkl = os.path.join(videos_realData[video_idx], labels_pkl)
 
 annotations = np.load(path_labels_pkl, allow_pickle=True)
+
+print(annotations)
 
 
 
@@ -124,10 +126,24 @@ class BasicEnv(gym.Env):
         self.CI = 0
         self.II = 0
         
+        self.prediction_error = 0
+        self.total_prediction = 0
+        
         self.r_history = []
         self.h_history = []
         self.rwd_history = []
+        self.rwd_time_h = []
+        self.rwd_energy_h = []
         
+    def get_frame(self):
+        global frame
+        return frame 
+    def get_action_idx(self):
+        global action_idx
+        return action_idx
+    def get_annotations(self):
+        global annotations
+        return annotations
     
     def get_action_meanings(self):
         return self.action_repertoire
@@ -137,7 +153,7 @@ class BasicEnv(gym.Env):
    
     def energy_robot_reward (self, action):
          
-        self.reward_energy = ROBOT_ACTION_DURATIONS[action]/100 
+        self.reward_energy = -ROBOT_ACTION_DURATIONS[action]/1
     
     def get_possibility_objects_in_table (self):
         global annotations
@@ -241,13 +257,13 @@ class BasicEnv(gym.Env):
                     fr_init = int(df_['Frame init'])
                     fr_end = int(df_['Frame end'])
                     if fr_init < frame < fr_end:
-                        energy_reward = 1
+                        energy_reward = 0
                     else:
-                        energy_reward = -1
+                        energy_reward = 1
                 else:
-                    energy_reward = -1
+                    energy_reward = 1
             else:
-                 energy_reward = -1
+                 energy_reward = 1
             
         elif len(added) > 0:
             
@@ -260,13 +276,13 @@ class BasicEnv(gym.Env):
                     fr_end = int(df_['Frame end'])
                     
                     if fr_init < frame < fr_end:
-                        energy_reward = 1
+                        energy_reward = 0
                     else:
-                        energy_reward = -1
+                        energy_reward = 1
                 else:
-                    energy_reward = -1
+                    energy_reward = 1
             else:
-                 energy_reward = -1
+                 energy_reward = 1
 
         self.energy_robot_reward(action)
         self.reward_energy = energy_reward * self.reward_energy
@@ -335,8 +351,14 @@ class BasicEnv(gym.Env):
         # print(self.objects_in_table)
         # print(dict_bring)
         # print(dict_put)
-        possible_actions[18] = 1     
+        possible_actions[6] = 1     
         # pdb.set_trace()
+        
+        
+        #if possible_actions[0] == 1: 
+        #    pdb.set_trace()
+            
+            
         return possible_actions
 
     def select_inaction_sample (self, inaction):
@@ -357,7 +379,7 @@ class BasicEnv(gym.Env):
         
         for idx, val in cfg.ROBOT_ACTION_DURATIONS.items(): 
             reward = self._take_action(idx)
-            if reward > -1 and idx!=18: 
+            if reward > -1 and idx!=6: 
                 correct_action = idx
                 duration_action = val
         
@@ -433,7 +455,7 @@ class BasicEnv(gym.Env):
         last_frame = int(annotations['frame_end'].iloc[-1])
         
         # pdb.set_trace()
-        if action != 18: 
+        if action != 6: 
 
             if fr_execution > last_frame: 
                 threshold = last_frame 
@@ -479,7 +501,7 @@ class BasicEnv(gym.Env):
         simple_reward = self._take_action(action)
         new_threshold = 0 
         reward = 0
-        correct_action = 0
+
         
         #print("IN EVALUATION\nFrame: ", frame)
         if self.flags['evaluation'] == 'Incorrect action' or self.flags['evaluation'] == "Incorrect inaction":   
@@ -496,164 +518,218 @@ class BasicEnv(gym.Env):
                 self.reward_time += -1
                     
         else: 
-           
-            if action != 18: 
-                # CORRECT ACTION
-                if simple_reward > -1: 
-                    # In time
-                    if fr_execution <= fr_end: 
-                       
-                        # pdb.set_trace()
-                        if frame == fr_execution: 
-                            # print("FROZEN REWARD: ",frozen_reward)
-                            frame_post.append(frame)
-                            self.energy_robot_reward(action)
-                            reward =  self.reward_energy + simple_reward
-                            
-                        if frame == fr_end:
-                        
-                            self.CA_intime += 1
-                            # print("Action idx: ", action_idx)
-                            # print("*************** CORRECT ACTION (in time) ***************")
-                            inaction.append("action") 
-                            self.update("action")
-                            # self.flags['pdb'] = True
-                    # Late
-                    else: 
-                        if frame == fr_execution: 
-                        
-                            self.CA_late += 1
-                            self.reward_time += -1
-                            # print("Action idx: ", action_idx)
-                            # print("*************** CORRECT ACTION (late) ***************")
-                            inaction.append("action")
-                            frame_post.append(frame)
-                            self.update("action")   
-                            self.energy_robot_reward(action)
-                            reward = self.reward_energy + self.reward_time + simple_reward
-                            
-                            # self.flags['pdb'] = True
-
-                        if frame >=  fr_end: 
-                        
-                            self.reward_time += -1
+            # simple reward  = +- 5. la accion ya se ha hecho previamente (el objeto esta o no en la mesa adecuadamente)
+            # no se hace nada
+            if simple_reward == 5:
+                if frame == fr_end: 
+                    reward = 0
+                    self.update("action")
+            # se hace otra accion
+            elif simple_reward == -5:
+                
+        
+                if fr_execution <= fr_end: 
                     
-                # # INCORRECT
-                else: 
-              
-                    # INCORRECT ACTION
-                    if self.flags["action robot"] == True: 
-                        
-                        if fr_execution <= fr_end: 
-                            if frame == fr_execution: 
-                                frame_post.append(frame)
-                                
-                            if frame == fr_end: 
-                                self.IA_intime += 1
-                                # print("Action idx: ", action_idx)
-                                # print("*************** INCORRECT ACTION (in time) ***************")
-                                inaction.append("action")
-                                new_threshold, correct_action = self.select_correct_action(action)
-                                self.flags['evaluation'] = 'Incorrect action'
-                                self.energy_robot_reward(action)
-                                self.get_energy_robot_reward(action,frame)
-                                prev_energy = self.reward_energy
-                                self.energy_robot_reward(correct_action)
-                                self.reward_energy = self.reward_energy + prev_energy
-                                
-                                
-                        else: 
-                            if frame > fr_end:
-                                self.reward_time += -1
-                            if frame == fr_execution: 
-                                self.IA_late += 1
-                                # print("Action idx: ", action_idx)
-                                # print("*************** INCORRECT ACTION (late) ***************")
-                            
-                                inaction.append("action")
-                                frame_post.append(frame)
-                                new_threshold, correct_action = self.select_correct_action(action)
-                                self.flags['evaluation'] = 'Incorrect action'
-                          
-                                self.get_energy_robot_reward(action,frame)
-                                prev_energy = self.reward_energy
-                                self.energy_robot_reward(correct_action)
-                                self.reward_energy = self.reward_energy + prev_energy
-
-                    # UNNECESARY ACTION 
-                    else: 
-
-                        if fr_execution <= fr_end: 
-                            
-                            if frame == fr_execution:
-                                frame_post.append(frame)
-
-                            if frame == fr_end: 
-                                
-                                inaction.append("action")
-                                self.energy_robot_reward(action)
-                                self.get_energy_robot_reward(action,frame)
-                                reward = self.reward_energy  
-                                if reward > 0:
-                                    self.UAC_intime += 1
-                                else:
-                                    self.UAI_intime += 1
-                                self.update("unnecesary")
-                        else: 
-
-                            if frame > fr_end:
-                                self.reward_time += -1
-                              
-                            if frame == fr_execution: 
-                                
-                                # print("Action idx: ", action_idx)
-                                # print("*************** UNNECESARY ACTION (late) ***************")
-                                inaction.append("action")
-                                frame_post.append(frame)
-                                self.energy_robot_reward(action)
-                                self.get_energy_robot_reward(action,frame)
-                                reward =  self.reward_energy + self.reward_time
-                                if self.reward_energy > 0:
-                                    self.UAC_late += 1
-                                else:
-                                    self.UAI_late += 1
-                                self.update("unnecesary")
-                                
-                                self.flags['break'] = True
-                                # flag_break = True
-                        # flag_pdb = True
-                               
-                        
-            # if action == 18 (no se hace nada)
-            else:
-                inaction.append([action, self.state, reward])
-                if self.flags['decision'] == True:
-                    if frame == fr_end: 
-                        # CORRECT INACTION
-                        if simple_reward > -1: 
-                            # no se actualiza como antes 
-                            self.CI += 1
-                            # print("Action idx: ", action_idx)
-                            # print("*************** CORRECT INACTION ***************")
-                            reward = self.select_inaction_sample(inaction)
-                  
-                        # INCORRECT INACTION
-                        else: 
-                            self.II += 1
-                            new_threshold, correct_action = self.select_correct_action(action)
-                            self.energy_robot_reward(correct_action)
-                            reward = (-self.reward_energy)
-                            self.flags['evaluation'] = 'Incorrect inaction'
-                           
-                            # print("Action idx: ", action_idx)
-                            # print("*************** INCORRECT INACTION ***************")
+                    if frame == fr_execution:
                         frame_post.append(frame)
 
+                    if frame == fr_end: 
+                        
+                        inaction.append("action")
+                        self.energy_robot_reward(action)
+                        self.get_energy_robot_reward(action,frame)
+                        reward = self.reward_energy  
+                        if reward == 0:
+                            self.UAC_intime += 1
+                        else:
+                            self.UAI_intime += 1
+                        self.update("action")
+                else: 
 
+                    if frame > fr_end:
+                        self.reward_time += -1
+                      
+                    if frame == fr_execution: 
+                        
+                        # print("Action idx: ", action_idx)
+                        # print("*************** UNNECESARY ACTION (late) ***************")
+                        inaction.append("action")
+                        frame_post.append(frame)
+                        self.energy_robot_reward(action)
+                        self.get_energy_robot_reward(action,frame)
+                        reward =  self.reward_energy + self.reward_time
+                        if self.reward_energy == 0:
+                            self.UAC_late += 1
+                        else:
+                            self.UAI_late += 1
+                        self.update("action")
+                        
+                        self.flags['break'] = True
+            
+            
+            
+            else:  
+                if action != 6: 
+                    # CORRECT ACTION
+                    if simple_reward > -1: 
+                        # In time
+                        if fr_execution <= fr_end: 
+                           
+                            # pdb.set_trace()
+                            if frame == fr_execution: 
+                                # print("FROZEN REWARD: ",frozen_reward)
+                                frame_post.append(frame)
+                                # self.energy_robot_reward(action)
+                                # reward =  self.reward_energy + simple_reward
+                                self.reward_energy = 0
+                                reward = 0
+                                
+                            if frame == fr_end:
+                            
+                                self.CA_intime += 1
+                                # print("Action idx: ", action_idx)
+                                # print("*************** CORRECT ACTION (in time) ***************")
+                                inaction.append("action") 
+                                self.update("action")
+                                # self.flags['pdb'] = True
+                        # Late
+                        else: 
+                            if frame == fr_execution: 
+                            
+                                self.CA_late += 1
+                                self.reward_time += -1
+                                # print("Action idx: ", action_idx)
+                                # print("*************** CORRECT ACTION (late) ***************")
+                                inaction.append("action")
+                                frame_post.append(frame)
+                                self.update("action")   
+                                # self.energy_robot_reward(action)
+                                # reward = self.reward_energy + self.reward_time + simple_reward
+                                self.reward_energy = 0
+                                reward = self.reward_time 
+                               
+                                # self.flags['pdb'] = True
+    
+                            if frame >=  fr_end: 
+                            
+                                self.reward_time += -1
+                        
+                    # # INCORRECT
+                    else: 
+                  
+                        # INCORRECT ACTION
+                        if self.flags["action robot"] == True: 
+                            
+                            if fr_execution <= fr_end: 
+                                if frame == fr_execution: 
+                                    frame_post.append(frame)
+                                    
+                                if frame == fr_end: 
+                                    self.IA_intime += 1
+                                    # print("Action idx: ", action_idx)
+                                    # print("*************** INCORRECT ACTION (in time) ***************")
+                                    inaction.append("action")
+                                    new_threshold, correct_action = self.select_correct_action(action)
+                                    self.flags['evaluation'] = 'Incorrect action'
+    
+                                    self.energy_robot_reward(action)
+                                    self.get_energy_robot_reward(action,frame)
+                                    prev_energy = self.reward_energy
+                                    self.energy_robot_reward(correct_action)
+                                    self.reward_energy = self.reward_energy + prev_energy
+                                    
+                                    
+                            else: 
+                                if frame > fr_end:
+                                    self.reward_time += -1
+                                if frame == fr_execution: 
+                                    self.IA_late += 1
+                                    # print("Action idx: ", action_idx)
+                                    # print("*************** INCORRECT ACTION (late) ***************")
+                                
+                                    inaction.append("action")
+                                    frame_post.append(frame)
+                                    new_threshold, correct_action = self.select_correct_action(action)
+                                    self.flags['evaluation'] = 'Incorrect action'
+                              
+                                    self.get_energy_robot_reward(action,frame)
+                                    prev_energy = self.reward_energy
+                                    self.energy_robot_reward(correct_action)
+                                    self.reward_energy = self.reward_energy + prev_energy
+    
+                        # UNNECESARY ACTION 
+                        else: 
+    
+                            if fr_execution <= fr_end: 
+                                
+                                if frame == fr_execution:
+                                    frame_post.append(frame)
+    
+                                if frame == fr_end: 
+                                    
+                                    inaction.append("action")
+                                    self.energy_robot_reward(action)
+                                    self.get_energy_robot_reward(action,frame)
+                                    reward = self.reward_energy  
+                                    if reward == 0:
+                                        self.UAC_intime += 1
+                                    else:
+                                        self.UAI_intime += 1
+                                    self.update("unnecesary")
+                            else: 
+    
+                                if frame > fr_end:
+                                    self.reward_time += -1
+                                  
+                                if frame == fr_execution: 
+                                    
+                                    # print("Action idx: ", action_idx)
+                                    # print("*************** UNNECESARY ACTION (late) ***************")
+                                    inaction.append("action")
+                                    frame_post.append(frame)
+                                    self.energy_robot_reward(action)
+                                    self.get_energy_robot_reward(action,frame)
+                                    reward =  self.reward_energy + self.reward_time
+                                    if self.reward_energy == 0:
+                                        self.UAC_late += 1
+                                    else:
+                                        self.UAI_late += 1
+                                    self.update("unnecesary")
+                                    
+                                    self.flags['break'] = True
+                                    # flag_break = True
+                            # flag_pdb = True
+                               
+                        
+                else:
+                    inaction.append([action, self.state, reward])
+                    if self.flags['decision'] == True:
+                        if frame == fr_end: 
+                            # CORRECT INACTION
+                            if simple_reward > -1: 
+                                # no se actualiza como antes 
+                                self.CI += 1
+                                # print("Action idx: ", action_idx)
+                                # print("*************** CORRECT INACTION ***************")
+                                reward = self.select_inaction_sample(inaction)
+                      
+                            # INCORRECT INACTION
+                            else: 
+                                self.II += 1
+                                new_threshold, correct_action = self.select_correct_action(action)
+                                self.energy_robot_reward(correct_action)
+                                reward = self.reward_energy
+                                self.flags['evaluation'] = 'Incorrect inaction'
+                               
+                                # print("Action idx: ", action_idx)
+                                # print("*************** INCORRECT INACTION ***************")
+                            frame_post.append(frame)
+    
+    
+                        else: 
+                            optim = False
                     else: 
                         optim = False
-                else: 
-                    optim = False
 
 
         return reward, new_threshold, optim, frame_post, correct_action
@@ -746,7 +822,7 @@ class BasicEnv(gym.Env):
         print("     ",state_prev)
         print("\nOBJECTS IN TABLE:")
         for obj in objects_prev_print: 
-            if obj == change and action != 18:
+            if obj == change and action != 6:
                 print('----> ' + obj + ', ')
             else:
                 print(obj + ', ')
@@ -756,7 +832,7 @@ class BasicEnv(gym.Env):
         print("     ",state)
         print("OBJECTS IN TABLE:")
         for obj in objects_print: 
-            if obj == change and action != 18:
+            if obj == change and action != 6:
             
                 print('----> ' + obj + ', ')
             else:
@@ -811,7 +887,7 @@ class BasicEnv(gym.Env):
         frame_post = []
         execution_times = []
         
-        if action != 18:
+        if action != 6:
             self.update_objects_in_table(action)
             memory_objects_in_table.append(list(self.objects_in_table.values()))
             # print("Threshold: ",threshold)
@@ -843,7 +919,8 @@ class BasicEnv(gym.Env):
         else:
                 
             while frame <= threshold:
-                
+                # print(frame)
+                # print(ATOMIC_ACTIONS_MEANINGS[undo_one_hot(self.state[0:33])] )
                 current_state = self.state #Current state
     
                 if self.flags['decision'] == False:   
@@ -894,8 +971,12 @@ class BasicEnv(gym.Env):
                 self.rwd_history.append([reward]) # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
                 self.h_history.append([self.person_state])
                 self.r_history.append([self.robot_state])
+                self.rwd_time_h.append([self.reward_time])
+                self.rwd_energy_h.append([self.reward_energy])
                 
-                #print("In STEP\nFrame: ", frame, "\nHuman: ", self.person_state, " |  Robot: ", self.robot_state)
+                #print("In history saving\nReward: ", reward, " | Reward time: ", self.reward_time, " | Reward energy: ", self.reward_energy)
+                
+                #print("Frame: ", frame, "| Human: ", self.person_state, " |  Robot: ", self.robot_state)
                 
 
                 #print("Frame: ", frame, "Human: ", self.person_state, " | Robot: ", self.robot_state)
@@ -915,16 +996,21 @@ class BasicEnv(gym.Env):
                     break
                     
                     
-        #if optim:
-        #	self.prints_terminal(action, frame_prev, frame_post, reward)
-        
+
+            
         if self.flags['decision'] == True:
             self.state[110:133] = memory_objects_in_table[len(memory_objects_in_table)-1]
 	
- 	
+        #if optim:
+        #        self.prints_terminal(action, frame_prev, frame_post, reward)
+        #        self.prints_debug(action)
+               
+        #        pdb.set_trace()
+             
         self.total_reward += reward 
 
-        return self.state, reward, done, optim,  self.flags['pdb'], self.reward_time, self.reward_energy, execution_times, action       
+        
+        return self.state, reward, done, optim,  self.flags['pdb'], self.reward_time, self.reward_energy, execution_times, action, self.flags['threshold'], self.prediction_error, self.total_prediction       
         
         
     def get_total_reward(self):
@@ -942,7 +1028,7 @@ class BasicEnv(gym.Env):
     		if not os.path.exists(path): os.makedirs(path)
     		
     		file_name = "{0}.npz".format(video_idx)
-    		np.savez(os.path.join(path, file_name), h_history=self.h_history, r_history=self.r_history, rwd_history=self.rwd_history)
+    		np.savez(os.path.join(path, file_name), h_history=self.h_history, r_history=self.r_history, rwd_history=self.rwd_history, rwd_time_h=self.rwd_time_h, rwd_energy_h=self.rwd_energy_h)
     
     
     def reset(self):
@@ -1016,9 +1102,15 @@ class BasicEnv(gym.Env):
         self.CI = 0
         self.II = 0
         
+        self.prediction_error = 0
+        self.total_prediction = 0
+        
+        
         self.r_history = []
         self.h_history = []
         self.rwd_history = []
+        self.rwd_time_h = []
+        self.rwd_energy_h = []
         
         self.objects_in_table = OBJECTS_INIT_STATE.copy()
         memory_objects_in_table.append(list(self.objects_in_table.values()))
@@ -1028,6 +1120,7 @@ class BasicEnv(gym.Env):
 
 
     def _take_action(self, action, state = []): 
+        global annotations, action_idx
         """
         Version of the take action function that considers a unique correct robot action for each state, related to the required object and its position (fridge or table). 
                 
@@ -1046,43 +1139,50 @@ class BasicEnv(gym.Env):
         reward = 0
         positive_reward = POSITIVE_REWARD
         
+        self.total_prediction += 1
+        
+        if annotations['label'][action_idx] != state:
+            self.prediction_error += 1
+            state = annotations['label'][action_idx]
+            # pdb.set_trace()
+        
         self.flags["action robot"] = False
 
         if state == 1: #'pour milk'
             
-            if action == 18: #'bring milk'
+            if action == 6: #'bring milk'
                 reward = positive_reward
                 
             else: reward = -1    
         
         elif state == 2: #'pour water'
            
-            if action == 18: #'bring water'
+            if action == 6: #'bring water'
                 reward = positive_reward
             else: reward = -1
         
         elif state == 3: #'pour coffee'
-            if action == 18: #'do nothing' -> *coffee is at arm's reach
+            if action == 6: #'do nothing' -> *coffee is at arm's reach
                 reward = positive_reward
             else: reward = -1                    
         
         elif state == 4: #'pour Nesquik'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
         
         elif state == 5: #'pour sugar'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
         
         elif state == 6: #'put microwave'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1    
         
         elif state == 7: #'stir spoon
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
         
@@ -1090,7 +1190,7 @@ class BasicEnv(gym.Env):
             
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'milk'][0]
-            if action == 8:
+            if action == 2:
                 # print("ENTRA")
                 reward = positive_reward
            
@@ -1098,212 +1198,221 @@ class BasicEnv(gym.Env):
            
                 # print("AQUI TB")
                 self.flags["action robot"] = False
-                if action == 18: 
-                    reward = positive_reward
+                if action == 6: 
+                    # self.update("action")
+                    
+                    reward = 5
                 else:
-                    reward = -1
+                    reward = -5
             else: reward = -1                    
         
         elif state == 9: #'extract water fridge'
             self.flags["action robot"] = True
-            if action == 17:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
         
         elif state == 10: #'extract sliced bread'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
         
         elif state == 11: #'put toaster'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1    
         
         elif state == 12: #'extract butter fridge'
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'butter'][0]
-            if action == 1: #'bring butter'
+            if action == 0: #'bring butter'
                 reward = positive_reward
                 
             elif object_before_action[key] == 1:
+                # pdb.set_trace()
                 self.flags["action robot"] = False
-                if action == 18: 
-                    reward = positive_reward
+                if action == 6: 
+                    reward = 5
                 else:
-                    reward = -1
+                    reward = -5
             else: reward = -1
         
         elif state == 13: #'extract jam fridge'
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'jam'][0]
-            if action == 6: #'bring jam'
+            if action == 1: #'bring jam'
                 reward = positive_reward
                 
             elif object_before_action[key] == 1:
+                # pdb.set_trace()
                 self.flags["action robot"] = False
-                if action == 18: 
-                    reward = positive_reward
+                if action == 6: 
+                    reward = 5
                 else:
-                    reward = -1
+                    reward = -5
             else: reward = -1                    
         
         elif state == 14: #'extract tomato sauce fridge'
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'tomato sauce'][0]
-            if action == 16: #'bring tomato sauce'
+            if action == 5: #'bring tomato sauce'
                 reward = positive_reward
                 
             elif object_before_action[key] == 1:
-           
+                # pdb.set_trace()
                 self.flags["action robot"] = False
-                if action == 18: 
-                    reward = positive_reward
+                if action == 6: 
+                    reward = 5
                 else:
-                    reward = -1
+                    reward = -5
             else: reward = -1
         
         elif state == 15: #'extract nutella fridge'
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'nutella'][0]
-            if action == 10: #'bring nutella'
+            if action == 3: #'bring nutella'
                 reward = positive_reward
                 
             elif object_before_action[key] == 1:
+                # pdb.set_trace()
                 self.flags["action robot"] = False
-                if action == 18: 
-                    reward = positive_reward
+                if action == 6: 
+                    reward = 5
                 else:
-                    reward = -1
+                    reward = -5
             else: reward = -1            
         
         elif state == 16: #'spread butter'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1    
         
         elif state == 17: #'spread jam'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
         
         elif state == 18: #'spread tomato sauce'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1                    
         
         elif state == 19: #'spread nutella'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
         
         elif state == 20: #'pour olive oil'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
             
         elif state == 21: #'put jam fridge'
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'jam'][0]
-            if action == 19:
+            if action == 7:
                 reward = positive_reward
                 
             elif object_before_action[key] == 0:
+                # pdb.set_trace()
                 self.flags["action robot"] = False
-                if action == 18: 
-                    reward = positive_reward
+                if action == 6: 
+                    reward = 5
                 else:
-                    reward = -1
+                    reward = -5
             else: reward = -1    
         
         elif state == 22: #'put butter fridge'
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'butter'][0]
-            if action == 20:
+            if action == 8:
                 reward = positive_reward
                
             elif object_before_action[key] == 0:
+                # pdb.set_trace()
                 self.flags["action robot"] = False
-                if action == 18: 
-                    reward = positive_reward
+                if action == 6: 
+                    reward = 5
                 else:
-                    reward = -1
+                    reward = -5
             else: reward = -1
         
         elif state == 23: #'put tomato sauce fridge'
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'tomato sauce'][0]
-            if action == 21:
+            if action == 9:
                 reward = positive_reward
                 
             elif object_before_action[key] == 0:
+                # pdb.set_trace()
                 self.flags["action robot"] = False
-                if action == 18: 
-                    reward = positive_reward
+                if action == 6: 
+                    reward = 5
                 else:
-                    reward = -1
+                    reward = -5
             else: reward = -1                    
         
         elif state == 24: #'put nutella fridge'
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'nutella'][0]
-            if action == 22:
+            if action == 10:
                 reward = positive_reward
                
             elif object_before_action[key] == 0:
+                # pdb.set_trace()
                 self.flags["action robot"] = False
-                if action == 18: 
-                    reward = positive_reward
+                if action == 6: 
+                    reward = 5
                 else:
-                    reward = -1
+                    reward = -5
             else: reward = -1
         
         elif state == 25: #'pour milk bowl'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
             
         elif state == 26: #'pour cereals bowl'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1    
         
         elif state == 27: #'pour nesquik bowl'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
         
         elif state == 28: #'put bowl microwave'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1                    
         
         elif state == 29: #'stir spoon bowl'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1
         
         elif state == 30: #'put milk fridge'
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'milk'][0]
-            if action == 23:
+            if action == 11:
                 reward = positive_reward
                 
             elif object_before_action[key] == 0:
                 self.flags["action robot"] = False
-                if action == 18: 
-                    reward = positive_reward
+                if action == 6: 
+                    reward = 5
                 else:
-                    reward = -1
+                    reward = -5
             else: reward = -1
             
         elif state == 31: #'put sliced bread plate'
-            if action == 18:
+            if action == 6:
                 reward = positive_reward
             else: reward = -1    
         
         else:
-            if action == 18: #'do nothing'
+            if action == 6: #'do nothing'
                 reward = positive_reward
             else: reward = -1                    
 
@@ -1382,7 +1491,7 @@ class BasicEnv(gym.Env):
         #ver porque los states aveces tienen un elemento, de resto creo que esta todo ok
         global frame, action_idx, annotations
         
-        guarda = 50 
+        guarda = 20 
         done = False
         state = []
         action = []
@@ -1392,7 +1501,7 @@ class BasicEnv(gym.Env):
         
         self.transition()
         fr_end = int(annotations['frame_end'][action_idx-1])
-        length = len(annotations)
+       
         print("          Frame: ", frame)
         print("Action idx: ",action_idx)
         # print(annotations['frame_end'].iloc[-2])
@@ -1400,12 +1509,9 @@ class BasicEnv(gym.Env):
         if frame >= annotations['frame_end'].iloc[-2]:
             frame = annotations['frame_end'].iloc[-1]
             done = True
-        _,real_correct_action = self.select_correct_action_video (action_idx)
-        cont = 0
+       
+       
         df_video = self.get_possibility_objects_in_table()
-        
-        
-        
         
         name_actions = []
         for index, row in df_video.iterrows():
@@ -1421,116 +1527,121 @@ class BasicEnv(gym.Env):
         for i in keys:
             video_dict[i] = 0
             
-        prev_state = self.prev_state
-        while frame < fr_end:
-            self._take_action(15)
-            if self.flags["action robot"] == True: 
-                _, correct_action = self.select_correct_action(15)
-                
-                
-                print("Frame: ",frame)
-                print('State: ',ATOMIC_ACTIONS_MEANINGS[undo_one_hot(self.state[:32])])
-                print("Correct action: ",ROBOT_ACTIONS_MEANINGS[correct_action])
-                print("real_correct_action: ",ROBOT_ACTIONS_MEANINGS[real_correct_action])
-                # pdb.set_trace()
-                # if real_correct_action == 21:
-                # pdb.set_trace()
-                if ROBOT_ACTIONS_MEANINGS[correct_action] in df_video['Actions'].values:
-                     df_action = df_video.loc[df_video['Actions']==ROBOT_ACTIONS_MEANINGS[correct_action]]
-                     fr_init = int(df_action['Frame init'])
-                     fr_end = int(df_action['Frame end'])
-                     duration = ROBOT_ACTION_DURATIONS[correct_action]
-                     if fr_init < frame < fr_end-duration:
-                         if video_dict[ROBOT_ACTIONS_MEANINGS[correct_action]] == 0:
-                             self.update_objects_in_table(correct_action)
-                             memory_objects_in_table.append(list(self.objects_in_table.values()))
-                             video_dict[correct_action] = 0
-                         if ATOMIC_ACTIONS_MEANINGS[undo_one_hot(self.state[:32])] == ATOMIC_ACTIONS_MEANINGS[annotations['label'][action_idx]]:
-                        
-                             if len(memory_objects_in_table) > 1:
-                                 state_append = self.state
-                                 state_append[56:] = memory_objects_in_table[len(memory_objects_in_table)-2]
-                                 state.append(state_append)
-                            
-                             else: 
-                                 state_append = self.state
-                                 state_append[56:] = memory_objects_in_table[len(memory_objects_in_table)-1]
-                                 state.append(state_append)
-                                 
-                             action.append(correct_action)
-                         elif ATOMIC_ACTIONS_MEANINGS[undo_one_hot(self.prev_state[:32])] == ATOMIC_ACTIONS_MEANINGS[annotations['label'][action_idx-1]]:
-                           
-                                if len(memory_objects_in_table) > 1:
-                                    state_append = self.prev_state
-                                    state_append[56:] = memory_objects_in_table[len(memory_objects_in_table)-2]
-                                    state.append(state_append)
-                               
-                                else: 
-                                    state_append = self.prev_state
-                                    state_append[56:] = memory_objects_in_table[len(memory_objects_in_table)-1]
-                                    state.append(state_append)
-                                    
-                                action.append(correct_action)
-
-            elif real_correct_action == 18:
-                if ATOMIC_ACTIONS_MEANINGS[undo_one_hot(self.state[:32])] == ATOMIC_ACTIONS_MEANINGS[annotations['label'][action_idx]]:
-                    
-                    no_actions.append(18)
-                    no_action_state.append(self.state)
-                elif ATOMIC_ACTIONS_MEANINGS[undo_one_hot(self.prev_state[:32])] == ATOMIC_ACTIONS_MEANINGS[annotations['label'][action_idx-1]]:
-                        
-                        no_actions.append(18)
-                        no_action_state.append(self.prev_state)
-                    
-            self.transition()
-           
+        person_states = annotations['label']
         
+        df_video_dataset = df_video.copy()
+        
+        if not df_video_dataset.empty:
+            print(df_video)
+            
+            for idx,value in enumerate(person_states):
+                for obj in INTERACTIVE_OBJECTS_ROBOT:
+                    if obj in ATOMIC_ACTIONS_MEANINGS[value]: 
+                        
+                        if 'extract' in ATOMIC_ACTIONS_MEANINGS[value]:
+                            if idx != 0: 
+                                action_name = 'bring '+ obj
+                                fr_init = annotations['frame_init'][idx-1]
+                                
+                                # df_selected = df_video_dataset.loc[df_video_dataset['Actions']==action_name]
+                                df_video_dataset['Frame init'].loc[df_video_dataset['Actions']==action_name] = fr_init
+                                # pdb.set_trace()
+                                
+                        elif 'put' in ATOMIC_ACTIONS_MEANINGS[value]: 
+                            action_name = 'put '+ obj +' fridge'
+                            fr_init = annotations['frame_init'][idx-1]
+                            # df_selected = df_video_dataset.loc[df_video_dataset['Actions']==action_name]
+                            df_video_dataset['Frame init'].loc[df_video_dataset['Actions']==action_name] = fr_init
+                      
+                   
+            df_video_dataset.sort_values("Frame init")
+            print(df_video_dataset)
+            
 
-        else:
-
-            frame = int(annotations['frame_init'][action_idx]) - 1
+        # print(frame)
+        print("fr end: ",fr_end)        
+        while frame < fr_end:
+            if not df_video_dataset.empty:
+                
+        
+                for index, row in df_video_dataset.iterrows():
+                    
+                        correct_action = [k for k, v in ROBOT_ACTIONS_MEANINGS.items() if v == row['Actions']]
+                        correct_action = correct_action[0]
+                        duration = ROBOT_ACTION_DURATIONS[correct_action]
+                        
+                      
+                        if row['Frame init'] + guarda < frame < row['Frame end'] - duration:
+                            # pdb.set_trace()
+                            while frame <  row['Frame end'] - duration:
+                                if video_dict[ROBOT_ACTIONS_MEANINGS[correct_action]] == 0:
+                                    if 'tomato' in ROBOT_ACTIONS_MEANINGS[correct_action]:
+                                        current_obj = 'tomato sauce'
+                                    else:
+                                        current_obj = ROBOT_ACTIONS_MEANINGS[correct_action].split(" ")[1]
+                                    if 'bring' in ROBOT_ACTIONS_MEANINGS[correct_action]:
+                                        if self.objects_in_table[current_obj] == 1:
+                                            self.objects_in_table[current_obj] = 0
+                                            print(ROBOT_ACTIONS_MEANINGS[correct_action])
+                                            print(self.objects_in_table)
+                                            print("SE HA REAJUSTADO PARA bring")
+                                            # pdb.set_trace()
+                                    elif 'put' in ROBOT_ACTIONS_MEANINGS[correct_action]:
+                                        if self.objects_in_table[current_obj] == 0:
+                                            self.objects_in_table[current_obj] = 1
+                                            print(ROBOT_ACTIONS_MEANINGS[correct_action])
+                                            print(self.objects_in_table)
+                                            print("SE HA REAJUSTADO PARA PUT")
+                                            # pdb.set_trace()
+                                    memory_objects_in_table = list(self.objects_in_table.values())
+                                    self.update_objects_in_table(correct_action)
+                                    video_dict[ROBOT_ACTIONS_MEANINGS[correct_action]] = 1
+                                    
+                                if len(memory_objects_in_table) > 1:
+                                    state_append = self.state
+                                    state_append[110:133] = memory_objects_in_table
+                                    state.append(state_append)
+                                        
+                                
+                                action.append(correct_action)
+                                self.transition()
+                        else:
+                            no_actions.append(6)
+                            no_action_state.append(self.state)
+                            
+                       
+                            self.transition()
+     
+            else:
+                no_actions.append(6)
+                no_action_state.append(self.state)
+                self.transition()
+                
+                # frame = int(annotations['frame_init'][action_idx]) - 1
             
             # print("Action idx: ",action_idx)
-    
+        
+
         
         if len(action)>0:
             new_no_actions = []
             new_no_actions_state = []
+            number_of_actions = round(len(action)*0.6)
+            random_positions = random.sample(range(0,len(action)),number_of_actions)        
+            action = ([action[i] for i in random_positions])
+            state = ([state[i] for i in random_positions])
         else: 
-            number_of_no_actions = round(len(no_actions)*0.01)
+            number_of_no_actions = round(len(no_actions)*0.2)
             random_positions = random.sample(range(0,len(no_actions)),number_of_no_actions)        
             new_no_actions = ([no_actions[i] for i in random_positions])
             new_no_actions_state = ([no_action_state[i] for i in random_positions])
             
-              
-        # # FILTRAR LO QUE PUEDE ESTAR MAL
-        # action_count = Counter(action)
-        # if len(action_count.keys()) > 1:
-            
-        #     print("Pre: ",action)
 
-        #     key_max = max(zip(action_count.values(), action_count.keys()))[1]
-        #     print(key_max)
-        
-        #     action_old = action
-        #     state_old = state
-            
-        #     state = []
-        #     action = []
-        #     for idx,val in enumerate(action_old): 
-        #         if val == key_max:
-        #             action.append(val)
-        #             state.append(state_old[idx])
-                
-            
-        # if len(state) < guarda/4: 
-        #     state = []
-        #     action = []
             
         print("Post: ",action)
-  
+        print("Frame: ", frame)
         print("")
-        self.prints_terminal(18, 0, frame, 1)
+        # self.prints_terminal(18, 0, frame, 1)
         print("State: ",len(state))
         print("No actions: ",len(no_actions))
         print("New no actions: ", len(new_no_actions))
@@ -1542,12 +1653,14 @@ class BasicEnv(gym.Env):
         
         # if (len(new_no_actions)==0 and len(state)==0):
         #     pdb.set_trace()
-        self.prints_terminal(18, 0, frame, 1)
+        # self.prints_terminal(18, 0, frame, 1)
         
         if len(action)>0:
             state_env = state
             action_env = action
-            
+            print("accion: ",ROBOT_ACTIONS_MEANINGS[action_env[0]] )
+            # if action_env[0] == 6:
+                # pdb.set_trace()
             # for mem in memory_objects_in_table:
               
             #     for idx,obj in OBJECTS_MEANINGS.items():
@@ -1555,43 +1668,43 @@ class BasicEnv(gym.Env):
             #             print(obj)
             #     print("--------------------------")
                 
-            variations_in_table = len(memory_objects_in_table)
-            if variations_in_table < 2:
-                oit_prev = memory_objects_in_table[0]
-                oit = memory_objects_in_table[0]
-            else:
-                oit_prev = memory_objects_in_table[variations_in_table-2]
-                oit = memory_objects_in_table[variations_in_table-1]
+            # variations_in_table = len(memory_objects_in_table)
+            # if variations_in_table < 2:
+            #     oit_prev = memory_objects_in_table[0]
+            #     oit = memory_objects_in_table[0]
+            # else:
+            #     oit_prev = memory_objects_in_table[variations_in_table-2]
+            #     oit = memory_objects_in_table[variations_in_table-1]
                 
-            objects_prev_print = []
-            for key,value in OBJECTS_MEANINGS.items():
-                if oit_prev[key] == 1: 
-                    objects_prev_print.append(value)
+            # objects_prev_print = []
+            # for key,value in OBJECTS_MEANINGS.items():
+            #     if oit_prev[key] == 1: 
+            #         objects_prev_print.append(value)
                 
-            objects_print = []
-            for key,value in OBJECTS_MEANINGS.items():
-                if oit[key] == 1: 
-                    objects_print.append(value)
+            # objects_print = []
+            # for key,value in OBJECTS_MEANINGS.items():
+            #     if oit[key] == 1: 
+            #         objects_print.append(value)
                     
-            set1 = set(objects_prev_print)
-            set2 = set(objects_print)
+            # set1 = set(objects_prev_print)
+            # set2 = set(objects_print)
             
-            missing = list(sorted(set1 - set2))
-            added = list(sorted(set2 - set1))
-            print("Frame: ",frame)
-            if len(missing) > 0:
-                print("------> MISSING: ", missing[0])
-            if len(added) > 0:
-                print("------> ADDED: ", added[0])
-            # pdb.set_trace()
+            # missing = list(sorted(set1 - set2))
+            # added = list(sorted(set2 - set1))
+            # print("Frame: ",frame)
+            # if len(missing) > 0:
+            #     print("------> MISSING: ", missing[0])
+            # if len(added) > 0:
+            #     print("------> ADDED: ", added[0])
+            # # pdb.set_trace()
             
-            for idx, state_ in enumerate(state_env): 
-                print("Estado: ",ATOMIC_ACTIONS_MEANINGS[undo_one_hot(state_[:32])])
-                objects_print = []
-                for key,value in OBJECTS_MEANINGS.items():
-                    if state_[56:][key] == 1: 
-                        objects_print.append(value)
-                print("Objects in table: ",*objects_print)
+            # for idx, state_ in enumerate(state_env): 
+            #     print("Estado: ",ATOMIC_ACTIONS_MEANINGS[undo_one_hot(state_[:32])])
+            #     objects_print = []
+            #     for key,value in OBJECTS_MEANINGS.items():
+            #         if state_[56:][key] == 1: 
+            #             objects_print.append(value)
+            #     print("Objects in table: ",*objects_print)
             # pdb.set_trace()
         else:
             state_env= new_no_actions_state
@@ -1622,3 +1735,4 @@ class BasicEnv(gym.Env):
     
     def close(self):
         pass
+

@@ -57,8 +57,26 @@ action_dic = cfg.ROBOT_ACTIONS_MEANINGS
 
 
 
-def post_processed_possible_actions(out,index_posible_actions,posible_actions):
-    
+def post_processed_possible_actions(out,index_posible_actions):
+    """
+    Function that performs a post-processing of the neural network output. 
+    In case the output is an action that is not available, either because 
+    of the object missing or left on the table, the most likely possible action will be selected 
+    from the output of the neural network,
+
+    Parameters
+    ----------
+    out : (tensor)
+        DQN output.
+    index_posible_actions : (list)
+        Posible actions taken by the robot according to the objects available.
+
+    Returns
+    -------
+    (tensor)
+        Action to be performed by the robot.
+
+    """
     action_pre_processed = out.max(1)[1].view(1,1)
      
     if action_pre_processed.item() in index_posible_actions:
@@ -66,10 +84,13 @@ def post_processed_possible_actions(out,index_posible_actions,posible_actions):
     else:
         out = out.cpu().numpy()
         out = out[0]
-        posible_actions = np.asarray(posible_actions)
-        action = np.argmax(posible_actions * out)
+   
+        idx = np.argmax(out[index_posible_actions])
+        action = index_posible_actions[idx]
+
         return torch.tensor([[action]], device=device, dtype=torch.long)
     
+
 
 def select_action(state):
     
@@ -81,7 +102,7 @@ def select_action(state):
     with torch.no_grad():
     	out = policy_net(state)
     
-    best_action = post_processed_possible_actions(out, index_posible_actions, posible_actions)	
+    best_action = action = post_processed_possible_actions(out,index_posible_actions)
     #output = out.detach().cpu().numpy().squeeze()	
 
     #print("\nState: ", state_name)
@@ -96,7 +117,8 @@ def select_action(state):
     """
     return best_action
 
-        
+     
+
         
         
 def action_rate(decision_cont,state):
@@ -105,7 +127,7 @@ def action_rate(decision_cont,state):
         action_selected = select_action(state)
         flag_decision = True 
     else:
-        action_selected = 18
+        action_selected = 6
         flag_decision = False
     
     return action_selected, flag_decision
@@ -248,7 +270,8 @@ for f in pt_files:
 	    		action = action.item()
 	    	
 	    	array_action = [action,flag_decision, 'val']
-	    	next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times, correct_action = env.step(array_action)
+	    	#next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times, correct_action, _ = env.step(array_action)
+	    	next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times, correct_action, type_threshold, error_pred, total_pred = env.step(array_action)
 	    	
 	    	
 	    	reward = torch.tensor([reward], device=device)
@@ -391,7 +414,7 @@ plt.title("Incorrect inactions")
 plt.plot(epoch_test, epoch_II)
 plt.xlabel("Epochs")
 
-plt.show()
+# plt.show()
 
 if env.test: fig.savefig(save_path+'/00_testEPOCHS_actions.jpg')
 else: fig.savefig(save_path+'/00_trainEPOCHS_actions.jpg')
@@ -402,7 +425,7 @@ plt.title("Reward")
 plt.plot(epoch_test, epoch_reward)
 plt.xlabel("Epochs")
 
-plt.show()
+# plt.show()
 
 if env.test: fig2.savefig(save_path+'/00_testEPOCHS_reward.jpg')
 else: fig2.savefig(save_path+'/00_trainEPOCHS_reward.jpg')
@@ -418,7 +441,7 @@ plt.plot(epoch_test, epoch_total_time_interaction, label='Interaction')
 plt.legend()
 plt.ylabel("Frames")
 
-plt.show()
+# plt.show()
 
 if env.test: fig3.savefig(save_path+'/00_testEPOCHS_time.jpg')
 else: fig3.savefig(save_path+'/00_trainEPOCHS_time.jpg')

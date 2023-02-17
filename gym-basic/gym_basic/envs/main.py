@@ -52,23 +52,23 @@ frame = 0 #Current frame
 correct_action = -1 # esto para que es
 
 
-labels_pkl = 'labels_margins'
+labels_pkl = 'labels_margins.pkl'
 path_labels_pkl = os.path.join(videos_realData[video_idx], labels_pkl)
 
 annotations = np.load(path_labels_pkl, allow_pickle=True)
 
-
+#print(annotations)
 
 
 class BasicEnv(gym.Env):
     message = "Custom environment for recipe preparation scenario."
-        
-
-    
+          
     def __init__(self, display=False, test=False):
         self.action_space = gym.spaces.Discrete(ACTION_SPACE) #[0, ACTION_SPACE-1]
 
         self.observation_space = gym.spaces.Discrete(1157) # Next Action + Action Recog + VWM + Obj in table + Z 
+        
+        self.observation_space = gym.spaces.Discrete(133)
             
         self.state = [] #One hot encoded state        
         self.total_reward = 0
@@ -106,7 +106,7 @@ class BasicEnv(gym.Env):
             
             total_videos = len(videos_realData)
             
-            labels_pkl = 'labels_margins'
+            labels_pkl = 'labels_margins.pkl'
             path_labels_pkl = os.path.join(videos_realData[video_idx], labels_pkl)
             
             annotations = np.load(path_labels_pkl, allow_pickle=True)
@@ -130,6 +130,8 @@ class BasicEnv(gym.Env):
         self.r_history = []
         self.h_history = []
         self.rwd_history = []
+        self.rwd_time_h = []
+        self.rwd_energy_h = []
         
     def get_frame(self):
         global frame
@@ -149,7 +151,7 @@ class BasicEnv(gym.Env):
    
     def energy_robot_reward (self, action):
          
-        self.reward_energy = -ROBOT_ACTION_DURATIONS[action]/10 
+        self.reward_energy = -ROBOT_ACTION_DURATIONS[action]/1
     
     def get_possibility_objects_in_table (self):
         global annotations
@@ -967,8 +969,12 @@ class BasicEnv(gym.Env):
                 self.rwd_history.append([reward]) # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
                 self.h_history.append([self.person_state])
                 self.r_history.append([self.robot_state])
+                self.rwd_time_h.append([self.reward_time])
+                self.rwd_energy_h.append([self.reward_energy])
                 
-                #print("In STEP\nFrame: ", frame, "\nHuman: ", self.person_state, " |  Robot: ", self.robot_state)
+                #print("In history saving\nReward: ", reward, " | Reward time: ", self.reward_time, " | Reward energy: ", self.reward_energy)
+                
+                #print("Frame: ", frame, "| Human: ", self.person_state, " |  Robot: ", self.robot_state)
                 
 
                 #print("Frame: ", frame, "Human: ", self.person_state, " | Robot: ", self.robot_state)
@@ -1020,7 +1026,7 @@ class BasicEnv(gym.Env):
     		if not os.path.exists(path): os.makedirs(path)
     		
     		file_name = "{0}.npz".format(video_idx)
-    		np.savez(os.path.join(path, file_name), h_history=self.h_history, r_history=self.r_history, rwd_history=self.rwd_history)
+    		np.savez(os.path.join(path, file_name), h_history=self.h_history, r_history=self.r_history, rwd_history=self.rwd_history, rwd_time_h=self.rwd_time_h, rwd_energy_h=self.rwd_energy_h)
     
     
     def reset(self):
@@ -1055,7 +1061,7 @@ class BasicEnv(gym.Env):
         # FOR REAL DATA --------------------------------------------------------------- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
         # 1) Read labels and store it in annotation_pkl
-        labels_pkl = 'labels_margins'
+        labels_pkl = 'labels_margins.pkl'
         path_labels_pkl = os.path.join(videos_realData[video_idx], labels_pkl)
         
         #print("\n\nPath to annotation pkl: ", path_labels_pkl)
@@ -1080,9 +1086,9 @@ class BasicEnv(gym.Env):
         
         self.total_reward = 0   
             
-        self.state = concat_3_vectors(data, list(OBJECTS_INIT_STATE.values()), z)
-        
-   
+        #self.state = concat_3_vectors(data, list(OBJECTS_INIT_STATE.values()), z) #With Z variable
+        self.state = concat_vectors(data, list(OBJECTS_INIT_STATE.values())) #Without Z variable
+
         self.CA_intime = 0
         self.CA_late = 0
         self.IA_intime = 0
@@ -1101,6 +1107,8 @@ class BasicEnv(gym.Env):
         self.r_history = []
         self.h_history = []
         self.rwd_history = []
+        self.rwd_time_h = []
+        self.rwd_energy_h = []
         
         self.objects_in_table = OBJECTS_INIT_STATE.copy()
         memory_objects_in_table.append(list(self.objects_in_table.values()))
@@ -1471,7 +1479,12 @@ class BasicEnv(gym.Env):
         	oit = memory_objects_in_table[variations_in_table-1]
         		
 
-        self.state = concat_3_vectors(data, oit, z)
+        
+        
+        #self.state = concat_3_vectors(data, oit, z)  #With Z variable      
+        self.state = concat_vectors(data, oit) #Without Z variable
+        
+        #print("STATE in transition: \n", self.state)
 
 
 

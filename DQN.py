@@ -11,9 +11,9 @@ class DQN(nn.Module):
 		
 		self.feature_dim = 133 #First features and Z variable separated
 		
-		self.input_layer1 = nn.Linear(self.feature_dim, 256)
+		self.input_layer1 = nn.Linear(self.feature_dim, 512) #When Z variable, output dim=256
 		
-		self.input_layer2 = nn.Linear(input_size-self.feature_dim, 256)
+		#self.input_layer2 = nn.Linear(input_size-self.feature_dim, 256) #For the Z variable
 			
 		self.hidden_layer = nn.Linear(512, 256)
 				
@@ -30,12 +30,14 @@ class DQN(nn.Module):
 		
 		# Separate input tensor
 		input1 = x[:, 0:self.feature_dim]
-		input2 = x[:, self.feature_dim:]
-
-		x1 = self.relu(self.input_layer1(input1))
-		x2 = self.relu(self.input_layer2(input2))
-
-		x = torch.cat((x1, x2), 1) #Concat after 1st layer pass
+		x = self.relu(self.input_layer1(input1))
+		
+		
+		#For the Z variable
+		#x1 = self.relu(self.input_layer1(input1))
+		#input2 = x[:, self.feature_dim:]
+		#x2 = self.relu(self.input_layer2(input2))
+		#x = torch.cat((x1, x2), 1) #Concat after 1st layer pass
 		
 		x = self.relu(self.hidden_layer(x))
 		x = self.output_layer(x)
@@ -84,4 +86,4 @@ class ReplayMemory(object):
 		return 0
 	
 	def __len__(self):
-		return len(self.memory)			
+		return len(self.memory)	

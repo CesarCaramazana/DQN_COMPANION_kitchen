@@ -6,10 +6,10 @@ import PySimpleGUI as sg #Graphic Interface
 import glob
 import time
 import os
-
+from statistics import mean
 import matplotlib.pyplot as plt
 import config as cfg
-
+import pandas as pd
 
 N_ATOMIC_ACTIONS = cfg.N_ATOMIC_ACTIONS
 N_OBJECTS = cfg.N_OBJECTS
@@ -292,6 +292,10 @@ def reward_confirmation_perform(action):
     
     
     return reward
+
+
+
+
 def plot_each_epoch(i_epoch, phase,save_path, total_results,total_loss_epoch,total_reward_epoch,total_time_video,total_time_execution_epoch,total_reward_energy_epoch,total_reward_time_epoch,ex_rate=0):
                 
     n = int(cfg.NUM_EPOCH*0.05)
@@ -303,259 +307,276 @@ def plot_each_epoch(i_epoch, phase,save_path, total_results,total_loss_epoch,tot
         plot_detailed_results(n, total_results, save_path, phase)
         
 
-    fig1 = plt.figure(figsize=(20, 6))
-    plt.subplot(131)
-    plt.title(phase+" Loss")
-    plt.xlabel("Epoch")
-    plt.ylabel("Average MSE")
-    plt.plot(total_loss_epoch, 'r')
-
     
-    plt.subplot(132)
-    plt.title(phase+" Reward")
-    plt.xlabel("Epoch")
-    plt.ylabel("Episode reward")
-    plt.plot(total_reward_epoch)
-  
-    
-    if phase=='train':
-        plt.subplot(133)
-        plt.title(phase+" Exploration rate")
-        plt.xlabel("Epoch")
-        plt.ylabel("Epsilon")
-        plt.plot(ex_rate)
-    fig1.savefig(save_path+'/'+phase+'_results_epoch.jpg')
+    if phase == 'train':
+    	fig1 = plt.figure(figsize=(20, 6))
+    	plt.subplot(121)
+    	plt.title(phase+" Loss")
+    	plt.xlabel("Epoch")
+    	plt.ylabel("MSE")
+    	plt.plot(total_loss_epoch, 'r')
+    	plt.subplot(122)
+    	plt.title(phase+" Exploration rate")
+    	plt.xlabel("Epoch")
+    	plt.ylabel("Epsilon")
+    	plt.plot(ex_rate, 'c')
+    	fig1.savefig(save_path+'/'+phase+'_LOSS_EXPLORATION.jpg')
     plt.close()
     
-    fig3 = plt.figure(figsize=(34, 12))
-    plt.suptitle("Amount of actions taken during "+phase)
+    
+    
+    # --------- ACTIONS ---------------------------
+    fig1 = plt.figure(figsize=(25, 8))
+
+    
     plt.subplot2grid((2,5), (0,0))
-    plt.title("Correct actions (in time)")
+    plt.title("Short-term correct actions (in time)")
     plt.plot(total_results[0])
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
+
+
     plt.subplot2grid((2,5), (1,0))
-    plt.title("Correct actions (late)")
+    plt.title("Short-term correct actions (late)")
     plt.plot(total_results[1])
     plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
-    plt.subplot2grid((2,5), (0,1))
+
+       
+    plt.subplot2grid((2,5), (0,4))
     plt.title("Incorrect actions (in time)")
     plt.plot(total_results[2])
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
-    plt.subplot2grid((2,5), (1,1))
+
+
+    plt.subplot2grid((2,5), (1,4))
     plt.title("Incorrect actions (late)")
     plt.plot(total_results[3])
     plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
-    plt.subplot2grid((2,5), (0,2))
-    plt.title("Unnecessary actions correct (in time)")
+
+      
+    plt.subplot2grid((2,5), (0,1))
+    plt.title("Long-term correct actions(in time)")
     plt.plot(total_results[4])
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
-    plt.subplot2grid((2,5), (1,2))
-    plt.title("Unnecessary actions correct (late)")
+
+
+    plt.subplot2grid((2,5), (1,1))
+    plt.title("Long-term correct actions (late)")
     plt.plot(total_results[5])
     plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
+
+    
+    
     plt.subplot2grid((2,5), (0,3))
-    plt.title("Unnecessary actions incorrect (in time)")
+    plt.title("Unnecessary actions (in time)")
     plt.plot(total_results[6])
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
+
+
     plt.subplot2grid((2,5), (1,3))
-    plt.title("Unnecessary actions incorrect (late)")
+    plt.title("Unnecessary actions (late)")
     plt.plot(total_results[7])
     plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
+
     
-    plt.subplot2grid((2,5), (0,4))
+    plt.subplot2grid((2,5), (0,2))
     plt.title("Correct inactions")
     plt.plot(total_results[8])
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
-    plt.subplot2grid((2,5), (1,4))
+
+
+    plt.subplot2grid((2,5), (1,2))
     plt.title("Incorrect inactions")
     plt.plot(total_results[9])
     plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
 
-    fig3.savefig(save_path+'/'+phase+'_detailed_results_epoch.jpg')
+
+    fig1.savefig(save_path+'/'+phase+'_ACTIONS.jpg')
     plt.close()
     
+    
+    # ---------- INTERACTION TIME ------------------------------
     total_time_video_epoch = [sum(total_time_video)]*len(total_time_execution_epoch)
     fig1 = plt.figure(figsize=(15, 6))
-    plt.plot(total_time_execution_epoch)
-    plt.plot(total_time_video_epoch)
-    plt.legend(["Interaction","Video"])
+    plt.plot(total_time_video_epoch, 'k')
+    plt.plot(total_time_execution_epoch, 'b--')
+    plt.legend(["Video","Interaction"])
     plt.xlabel("Epoch")
     plt.ylabel("Frames")
-    plt.title(phase+" time")
+    plt.title(phase+" | Interaction time")
 
-    fig1.savefig(save_path+'/'+phase+'_time_execution.jpg')
+    fig1.savefig(save_path+'/'+phase+'_INTERACTION_TIME.jpg')
     plt.close()
-
-    fig1 = plt.figure(figsize=(15, 6))
-    plt.plot(total_reward_energy_epoch)
+    
+    
+    
+    #---------- REWARDs ---------------------------
+    fig1 = plt.figure(figsize=(20, 6))
+     
+    plt.subplot2grid((1,3), (0,0))
+    plt.plot(total_reward_energy_epoch, 'b:')
     plt.legend(["Energy reward"])
     plt.xlabel("Epoch")
-    plt.ylabel("Reward")
-    plt.title(phase+" Reward")
-    # plt.show()
-    fig1.savefig(save_path+'/'+phase+'_energy_reward.jpg')
-    plt.close()
+
+    plt.title(phase+" | Energy reward")
     
-    fig1 = plt.figure(figsize=(15, 6))
-    plt.plot(total_reward_time_epoch)
+    plt.subplot2grid((1,3), (0,1))
+    plt.plot(total_reward_time_epoch, 'b:')
     plt.legend(["Time reward"])
     plt.xlabel("Epoch")
-    plt.ylabel("Reward")
-    plt.title(phase+" Reward")
 
-    fig1.savefig(save_path+'/'+phase+'_time_reward.jpg')
+    plt.title(phase+" | Time reward")
+    
+    
+    plt.subplot2grid((1,3), (0,2))
+    plt.plot(total_reward_epoch, 'b-.')
+    plt.xlabel("Epoch")
+    plt.legend(["Total reward"])
+    plt.title("Total reward")
+
+    fig1.savefig(save_path+'/'+phase+'_REWARD.jpg')
     plt.close()
+    
+    
+    
     
 def plot_each_epoch_together(i_epoch,save_path, total_results_train,total_loss_epoch_train,total_reward_epoch_train,total_time_video,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate,total_results,total_loss_epoch_val,total_reward_epoch_val,total_time_execution_epoch_val,total_reward_energy_epoch_val,total_reward_time_epoch_val):
-                
-    fig1 = plt.figure(1,figsize=(20, 6))
-    plt.subplot(131)
-    plt.title("Train and Validation Loss vs. Epoch")
-    plt.xlabel("Epoch")
-    plt.ylabel("Average MSE")
-    plt.plot(total_loss_epoch_train,label='train')
-    plt.plot(total_loss_epoch_val,label='val')
-    plt.legend()
+                 
     
-    plt.subplot(132)
-    plt.title("Train and Validation Reward vs. Epoch")
-    plt.xlabel("Epoch")
-    plt.ylabel("Reward")
-    plt.plot(total_reward_epoch_train,label='train')
-    plt.plot(total_reward_epoch_val,label='val')
-    plt.legend()
     
-    plt.subplot(133)
-    plt.title("Train Exploration rate")
-    plt.xlabel("Epoch")
-    plt.ylabel("Epsilon")
-    plt.plot(ex_rate)
-
-    fig1.savefig(save_path+'/together_results_epoch.jpg')
-    plt.close()
+    #------------- ACTIONS --------------------------------
+    fig1 = plt.figure(figsize=(25, 8))
     
-    fig2 = plt.figure(2,figsize=(34, 12))
-    plt.suptitle("Amount of actions taken during train and validation")
     plt.subplot2grid((2,5), (0,0))
-    plt.title("Correct actions (in time)")
-    plt.plot(total_results_train[0], label='train')
-    plt.plot(total_results[0], label='val')
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
+    plt.title("Short-term correct actions (in time)")
+    plt.plot(total_results_train[0],'b',label='train')
+    plt.plot(total_results[0], 'm',label='val')
+
+
     plt.legend()
     plt.subplot2grid((2,5), (1,0))
-    plt.title("Correct actions (late)")
-    plt.plot(total_results_train[1],label='train')
-    plt.plot(total_results[1],label='val')
+    plt.title("Short-term correct actions (late)")
+    plt.plot(total_results_train[1],'b',label='train')
+    plt.plot(total_results[1],'m',label='val')
     plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
+
     plt.legend()
-    plt.subplot2grid((2,5), (0,1))
-    plt.title("Incorrect actions (in time)")
-    plt.plot(total_results_train[2],label='train')
-    plt.plot(total_results[2],label='val')
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
-    plt.legend()
-    plt.subplot2grid((2,5), (1,1))
-    plt.title("Incorrect actions (late)")
-    plt.plot(total_results_train[3],label='train')
-    plt.plot(total_results[3],label='val')
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
-    plt.legend()
-    plt.subplot2grid((2,5), (0,2))
-    plt.title("Unnecessary actions correct (in time)")
-    plt.plot(total_results_train[4],label='train')
-    plt.plot(total_results[4],label='val')
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
-    plt.legend()
-    plt.subplot2grid((2,5), (1,2))
-    plt.title("Unnecessary actions correct (late)")
-    plt.plot(total_results_train[5],label='train')
-    plt.plot(total_results[5],label='val')
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
-    plt.legend()
-    plt.subplot2grid((2,5), (0,3))
-    plt.title("Unnecessary actions incorrect (in time)")
-    plt.plot(total_results_train[6],label='train')
-    plt.plot(total_results[6],label='val')
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
-    plt.legend()
-    plt.subplot2grid((2,5), (1,3))
-    plt.title("Unnecessary actions incorrect (late)")
-    plt.plot(total_results_train[7],label='train')
-    plt.plot(total_results[7],label='val')
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
-    plt.legend()
+    
+    
     plt.subplot2grid((2,5), (0,4))
-    plt.title("Correct inactions")
-    plt.plot(total_results_train[8],label='train')
-    plt.plot(total_results[8],label='val')
-    plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
+    plt.title("Incorrect actions (in time)")
+    plt.plot(total_results_train[2],'b',label='train')
+    plt.plot(total_results[2],'m',label='val')
+
+
     plt.legend()
     plt.subplot2grid((2,5), (1,4))
-    plt.title("Incorrect inactions")
-    plt.plot(total_results_train[9],label='train')
-    plt.plot(total_results[9],label='val')
+    plt.title("Incorrect actions (late)")
+    plt.plot(total_results_train[3],'b',label='train')
+    plt.plot(total_results[3],'m',label='val')
     plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
+
     plt.legend()
-    fig2.savefig(save_path+'/together_detailed_results_epoch.jpg')
+    
+    
+    plt.subplot2grid((2,5), (0,1))
+    plt.title("Long-term correct actions (in time)")
+    plt.plot(total_results_train[4],'b',label='train')
+    plt.plot(total_results[4],'m',label='val')
+
+
+    plt.legend()
+    plt.subplot2grid((2,5), (1,1))
+    plt.title("Long-term correct actions (late)")
+    plt.plot(total_results_train[5],'b',label='train')
+    plt.plot(total_results[5],'m',label='val')
+    plt.xlabel("Epoch")
+
+    plt.legend()
+    
+    
+    plt.subplot2grid((2,5), (0,3))
+    plt.title("Unnecessary actions (in time)")
+    plt.plot(total_results_train[6],'b',label='train')
+    plt.plot(total_results[6],'m',label='val')
+
+
+    plt.legend()
+    plt.subplot2grid((2,5), (1,3))
+    plt.title("Unnecessary actions (late)")
+    plt.plot(total_results_train[7],'b',label='train')
+    plt.plot(total_results[7],'m',label='val')
+    plt.xlabel("Epoch")
+
+    plt.legend()
+    
+    
+    plt.subplot2grid((2,5), (0,2))
+    plt.title("Correct inactions")
+    plt.plot(total_results_train[8],'b',label='train')
+    plt.plot(total_results[8],'m',label='val')
+
+
+    plt.legend()
+    plt.subplot2grid((2,5), (1,2))
+    plt.title("Incorrect inactions")
+    plt.plot(total_results_train[9],'b',label='train')
+    plt.plot(total_results[9],'m',label='val')
+    plt.xlabel("Epoch")
+
+    plt.legend()
+    fig1.savefig(save_path+'/01_ACTIONS.jpg')
     plt.close()
         
+    
+    
+    #------------------ INTERACTION TIME------------------------------------------
     total_time_video_epoch = [sum(total_time_video)]*len(total_time_execution_epoch_train)
     
-    fig3 = plt.figure(3,figsize=(15, 6))
-    plt.plot(total_time_execution_epoch_train,label='train')
-    plt.plot(total_time_execution_epoch_val,label='val')
-    plt.plot(total_time_video_epoch)
-    plt.legend(["train Interaction","val Interaction","Video"])
+    fig1 = plt.figure(figsize=(15, 6))
+    plt.plot(total_time_video_epoch,'k', label='Video')
+    plt.plot(total_time_execution_epoch_train,'b--',label='Train')
+    plt.plot(total_time_execution_epoch_val,'m--',label='Validation')
+    
+    plt.legend(["Video","Train Interaction","Val Interaction"])
     plt.xlabel("Epoch")
     plt.ylabel("Frames")
-    plt.title("Train and validation time vs.epoch")
+    plt.title("Interaction time")
 
     plt.legend()
-    fig3.savefig(save_path+'/together_time_execution.jpg')
+    fig1.savefig(save_path+'/02_INTERACTION_TIME.jpg')
     plt.close()
 
     
-    fig4 = plt.figure(4,figsize=(15, 6))
-    plt.plot(total_reward_energy_epoch_train,label='train')
-    plt.plot(total_reward_energy_epoch_val,label='val')
+    
+    # -------------------- REWARDS ---------------------------------------------
+    fig1 = plt.figure(figsize=(20, 6))
+    
+    plt.subplot2grid((1,3), (0,0))
+    
+    plt.plot(total_reward_energy_epoch_train, 'b:', label='train')
+    plt.plot(total_reward_energy_epoch_val,'m:',label='val')
     plt.xlabel("Epoch")
-    plt.ylabel("Reward")
-    plt.title("Train and validation energy reward vs. epoch")
+
+    plt.title("Energy reward")
     plt.legend()
     
-    fig4.savefig(save_path+'/together_energy_reward.jpg')
-    plt.close()
+     
+    plt.subplot2grid((1,3), (0,1))
     
-    
-    fig5 = plt.figure(5,figsize=(15, 6))
-    plt.plot(total_reward_time_epoch_train,label='train')
-    plt.plot(total_reward_time_epoch_val,label='val')
+    plt.plot(total_reward_time_epoch_train,'b:',label='train')
+    plt.plot(total_reward_time_epoch_val,'m:', label='val')
     
     plt.xlabel("Epoch")
-    plt.ylabel("Reward")
-    plt.title("Train and valdiation time reward vs. epoch")
+
+    plt.title("Time reward")
     plt.legend()
-    fig5.savefig(save_path+'/together_time_reward.jpg')
+
+    
+    plt.subplot2grid((1,3), (0,2))    
+    
+    plt.plot(total_reward_epoch_train,'b-.',label='train')
+    plt.plot(total_reward_epoch_val,'m-.',label='val')
+    plt.xlabel("Epoch")
+    plt.title("Total reward")
+    plt.legend()
+    
+    
+    fig1.savefig(save_path+'/03_REWARDS.jpg')
     plt.close()
     
     
@@ -565,8 +586,6 @@ def plot_detailed_results (n, total_results, save_path, MODE):
     total_CA_late = total_results[1]
     total_IA_intime = total_results[2]
     total_IA_late = total_results[3]
-    # total_UA_intime = total_results[4]
-    # total_UA_late = total_results[5]
     total_UAC_intime = total_results[4]
     total_UAC_late = total_results[5]
     total_UAI_intime = total_results[6]
@@ -579,8 +598,6 @@ def plot_detailed_results (n, total_results, save_path, MODE):
     n_total_CA_late = [sum(total_CA_late[i:i+n])/n for i in range(0,len(total_CA_late)-1,n)]
     n_total_IA_intime = [sum(total_IA_intime[i:i+n])/n for i in range(0,len(total_IA_intime)-1,n)]
     n_total_IA_late = [sum(total_IA_late[i:i+n])/n for i in range(0,len(total_IA_late)-1,n)]
-    # n_total_UA_intime = [sum(total_UA_intime[i:i+n])/n for i in range(0,len(total_UA_intime)-1,n)]
-    # n_total_UA_late = [sum(total_UA_late[i:i+n])/n for i in range(0,len(total_UA_late)-1,n)]
     n_total_UAC_intime = [sum(total_UAC_intime[i:i+n])/n for i in range(0,len(total_UAC_intime)-1,n)]
     n_total_UAC_late = [sum(total_UAC_late[i:i+n])/n for i in range(0,len(total_UAC_late)-1,n)]
     n_total_UAI_intime = [sum(total_UAI_intime[i:i+n])/n for i in range(0,len(total_UAI_intime)-1,n)]
@@ -589,63 +606,160 @@ def plot_detailed_results (n, total_results, save_path, MODE):
     n_total_II = [sum(total_II[i:i+n])/n for i in range(0,len(total_II)-1,n)]
 
 
-    fig3 = plt.figure(figsize=(34, 12))
+    fig1 = plt.figure(figsize=(25, 8))
     plt.suptitle("Amount of actions taken averaging every "+str(n)+" epochs",fontsize=20)
+    
+    
     plt.subplot2grid((2,5), (0,0))
-    plt.title("Correct actions (in time)",fontsize=14)
+    plt.title("Short-term correct actions (in time)",fontsize=14)
     plt.plot(x_axis,n_total_CA_intime)  
-    plt.xlabel("Epoch")
+
     plt.ylabel("Amount action")
     plt.subplot2grid((2,5), (1,0))
-    plt.title("Correct actions (late)",fontsize=14)
+    plt.title("Short-term actions (late)",fontsize=14)
     plt.plot(x_axis,n_total_CA_late)
     plt.xlabel("Epoch")
     plt.ylabel("Amount action")
-    plt.subplot2grid((2,5), (0,1))
+    
+    
+    plt.subplot2grid((2,5), (0,4))
     plt.title("Incorrect actions (in time)",fontsize=14)
     plt.plot(x_axis,n_total_IA_intime)
-    plt.xlabel("Epoch")
+
     plt.ylabel("Amount action")
-    plt.subplot2grid((2,5), (1,1))
+    plt.subplot2grid((2,5), (1,4))
     plt.title("Incorrect actions (late)",fontsize=14)
     plt.plot(x_axis,n_total_IA_late)
     plt.xlabel("Epoch")
     plt.ylabel("Amount action")
-    plt.subplot2grid((2,5), (0,2))
-    plt.title("Unnecessary actions correct (in time)",fontsize=14)
+    
+    
+    plt.subplot2grid((2,5), (0,1))
+    plt.title("Long-term correct actions (in time)",fontsize=14)
     plt.plot(x_axis,n_total_UAC_intime)
-    plt.xlabel("Epoch")
+
     plt.ylabel("Amount action")
-    plt.subplot2grid((2,5), (1,2))
-    plt.title("Unnecessary actions correct (late)",fontsize=14)
+    plt.subplot2grid((2,5), (1,1))
+    plt.title("Long-term correct actions (late)",fontsize=14)
     plt.plot(x_axis,n_total_UAC_late)
     plt.xlabel("Epoch")
     plt.ylabel("Amount action")
+    
+    
     plt.subplot2grid((2,5), (0,3))
     plt.title("Unnecessary actions incorrect (in time)",fontsize=14)
     plt.plot(x_axis,n_total_UAI_intime)
-    plt.xlabel("Epoch")
+
     plt.ylabel("Amount action")
     plt.subplot2grid((2,5), (1,3))
     plt.title("Unnecessary actions incorrect (late)",fontsize=14)
     plt.plot(x_axis,n_total_UAI_late)
     plt.xlabel("Epoch")
     plt.ylabel("Amount action")
-    plt.subplot2grid((2,5), (0,4))
+    
+    
+    plt.subplot2grid((2,5), (0,2))
     plt.title("Correct inactions",fontsize=14)
     plt.plot(x_axis,n_total_CI)
-    plt.xlabel("Epoch")
+
     plt.ylabel("Amount action")
-    plt.subplot2grid((2,5), (1,4))
+    plt.subplot2grid((2,5), (1,2))
     plt.title("Incorrect inactions",fontsize=14)
     plt.plot(x_axis,n_total_II)
     plt.xlabel("Epoch")
     plt.ylabel("Amount action")
     # plt.show()
 
-    fig3.savefig(save_path+'/'+MODE+'_detailed_results_each_'+str(n)+'.jpg')
+    fig1.savefig(save_path+'/'+MODE+'_ACTIONS_'+str(n)+'.jpg')
     plt.close()
+ 
+def get_estimations_action_time_human():
     
+    # Get the list of all files and directories
+    path = os.path.abspath(os.getcwd())
+    dir_list = os.listdir(path+'/video_annotations/Real_data/train/')
+    
+    duration_action_compilation_list = [[] for _ in range(33)]
+    
+    #print(dir_list)
+    
+    for idx in dir_list:
+        
+        with open(path+'/video_annotations/Real_data/train/'+idx+'/labels_margins', 'rb') as f:
+                data = np.load(f, allow_pickle=True)
+                for i in range(len(data)):
+                    frame_duration = data['frame_end'][i]-data['frame_init'][i]
+                    duration_action_compilation_list[data['label'][i]].append(frame_duration)
+                #print(data)
+            
+    avg_list = []
+    for idx in range(len(duration_action_compilation_list)):
+        if duration_action_compilation_list[idx]: 
+            avg_list.append(mean(duration_action_compilation_list[idx]))
+        else: 
+            avg_list.append(0)
+            
+        
+    atomic_actions = ['other manipulation',
+                                'pour milk',
+                                'pour water',
+                                'pour coffee',
+                                'pour Nesquik',
+                                'pour sugar',
+                                'put microwave',
+                                'stir spoon',
+                                'extract milk fridge',
+                                'extract water fridge',
+                                'extract sliced bread',
+                                'put toaster',
+                                'extract butter fridge',
+                                'extract jam fridge',
+                                'extract tomato sauce fridge',
+                                'extract nutella fridge',
+                                'spread butter',
+                                'spread jam',
+                                'spread tomato sauce',
+                                'spread nutella',
+                                'pour olive oil',
+                                'put jam fridge',
+                                'put butter fridge',
+                                'put tomato sauce fridge',
+                                'put nutella fridge',
+                                'pour milk bowl',
+                                'pour cereals bowl',
+                                'pour nesquik bowl',
+                                'put bowl microwave',
+                                'stir spoon bowl',
+                                'put milk fridge',
+                                'put sliced bread plate',
+                                'TERMINAL STATE',
+                                ]
+            
+    # Calling DataFrame constructor after zipping
+    # both lists, with columns specified
+    df = pd.DataFrame(list(zip(atomic_actions, avg_list)),
+                    columns =['atomic_actions', 'avg_frame'])
+
+    ROBOT_ACTION_DURATIONS = {}
+    for idx in range(len(cfg.ROBOT_ACTIONS_MEANINGS)):
+        ROBOT_ACTION_DURATIONS[idx] = 0
+        
+    for idx_AR, value_AR in cfg.ROBOT_ACTIONS_MEANINGS.items():
+        current_object = value_AR.split(" ")[1]
+        for index, row in df.iterrows():
+            if current_object in row['atomic_actions']:
+                if 'bring' in value_AR:
+                    if 'extract' in row['atomic_actions']: 
+                        ROBOT_ACTION_DURATIONS[idx_AR] = row['avg_frame']
+                elif 'put' in (row['atomic_actions'] and value_AR):
+                    ROBOT_ACTION_DURATIONS[idx_AR] = row['avg_frame']
+                
+    
+    
+    #print(ROBOT_ACTION_DURATIONS)
+    
+    return ROBOT_ACTION_DURATIONS
+                
 def get_sentiment_keyboard():
     """
     Returns an integer reward value extracted from the sentiment analysis of an input sentence.
@@ -670,41 +784,6 @@ def get_sentiment_keyboard():
 
     return reward
 
-
-
-
-#---------------------------------
-#Debug
-"""
-na = get_next_action()
-na2 = get_init_state()
-na3 = get_end_state()
-na4 = get_random_state()
-
-ao = get_active_object()
-
-
-s = get_state()
-s_ext = get_state_extended()
-
-na_, vwm_ = undo_concat_state(s)
-na__, vwm__, ao__ = undo_concat_state_extended(s_ext)
-
-print("N ATOMIC ACTIONS: ", N_ATOMIC_ACTIONS)
-print("N OBJECTS: ", N_OBJECTS)
-print("\nNA prob of shape ", na.shape, "\n", na)
-print("\nNA init of shape ", na2.shape, "\n", na2)
-print("\nNA end of shape ", na3.shape, "\n", na3)
-print("\nNA hard of shape ", na4.shape, "\n", na4)
-print("\nActive Obj of shape ", ao.shape, "\n", ao)
-print("\nVWM of shape ", vwm.shape , "\n", vwm)
-print("\nState (NA + VWM) of shape ", s.shape, "\n", s)
-print("\nExtended state (NA + VWM + AO) of shape ", s_ext.shape, "\n", s_ext)
-print("\nUncat NA of shape ", na__.shape, "\n", na__)
-print("\nUncat VWM of shape ", vwm__.shape, "\n", vwm__)
-print("\nUncat AO of shape ", ao__.shape, "\n", ao__)
-
-"""
 
 
 

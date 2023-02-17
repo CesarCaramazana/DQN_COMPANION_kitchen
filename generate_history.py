@@ -4,7 +4,7 @@ import math
 import os
 import shutil
 
-resolution = 10 #Subsampling factor
+resolution = 30 #Subsampling factor
 
 
 def generate_action_duration(history):
@@ -81,9 +81,9 @@ def generate_signal(history, rwd_format=False):
 				color_code = "5"
 				actions.append('other')
 
-			elif action[0] == 'Predicting...':
+			elif action[0] == 'Predicting...' or action[0] == 'do nothing':
 				color_code = "6"
-				actions.append(action[0])
+				actions.append('Predicting')
 				#actions.append("...")
 			
 			elif action[0] == 'Waiting for evaluation...' or action[0] == 'Waiting for robot action...':

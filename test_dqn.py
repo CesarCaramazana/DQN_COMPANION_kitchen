@@ -103,18 +103,7 @@ def select_action(state):
     	out = policy_net(state)
     
     best_action = action = post_processed_possible_actions(out,index_posible_actions)
-    #output = out.detach().cpu().numpy().squeeze()	
 
-    #print("\nState: ", state_name)
-    #print("Action taken: ", action_dic[best_action[0].detach().cpu().numpy()[0]])
-    """
-    if state_name == 'put toaster' or state_name != '':
-
-        	print("STATE= ", state_name)
-        	for i in range(output.shape[0]):
-        		print("%2i | Q-value: %4.4f" %(i,output[i]))
-        	print("\nAction returned: ", best_action)
-    """
     return best_action
 
      
@@ -238,7 +227,6 @@ for f in pt_files:
 	total_II = []
 	
 	
-	
 	decision_cont = 0
 
 	flag_do_action = True 
@@ -332,72 +320,56 @@ for f in pt_files:
  
 
 
-
-# SORT LISTS in ascending order of epoch
-
-"""
-epoch_CA_intime = [x for y, x in sorted(zip(epoch_test, epoch_CA_intime))]
-epoch_CA_late = [x for y, x in sorted(zip(epoch_test, epoch_CA_late))]
-epoch_IA_intime = [x for y, x in sorted(zip(epoch_test, epoch_IA_intime))]
-epoch_IA_late = [x for y, x in sorted(zip(epoch_test, epoch_IA_late))]
-epoch_UA_intime = [x for y, x in sorted(zip(epoch_test, epoch_UA_intime))]
-epoch_UA_late = [x for y, x in sorted(zip(epoch_test, epoch_UA_late))]
-epoch_CI = [x for y, x in sorted(zip(epoch_test, epoch_CI))]
-epoch_II = [x for y, x in sorted(zip(epoch_test, epoch_II))]
-epoch_test = sorted(epoch_test)
-"""
-
-
 save_path = os.path.join(path, "Graphics") 
 if not os.path.exists(save_path): os.makedirs(save_path)
 
 
+#--------------------ACTIONS ----------------
 
-
-fig = plt.figure(figsize=(34, 12))
+fig = plt.figure(figsize=(25, 8))
 plt.subplot(2,5,1)
-plt.title("Correct (in time)")
+plt.title("Short-term correct actions (in time)")
 plt.plot(epoch_test, epoch_CA_intime)
-plt.xlabel("Epochs")
 
-plt.subplot(2,5,2)
+
+plt.subplot(2,5,5)
 plt.title("Incorrect (in time)")
 plt.plot(epoch_test, epoch_IA_intime)
-plt.xlabel("Epochs")
 
 
-plt.subplot(2,5,3)
-plt.title("Unnecessary correct (in time)")
+
+plt.subplot(2,5,2)
+plt.title("Long-term correct actions (in time)")
 plt.plot(epoch_test, epoch_UAC_intime)
-plt.xlabel("Epochs")
+
 
 
 plt.subplot(2,5,4)
 plt.title("Unnecessary incorrect (in time)")
 plt.plot(epoch_test, epoch_UAI_intime)
-plt.xlabel("Epochs")
 
-plt.subplot(2,5,5)
+
+plt.subplot(2,5,3)
 plt.title("Correct inactions")
 plt.plot(epoch_test, epoch_CI)
-plt.xlabel("Epochs")
+
 
 
 
 plt.subplot(2,5,6)
-plt.title("Correct (late)")
+plt.title("Short-term correct actions (late)")
 plt.plot(epoch_test, epoch_CA_late)
 plt.xlabel("Epochs")
 
 
-plt.subplot(2,5,7)
+plt.subplot(2,5,10)
 plt.title("Incorrect (late)")
 plt.plot(epoch_test, epoch_IA_late)
 plt.xlabel("Epochs")
 
 
-plt.subplot(2,5,8)
-plt.title("Unnecessary correct (late)")
+plt.subplot(2,5,7)
+plt.title("Long-term correct actions (late)")
 plt.plot(epoch_test, epoch_UAC_late)
 plt.xlabel("Epochs")
 
@@ -409,42 +381,66 @@ plt.xlabel("Epochs")
 
 
 
-plt.subplot(2,5,10)
+plt.subplot(2,5,8)
 plt.title("Incorrect inactions")
 plt.plot(epoch_test, epoch_II)
 plt.xlabel("Epochs")
 
 # plt.show()
 
-if env.test: fig.savefig(save_path+'/00_testEPOCHS_actions.jpg')
-else: fig.savefig(save_path+'/00_trainEPOCHS_actions.jpg')
+if env.test: fig.savefig(save_path+'/00_TEST_ACTIONS.jpg')
+else: fig.savefig(save_path+'/00_TRAIN_ACTIONS.jpg')
 
-fig2 = plt.figure()
 
-plt.title("Reward")
-plt.plot(epoch_test, epoch_reward)
-plt.xlabel("Epochs")
+
+
+# -------------__REWARDS -------------------------
+fig2 = plt.figure(figsize=(20,6))
+
+
+plt.subplot2grid((1,3),(0,0))
+
+plt.plot(epoch_total_reward_energy_ep, 'c:')
+plt.title("Energy reward")
+plt.legend(["Energy reward"])
+plt.xlabel("Epoch")
+
+
+plt.subplot2grid((1,3),(0,1))
+
+plt.plot(epoch_total_reward_time_ep, 'c:')
+plt.title("Time reward")
+plt.legend(["Time reward"])
+plt.xlabel("Epoch")
+
+
+plt.subplot2grid((1,3),(0,2))
+
+plt.title("Total reward")
+plt.plot(epoch_reward, 'c-.')
+plt.legend(["Total reward"])
+plt.xlabel("Epoch")
 
 # plt.show()
 
-if env.test: fig2.savefig(save_path+'/00_testEPOCHS_reward.jpg')
-else: fig2.savefig(save_path+'/00_trainEPOCHS_reward.jpg')
+if env.test: fig2.savefig(save_path+'/00_TEST_REWARD.jpg')
+else: fig2.savefig(save_path+'/00_TRAIN_REWARD.jpg')
 #-----------------------------
 
 
 
-
-fig3 = plt.figure()
-plt.title("HRI time vs annotations time")
-plt.plot(epoch_test, epoch_total_time_video, label='Video')
-plt.plot(epoch_test, epoch_total_time_interaction, label='Interaction')
+#--------------- INTERACTION ---------------------
+fig3 = plt.figure(figsize=(15,6))
+plt.title("Interaction time")
+plt.plot(epoch_total_time_video, 'k',label='Video')
+plt.plot(epoch_total_time_interaction, 'c--',label='Interaction')
 plt.legend()
 plt.ylabel("Frames")
 
 # plt.show()
 
-if env.test: fig3.savefig(save_path+'/00_testEPOCHS_time.jpg')
-else: fig3.savefig(save_path+'/00_trainEPOCHS_time.jpg')
+if env.test: fig3.savefig(save_path+'/00_TEST_INTERACTION_TIME.jpg')
+else: fig3.savefig(save_path+'/00_TRAIN_INTERACTION_TIME.jpg')
 
 plt.close()
 

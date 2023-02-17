@@ -4,7 +4,7 @@ import math
 import os
 import shutil
 
-resolution = 10 #Subsampling factor
+resolution = 30 #Subsampling factor
 
 
 def generate_action_duration(history):
@@ -81,9 +81,9 @@ def generate_signal(history, rwd_format=False):
 				color_code = "5"
 				actions.append('other')
 
-			elif action[0] == 'Predicting...':
+			elif action[0] == 'Predicting...' or action[0] == 'do nothing':
 				color_code = "6"
-				actions.append(action[0])
+				actions.append('Predicting')
 				#actions.append("...")
 			
 			elif action[0] == 'Waiting for evaluation...' or action[0] == 'Waiting for robot action...':
@@ -135,19 +135,30 @@ def create_graph(save_path, file_id):
 	robot = history['r_history']
 	reward = history['rwd_history']
 	
+	rwd_time = history['rwd_time_h']
+	rwd_energy = history['rwd_energy_h']
+	
 	r_history=[robot[i].item() for i in range(0,len(robot),resolution)] #Subsampling: taking the first of every 'resolution' elements
 	h_history=[human[i].item() for i in range(0,len(human),resolution)]
 	rwd_history = [min(reward[i:i+resolution])[0] for i in range(0, len(reward), resolution)]
+	
+	rwd_time_history = [min(rwd_time[i:i+resolution])[0] for i in range(0, len(rwd_time), resolution)]
+	rwd_energy_history = [min(rwd_energy[i:i+resolution])[0] for i in range(0, len(rwd_energy), resolution)]
 
 	
 	human_history = generate_action_duration(h_history)
 	robot_history = generate_action_duration(r_history)
 	reward_history = generate_action_duration(rwd_history)
+	reward_time = generate_action_duration(rwd_time_history)
+	reward_energy = generate_action_duration(rwd_energy_history)
 
 	
 	h_actions, h_waveform = generate_signal(human_history)
 	r_actions, r_waveform = generate_signal(robot_history)
 	rwd_values, rwd_waveform = generate_signal(reward_history, rwd_format=True)
+	
+	time_values, time_waveform = generate_signal(reward_time, rwd_format=True)
+	energy_values, energy_waveform = generate_signal(reward_energy, rwd_format=True)
 	
 	
 	clk = "P" + "."*(len(r_waveform)-1) #Clock signal
@@ -158,7 +169,9 @@ def create_graph(save_path, file_id):
 		{ "name": clock, "wave": clk},
 		{ "name": "Human", "wave": h_waveform, "data": h_actions},
 		{ "name": "Robot",  "wave": r_waveform ,"data": r_actions },
-		{ "name": "Reward", "wave": rwd_waveform, "data": rwd_values}
+		{ "name": "Reward", "wave": rwd_waveform, "data": rwd_values},
+		{ "name": "Time rwd", "wave": time_waveform, "data": time_values},
+		{ "name": "Energy rwd", "wave": energy_waveform, "data":energy_values}
 	]}
 	
 	

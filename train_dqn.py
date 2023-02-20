@@ -579,7 +579,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
         
             
         if phase == 'train':
-            if i_epoch % 1 == 0:
+            if i_epoch % 5 == 0:
                 # print(PRETRAINED)
                
                 if PRETRAINED == True:
@@ -646,7 +646,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_results_train = [total_CA_intime_epoch_train,total_CA_late_epoch_train,total_IA_intime_epoch_train,total_IA_late_epoch_train,total_UAC_intime_epoch_train,total_UAC_late_epoch_train,total_UAI_intime_epoch_train,total_UAI_late_epoch_train,total_CI_epoch_train,total_II_epoch_train]
            
             
-            if i_epoch % 1 == 0: plot_each_epoch(i_epoch, phase,save_path, total_results_train,total_loss_epoch_train,total_reward_epoch_train,total_time_video,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate)
+            if i_epoch % 5 == 0: plot_each_epoch(i_epoch, phase,save_path, total_results_train,total_loss_epoch_train,total_reward_epoch_train,total_time_video,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate)
             
             
             

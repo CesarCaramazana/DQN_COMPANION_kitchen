@@ -27,9 +27,12 @@ import pdb
 from datetime import datetime
 
 
+import warnings
+warnings.filterwarnings("ignore")
+
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--pretrained', action='store_true', default=False, help="(bool) Inizializate the model with a pretrained model.")
+parser.add_argument('--pretrained', action='store_true', default=True, help="(bool) Inizializate the model with a pretrained model.")
 parser.add_argument('--freeze', type=str, default='False', help="(bool) Inizializate the model with a pretrained moddel freezing the layers but the last one.")
 parser.add_argument('--experiment_name', type=str, default=cfg.EXPERIMENT_NAME, help="(str) Name of the experiment. Used to name the folder where the model is saved. For example: my_first_DQN.")
 
@@ -83,7 +86,7 @@ episode_loss = [] #List to save every loss value during a single episode.
 total_reward = [] #List to save the total reward gathered each episode.
 ex_rate = [] #List to save the epsilon value after each episode.
 
-mem_full = False
+
 
 
 #Environment - Custom basic environment for kitchen recipes
@@ -106,8 +109,12 @@ target_net = DQN(n_states, n_actions).to(device)
 
 
 if PRETRAINED:
-    path_model = './Pretrained/model_real_data.pt' #Path al modelo pre-entrenado
-    
+    # path_model = './Pretrained/model_real_data.pt' #Path al modelo pre-entrenado
+    if cfg.Z_hidden_state:
+        path_model = './Pretrained/model_real_data_correct_frames.pt'
+    else:
+        path_model = './Pretrained/model_correct_frames_without_z_v2.pt'
+  
     print("USING PRETRAINED MODEL---------------")
     
     policy_net.load_state_dict(torch.load(path_model))
@@ -169,19 +176,16 @@ def post_processed_possible_actions(out,index_posible_actions):
     In case the output is an action that is not available, either because 
     of the object missing or left on the table, the most likely possible action will be selected 
     from the output of the neural network,
-
     Parameters
     ----------
     out : (tensor)
         DQN output.
     index_posible_actions : (list)
         Posible actions taken by the robot according to the objects available.
-
     Returns
     -------
     (tensor)
         Action to be performed by the robot.
-
     """
     action_pre_processed = out.max(1)[1].view(1,1)
      
@@ -251,7 +255,6 @@ def select_action(state, phase):
 def action_rate(decision_cont,state,phase,prev_decision_rate):
     """
     Function that sets the rate at which the robot makes decisions.
-
     """
     if cfg.DECISION_RATE == "random":
         
@@ -262,7 +265,7 @@ def action_rate(decision_cont,state,phase,prev_decision_rate):
             else:
                  decision_rate = prev_decision_rate
         else:
-            decision_rate = 20
+            decision_rate = 100
              
     else:
         decision_rate = cfg.DECISION_RATE
@@ -285,7 +288,7 @@ def action_rate(decision_cont,state,phase,prev_decision_rate):
 
 def optimize_model(phase):
 
-    global mem_full
+
     
     t_batch_size = min(len(memory),BATCH_SIZE)
     
@@ -294,7 +297,7 @@ def optimize_model(phase):
     
     if len(memory) < BATCH_SIZE:
     	return
-    else: mem_full = True	
+
 
 	       
     transitions = memory.sample(t_batch_size)    
@@ -439,6 +442,8 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
         total_CI = []
         total_II = []
         
+        total_minimum_time_execution_epoch = []
+        videos_mejorables = []
         total_times_execution = []
         if phase == 'train':
             policy_net.train()  # Set model to training mode
@@ -482,9 +487,8 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                         
                 
                 array_action = [action,flag_decision,phase]
-                next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times, correct_action, type_threshold, error_pred, total_pred = env.step(array_action)
-      
-                    
+                next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times, correct_action, type_threshold, error_pred, total_pred, total_minimum_time_execution, path_labels_pkl = env.step(array_action)
+        
                 reward = torch.tensor([reward], device=device)
 
                 next_state = torch.tensor(env.state, dtype=torch.float, device=device).unsqueeze(0)
@@ -501,13 +505,58 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
 
                     memory.push(decision_state, action_, next_state, reward)
                     
-                    # Semi -supervised case where the correction is also taken into account to train the DQN
-                    #if (action != correct_action):
-                    #    memory.push(decision_state, torch.tensor([[correct_action]], device=device), next_state, torch.tensor([0], device=device))
-                    
+
                     optimize_model(phase)
                     num_optim += 1
+                    # # Semi -supervised case where the correction is also taken into account to train the DQN
+                    # if (action != correct_action):
+                    #     memory.push(decision_state, torch.tensor([[correct_action]], device=device), next_state, torch.tensor([0], device=device))
                     
+                    # optimize_model(phase)
+                    # num_optim += 1
+                    
+                    # # DECISION FRAME HISTOGRAM
+                    # if type_threshold != "second":
+                    #     fr_init_prev = annotations['frame_end'][action_idx-1]
+                    #     if action_idx > len(annotations):
+                    #         action_idx = len(annotations)-1
+                            
+                    #     if action_idx < 2:
+                    #         fr_init_prev = 0
+                    #     else:
+                    #         fr_init_prev = annotations['frame_end'][action_idx-2]
+                       
+    
+                    #     fr_init = annotations['frame_init'][action_idx]
+                    #     if type_threshold == "first":
+                    #         fr_init = annotations['frame_end'][action_idx-1]
+                        
+                    #     index_frame_decision = 1 - ((fr_init-frame_decision)/(fr_init-fr_init_prev))
+                    #     if phase=='train':
+                    #         decision_index_histogram_TRAIN.append(index_frame_decision)
+                    #         if action != 6:
+                    #             decision_action_index_histogram_TRAIN.append(index_frame_decision)
+                            
+                    #         if reward < 0:
+                    #             bad_reward_TRAIN.append(index_frame_decision)
+                    #         else:
+                    #             if action != 6:
+                    #                 good_reward_action_TRAIN.append(index_frame_decision)
+                    #             else:
+                    #                 good_reward_noaction_TRAIN.append(index_frame_decision)
+                    #     else:
+                    #         decision_index_histogram_VAL.append(index_frame_decision)
+                    #         if action != 6:
+                    #             decision_action_index_histogram_VAL.append(index_frame_decision)
+                            
+                    #         if reward < 0:
+                    #             bad_reward_VAL.append(index_frame_decision)
+                    #         else:
+                    #             if action != 6:
+                    #                 good_reward_action_VAL.append(index_frame_decision)
+                    #             else:
+                    #                 good_reward_noaction_VAL.append(index_frame_decision)
+
 
                 if not done: 
                     state = next_state
@@ -516,6 +565,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                     next_state = None 
                 
                 if done: 
+                    
                     if episode_loss: 
                     	total_loss.append(mean(episode_loss))
                     	
@@ -537,11 +587,15 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                     total_II.append(env.II)
                     
                     #memory.show_batch(10)
+                    
+                    total_minimum_time_execution_epoch.append(total_minimum_time_execution)
               
 
                     break #Finish episode
         
             #print(scheduler.optimizer.param_groups[0]['lr']) #Print LR (to check scheduler)
+            
+            
             
             if i_episode % TARGET_UPDATE == 0: #Copy the Policy Network parameters into Target Network
                 target_net.load_state_dict(policy_net.state_dict())
@@ -551,7 +605,10 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                             
         total_time_video = list(list(zip(*total_times_execution))[0])
         total_time_interaction = list(list(zip(*total_times_execution))[1])
-
+        minimum_time = sum(total_minimum_time_execution_epoch)
+        
+        #print("\n\n\n\nIN TRAIN, minimum: ", minimum_time)
+     
             
         data = {'video': total_time_video,
         'interaction': total_time_interaction,
@@ -592,7 +649,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                 else: 
                     freeze = ''
                 if NO_ACTION_PROBABILITY == 0:
-                    weight_prob = ' '
+                    weight_prob = ''
                 else:
                     weight_prob = '_NO_ACTION_PROBABILITY_EXPLORATION_' + str(cfg.NO_ACTION_PROBABILITY)
                     
@@ -601,9 +658,18 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                 else:
                     decision_rate_name = '_DECISION_RATE_'+str(cfg.DECISION_RATE)
                     
-
-                path = os.path.join(ROOT, EXPERIMENT_NAME + '_' + dt_string + '_EPS_START_'+str(cfg.EPS_START) + decision_rate_name +weight_prob +'_LR_'+str(LR)+ pre + freeze + '_GAMMA_'+str(GAMMA))
+                if REPLAY_MEMORY > BATCH_SIZE:
+                    batch_name = '_CHANGING_BATCH_SIZE_MEMORY_'
+                else: 
+                    batch_name = ''
                     
+                if n_states < 1157:
+                    z_name = '_WITHOUT_Z_'
+                else: 
+                    z_name = ''
+
+                path = os.path.join(ROOT, EXPERIMENT_NAME + '_' + dt_string  +'_CORRECT_FRAMES_'+z_name+batch_name+'_EPS_START_'+str(cfg.EPS_START) + decision_rate_name +weight_prob +'_LR_'+str(LR)+ pre + freeze + '_GAMMA_'+str(GAMMA))
+                                  
                 
                 # path = os.path.join(ROOT, EXPERIMENT_NAME)
                 save_path = os.path.join(path, "Graphics") 
@@ -611,7 +677,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                 model_name = 'model_' + str(i_epoch) + '.pt'
                 if not os.path.exists(path): os.makedirs(path)
                 if not os.path.exists(save_path): os.makedirs(save_path)
-                #if not os.path.exists(save_path_hist): os.makedirs(save_path_hist)
+                if not os.path.exists(save_path_hist): os.makedirs(save_path_hist)
  
          
                 print("Saving model at ", os.path.join(path, model_name))
@@ -646,8 +712,9 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_results_train = [total_CA_intime_epoch_train,total_CA_late_epoch_train,total_IA_intime_epoch_train,total_IA_late_epoch_train,total_UAC_intime_epoch_train,total_UAC_late_epoch_train,total_UAI_intime_epoch_train,total_UAI_late_epoch_train,total_CI_epoch_train,total_II_epoch_train]
            
             
-            if i_epoch % 5 == 0: plot_each_epoch(i_epoch, phase,save_path, total_results_train,total_loss_epoch_train,total_reward_epoch_train,total_time_video,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate)
+            # if i_epoch % 5 == 0: plot_each_epoch(i_epoch, phase,save_path, total_results_train,total_loss_epoch_train,total_reward_epoch_train,total_time_video,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate)
             
+            plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results_train,total_loss_epoch_train,total_reward_epoch_train,total_time_video,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate)
             
             
             
@@ -671,7 +738,32 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             #df_train.to_csv(save_path+'/data_train.csv')
             
 
-            
+            # HISTOGRAMS
+            """
+            fig1 = plt.figure(figsize=(12, 7))
+            plt.hist(decision_index_histogram_TRAIN, bins = 100, edgecolor="black")
+            plt.title("DECISION FRAME (ALL ACTIONS)")
+            fig1.savefig(save_path_hist+'/train_hist_epoch_'+str(i_epoch)+'.jpg')
+            # plt.show()
+            plt.close()
+            fig1 = plt.figure(figsize=(12, 7))
+            plt.hist(good_reward_action_TRAIN, bins = 100, edgecolor="black")
+            plt.title("DECISION FRAME (ONLY ACTIONS, GOOD REWARD)")
+            fig1.savefig(save_path_hist+'/train_GOOD_action_hist_epoch_'+str(i_epoch)+'.jpg')
+            plt.close()
+            fig1 = plt.figure(figsize=(12, 7))
+            plt.hist(bad_reward_TRAIN, bins = 100, edgecolor="black")
+            plt.title("DECISION FRAME (BAD REWARD)")
+            fig1.savefig(save_path_hist+'/train_BAD_hist_epoch_'+str(i_epoch)+'.jpg')
+            plt.close()
+            # pdb.set_trace()
+            fig1 = plt.figure(figsize=(12, 7))
+            plt.hist(decision_action_index_histogram_TRAIN, bins = 100, edgecolor="black")
+            plt.title("DECISION FRAME (ALL ACTIONS BUT NO ACTION(18))")
+            fig1.savefig(save_path_hist+'/train_hist_action_epoch_'+str(i_epoch)+'.jpg')
+            plt.close()
+            # plt.show()
+            """
             #print("\n(train) PREDICTION ERROR: %.2f%%" %(np.mean(total_reward_error_pred)*100))
         elif phase=='val':
             # print(len(total_loss))
@@ -695,11 +787,10 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_II_epoch_val.append(sum(total_II))
             total_results = [total_CA_intime_epoch_val,total_CA_late_epoch_val,total_IA_intime_epoch_val,total_IA_late_epoch_val,total_UAC_intime_epoch_val,total_UAC_late_epoch_val,total_UAI_intime_epoch_val,total_UAI_late_epoch_val,total_CI_epoch_val,total_II_epoch_val]
             
+            plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_loss_epoch_val,total_reward_epoch_val,total_time_video,total_time_execution_epoch_val,total_reward_energy_epoch_val,total_reward_time_epoch_val)
             
-            plot_each_epoch(i_epoch, phase,save_path, total_results,total_loss_epoch_val,total_reward_epoch_val,total_time_video,total_time_execution_epoch_val,total_reward_energy_epoch_val,total_reward_time_epoch_val)
             
-            
-            plot_each_epoch_together(i_epoch,save_path, total_results_train,total_loss_epoch_train,total_reward_epoch_train,total_time_video,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate,total_results,total_loss_epoch_val,total_reward_epoch_val,total_time_execution_epoch_val,total_reward_energy_epoch_val,total_reward_time_epoch_val)
+            plot_each_epoch_together(i_epoch,save_path, minimum_time,total_results_train,total_loss_epoch_train,total_reward_epoch_train,total_time_video,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate,total_results,total_loss_epoch_val,total_reward_epoch_val,total_time_execution_epoch_val,total_reward_energy_epoch_val,total_reward_time_epoch_val)
             
             # if i_epoch == NUM_EPOCH-1:
             data_val = {
@@ -718,7 +809,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             
     
             df_val = pd.DataFrame(data_val)
-            #df_val.to_csv(save_path+'/data_val.csv')
+            df_val.to_csv(save_path+'/data_val.csv')
             
             
 
@@ -726,5 +817,6 @@ t2 = time.time() - t1 #Tak
 
 
 print("\nTraining completed in {:.1f}".format(t2), "seconds.\n")
-
+if PRETRAINED:
+    with open(path +'/model_used.txt', 'w') as f: f.write(path_model.split('/')[-1])
 

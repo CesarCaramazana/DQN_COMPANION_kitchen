@@ -607,43 +607,42 @@ def plot_detailed_results (n, total_results, save_path, MODE):
 
 
     fig1 = plt.figure(figsize=(25, 8))
-    plt.suptitle("Amount of actions taken averaging every "+str(n)+" epochs",fontsize=20)
-    
+   
     
     plt.subplot2grid((2,5), (0,0))
     plt.title("Short-term correct actions (in time)",fontsize=14)
     plt.plot(x_axis,n_total_CA_intime)  
 
-    plt.ylabel("Amount action")
+
     plt.subplot2grid((2,5), (1,0))
     plt.title("Short-term actions (late)",fontsize=14)
     plt.plot(x_axis,n_total_CA_late)
     plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
+
     
     
     plt.subplot2grid((2,5), (0,4))
     plt.title("Incorrect actions (in time)",fontsize=14)
     plt.plot(x_axis,n_total_IA_intime)
 
-    plt.ylabel("Amount action")
+
     plt.subplot2grid((2,5), (1,4))
     plt.title("Incorrect actions (late)",fontsize=14)
     plt.plot(x_axis,n_total_IA_late)
     plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
+
     
     
     plt.subplot2grid((2,5), (0,1))
     plt.title("Long-term correct actions (in time)",fontsize=14)
     plt.plot(x_axis,n_total_UAC_intime)
 
-    plt.ylabel("Amount action")
+
     plt.subplot2grid((2,5), (1,1))
     plt.title("Long-term correct actions (late)",fontsize=14)
     plt.plot(x_axis,n_total_UAC_late)
     plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
+
     
     
     plt.subplot2grid((2,5), (0,3))
@@ -655,22 +654,22 @@ def plot_detailed_results (n, total_results, save_path, MODE):
     plt.title("Unnecessary actions incorrect (late)",fontsize=14)
     plt.plot(x_axis,n_total_UAI_late)
     plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
+
     
     
     plt.subplot2grid((2,5), (0,2))
     plt.title("Correct inactions",fontsize=14)
     plt.plot(x_axis,n_total_CI)
 
-    plt.ylabel("Amount action")
+
     plt.subplot2grid((2,5), (1,2))
     plt.title("Incorrect inactions",fontsize=14)
     plt.plot(x_axis,n_total_II)
     plt.xlabel("Epoch")
-    plt.ylabel("Amount action")
+
     # plt.show()
 
-    fig1.savefig(save_path+'/'+MODE+'_ACTIONS_'+str(n)+'.jpg')
+    fig1.savefig(save_path+'/'+MODE+'_ACTIONS_average'+str(n)+'.jpg')
     plt.close()
  
 def get_estimations_action_time_human():

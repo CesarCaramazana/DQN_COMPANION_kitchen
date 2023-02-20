@@ -6,15 +6,16 @@
 
 REPLAY_MEMORY = 2048 #Size of replay memory (deque object)
 
-NUM_EPOCH = 20000
-
-BATCH_SIZE = 512
+NUM_EPOCH = 100
+NUM_EPISODES = 63 #"Number of training epochs"
+BATCH_SIZE = 256
+# BATCH_SIZE = 2048
 GAMMA = 0.0 #Discount rate for future rewards
-EPS_START = 0.99 #Initial exporation rate
+EPS_START = 0.5 #Initial exporation rate
 EPS_END = 0.01 #Final exploration rate
 EPS_DECAY = NUM_EPOCH #Exploration rate decay factor
 TARGET_UPDATE = 10 #Episodes between target network update (policy net parameters -> target net)
-LR = 1e-5 #Learning rate
+LR = 1e-4 #Learning rate
 POSITIVE_REWARD = 0
 NO_ACTION_PROBABILITY = 70
 
@@ -25,7 +26,8 @@ SAVE_EPISODE = 100
 LOAD_MODEL = False
 LOAD_EPISODE = 0
 
-DECISION_RATE = 60 
+DECISION_RATE = 100 
+Z_hidden_state = False
 #ENVIRONMENT PARAMETERS ------
 #---------------------------------------------------------------------------------
 
@@ -33,7 +35,7 @@ VERSION = 4
 
 N_ATOMIC_ACTIONS = 33 #Number of total atomic actions. 33 = 31 actions + 1 'other manipulation' + 1 Terminal state
 N_OBJECTS = 23 #Number of objects. Input variables: "Active Object" and "VWM" (Visual Working Memory)
-
+ACTION_SPACE = 12 #Number of robot actions. Output variable
 
 INTERACTIVE_OBJECTS_ROBOT = ['butter','jam','milk','nutella','tomato sauce']
 
@@ -116,6 +118,7 @@ OBJECTS_MEANINGS = {
 	22: 'water'
 }
 
+
 OBJECTS_INIT_STATE = {
     'background': 0,
 	'bowl': 1,
@@ -142,6 +145,36 @@ OBJECTS_INIT_STATE = {
 	'water': 1
     } 
 
+"""
+
+ROBOT_ACTIONS_MEANINGS = {	
+	0: 'bring bowl',
+	1: 'bring butter',
+	2: 'bring cereals',
+	3: 'bring coffee',
+	4: 'bring cup',
+	5: 'bring fork',
+	6: 'bring jam',
+	7: 'bring knife',
+	8: 'bring milk',
+	9: 'bring nesquik',
+	10: 'bring nutella',
+	11: 'bring olive oil',
+	12: 'bring plate',
+	13: 'bring sliced bread',
+	14: 'bring spoon',
+	15: 'bring sugar',
+	16: 'bring tomato sauce',
+	17: 'bring water',
+	18: 'do nothing',
+	19: 'put jam fridge',
+	20: 'put butter fridge',
+	21: 'put tomato sauce fridge',
+	22: 'put nutella fridge',
+	23: 'put milk fridge'
+
+}
+"""
 
 #Reduced action repertoire
 ROBOT_ACTIONS_MEANINGS = {
@@ -161,58 +194,22 @@ ROBOT_ACTIONS_MEANINGS = {
 }
 
 #Reduced action repertoire durations (from get_human_estimates)
-
-# VERSION 1) AVERAGE OF HUMAN ACTION DURATIONS
 ROBOT_ACTION_DURATIONS = {
-	0: 174,  # bring butter
-	1: 198,  # bring jam
-	2: 186,  # bring milk
-	3: 234,  # bring nutella
-	4: 342,  # bring sliced bread
-	5: 270,  # bring tomato sauce
-	6: 0,    # do nothing
-	7: 90,   # put jam fridge
-	8: 114,  # put butter fridge
-	9: 120,  # put tomato sauce fridge
-	10: 168, # put nutella fridge
-	11: 150  # put milk fridge
+	0: 29,
+	1: 33,
+	2: 31,
+	3: 39,
+	4: 57,
+	5: 45,
+	6: 0,
+	7: 15,
+	8: 19,
+	9: 20,
+	10: 28,
+	11: 25
+
 }
 
-"""
-# VERSION 2) 0.5*HUMAN ---> FAST ROBOT
-ROBOT_ACTION_DURATIONS = {
-	0: 87,  # bring butter
-	1: 99,  # bring jam
-	2: 93,  # bring milk
-	3: 117,  # bring nutella
-	4: 171,  # bring sliced bread
-	5: 135,  # bring tomato sauce
-	6: 0,    # do nothing
-	7: 45,   # put jam fridge
-	8: 57,  # put butter fridge
-	9: 60,  # put tomato sauce fridge
-	10: 84, # put nutella fridge
-	11: 75  # put milk fridge
-}
-
-
-# VERSION 3) 2*HUMAN ---> SLOW (MORE REALISTIC) ROBOT
-ROBOT_ACTION_DURATIONS = {
-	0: 348,  # bring butter
-	1: 396,  # bring jam
-	2: 372,  # bring milk
-	3: 468,  # bring nutella
-	4: 684,  # bring sliced bread
-	5: 540,  # bring tomato sauce
-	6: 0,    # do nothing
-	7: 180,   # put jam fridge
-	8: 228,  # put butter fridge
-	9: 249,  # put tomato sauce fridge
-	10: 336, # put nutella fridge
-	11: 300  # put milk fridge
-}
-
-"""
 
 ROBOT_POSSIBLE_INIT_ACTIONS = {
 	0: 1,
@@ -226,10 +223,98 @@ ROBOT_POSSIBLE_INIT_ACTIONS = {
 	8: 0,
 	9: 0,
 	10: 0,
-	11: 0	
+	11: 0
+	
 }
+"""
+ROBOT_POSSIBLE_INIT_ACTIONS = {
+    	0: 0,
+	1: 1,
+	2: 0,
+	3: 0,
+	4: 0,
+	5: 0,
+	6: 1,
+	7: 0,
+	8: 1,
+	9: 0,
+	10: 1,
+	11: 0,
+	12: 0,
+	13: 0,
+	14: 0,
+	15: 0,
+	16: 1,
+	17: 0,
+	18: 1,
+	19: 0,
+	20: 0,
+	21: 0,
+	22: 0,
+	23: 0
 
+}
+"""
 
+#In frames
+# ROBOT_ACTION_DURATIONS = {
+#  	0: 174, 
+#  	1: 122, 
+#  	2: 87, 
+#  	3: 131, 
+#  	4: 147, 
+#  	5: 231, 
+#  	6: 229, 
+#  	7: 171, 
+#  	8: 142, 
+#  	9: 196, 
+#  	10: 221, 
+#  	11: 193, 
+#  	12: 196, 
+#  	13: 142, 
+#  	14: 111, 
+#  	15: 131, 
+#  	16: 169, 
+#  	17: 221, 
+#  	18: 0, 
+#  	19: 86, 
+#  	20: 121, 
+#  	21: 125, 
+#  	22: 123, 
+#  	23: 164
+# }
+
+#from aux import *
+#ROBOT_ACTION_DURATIONS = get_estimations_action_time_human()
+# ROBOT_ACTION_DURATIONS = {
+# 	0: 1740, 
+# 	1: 1220, 
+# 	2: 870, 
+# 	3: 1310, 
+# 	4: 1470, 
+# 	5: 2310, 
+# 	6: 2290, 
+# 	7: 1710, 
+# 	8: 1420, 
+# 	9: 1960, 
+# 	10: 2210, 
+# 	11: 1930, 
+# 	12: 1960, 
+# 	13: 1420, 
+# 	14: 1110, 
+# 	15: 1310, 
+# 	16: 1690, 
+# 	17: 2210, 
+# 	18: 0, 
+# 	19: 860, 
+# 	20: 1210, 
+# 	21: 1250, 
+# 	22: 1230, 
+# 	23: 1640
+# }
+
+from aux import *
+ROBOT_ACTION_DURATIONS = get_estimations_action_time_human()
 
 
 N_OBJECTS = len(OBJECTS_MEANINGS)
@@ -257,6 +342,7 @@ def print_setup(args):
 	print("="*39)
 	print("  Training parameters")
 	print("="*39)
+	print("| NUMBER OF EPISODES        | {0:<6g}".format(args.num_episodes), " |")
 	print("| BATCH SIZE                | {0:<6g}".format(args.batch_size), " |")
 	print("| LEARNING RATE             | {0:<6g}".format(args.lr), " |")
 	print("| LOAD MODEL                | {0:<6g}".format(args.load_model), " |")

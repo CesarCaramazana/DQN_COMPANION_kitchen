@@ -680,16 +680,16 @@ def get_estimations_action_time_human():
     
     duration_action_compilation_list = [[] for _ in range(33)]
     
-    #print(dir_list)
+    print(dir_list)
     
     for idx in dir_list:
         
-        with open(path+'/video_annotations/Real_data/train/'+idx+'/labels_margins', 'rb') as f:
+        with open(path+'/video_annotations/Real_data/train/'+idx+'/labels_updated.pkl', 'rb') as f:
                 data = np.load(f, allow_pickle=True)
                 for i in range(len(data)):
                     frame_duration = data['frame_end'][i]-data['frame_init'][i]
                     duration_action_compilation_list[data['label'][i]].append(frame_duration)
-                #print(data)
+                print(data)
             
     avg_list = []
     for idx in range(len(duration_action_compilation_list)):
@@ -753,35 +753,31 @@ def get_estimations_action_time_human():
                 elif 'put' in (row['atomic_actions'] and value_AR):
                     ROBOT_ACTION_DURATIONS[idx_AR] = row['avg_frame']
                 
-    
-    
-    #print(ROBOT_ACTION_DURATIONS)
-    
     return ROBOT_ACTION_DURATIONS
-                
-def get_sentiment_keyboard():
-    """
-    Returns an integer reward value extracted from the sentiment analysis of an input sentence.
+       
+# def get_sentiment_keyboard():
+#     """
+#     Returns an integer reward value extracted from the sentiment analysis of an input sentence.
     
-    Output:
-        reward: (int) value +1 if text was positive, -1 if text was negative, 0 if neutral.
+#     Output:
+#         reward: (int) value +1 if text was positive, -1 if text was negative, 0 if neutral.
 
-    """
-    sentence = input("Type text\n")
-    analyzer = SentimentIntensityAnalyzer()
+#     """
+#     sentence = input("Type text\n")
+#     analyzer = SentimentIntensityAnalyzer()
     
-    score = analyzer.polarity_scores(sentence)
-    #print("Score : ", score['compound'])
+#     score = analyzer.polarity_scores(sentence)
+#     #print("Score : ", score['compound'])
         
-    if score['compound'] > 0.1: reward = 1
-    elif score['compound'] < -0.1: reward = -1
-    else : reward = 0
+#     if score['compound'] > 0.1: reward = 1
+#     elif score['compound'] < -0.1: reward = -1
+#     else : reward = 0
     
-    #print("Sentiment - ", score['compound'])
-    #print("Reward - ", reward)
+#     #print("Sentiment - ", score['compound'])
+#     #print("Reward - ", reward)
     
 
-    return reward
+#     return reward
 
 
 

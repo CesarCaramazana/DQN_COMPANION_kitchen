@@ -226,6 +226,11 @@ for f in pt_files:
 	total_CI = []
 	total_II = []
 	
+	total_interaction_time_epoch = []
+	total_maximum_time_execution_epoch = []
+	total_minimum_time_execution_epoch = []
+	
+	
 	
 	decision_cont = 0
 
@@ -259,7 +264,7 @@ for f in pt_files:
 	    	
 	    	array_action = [action,flag_decision, 'val']
 	    	#next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times, correct_action, _ = env.step(array_action)
-	    	next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times, correct_action, type_threshold, error_pred, total_pred = env.step(array_action)
+	    	next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, hri_time, correct_action, type_threshold, error_pred, total_pred, min_time, max_time = env.step(array_action)
 	    	
 	    	
 	    	reward = torch.tensor([reward], device=device)
@@ -274,7 +279,7 @@ for f in pt_files:
 	    		next_state = None
 	    	
 	    	if done:
-	    		total_times_execution.append(execution_times)
+	    		#total_times_execution.append(execution_times)
 	    		total_reward_energy_ep.append(reward_energy_ep)
 	    		total_reward_time_ep.append(reward_time_ep)
 	    		total_reward.append(env.get_total_reward())
@@ -290,20 +295,28 @@ for f in pt_files:
 	    		total_CI.append(env.CI)
 	    		total_II.append(env.II)
 	    		
-	    		total_time_video = list(list(zip(*total_times_execution))[0])
-	    		total_time_interaction = list(list(zip(*total_times_execution))[1])
+	    		#total_time_video = list(list(zip(*total_times_execution))[0])
+	    		#total_time_interaction = list(list(zip(*total_times_execution))[1])
+	    		
+	    		#HRI
+	    		total_interaction_time_epoch.append(hri_time)
+	    		
+	    		#Human baseline
+	    		total_minimum_time_execution_epoch.append(min_time)
+	    		total_maximum_time_execution_epoch.append(max_time)
+
 	    		
 	    		#print(total_time_video)
 	    		#print(total_time_iteraction)
 	    		
 	    		break #Finish episode
 
-	epoch_total_times_execution.append(np.sum(total_times_execution))
+	#epoch_total_times_execution.append(np.sum(total_times_execution))
 	epoch_total_reward_energy_ep.append(np.sum(total_reward_energy_ep))
 	epoch_total_reward_time_ep.append(np.sum(total_reward_time_ep))
 
-	epoch_total_time_video.append(np.sum(total_time_video))
-	epoch_total_time_interaction.append(np.sum(total_time_interaction))
+	#epoch_total_time_video.append(np.sum(total_time_video))
+	epoch_total_time_interaction.append(np.sum(total_interaction_time_epoch)) #HRI time
 
 	epoch_CA_intime.append(np.sum(total_CA_intime))
 	epoch_CA_late.append(np.sum(total_CA_late))
@@ -317,11 +330,17 @@ for f in pt_files:
 	epoch_II.append(np.sum(total_II))
 	
 	epoch_reward.append(np.sum(total_reward))
+	
+	maximum_time = sum(total_maximum_time_execution_epoch) #Human times
+	minimum_time = sum(total_minimum_time_execution_epoch)
  
 
 
 save_path = os.path.join(path, "Graphics") 
 if not os.path.exists(save_path): os.makedirs(save_path)
+
+
+
 
 
 #--------------------ACTIONS ----------------
@@ -490,8 +509,10 @@ else: fig2.savefig(save_path+'/00_TRAIN_REWARD.jpg')
 #--------------- INTERACTION ---------------------
 fig3 = plt.figure(figsize=(15,6))
 plt.title("Interaction time")
-plt.plot(epoch_total_time_video, 'k',label='Video')
+#plt.plot(epoch_total_time_video, 'k',label='Video')
 plt.plot(epoch_total_time_interaction, 'c--',label='Interaction')
+plt.axhline(y=maximum_time, color='k', label='Video')
+plt.axhline(y=minimum_time, color='r', label='Minimum')
 plt.legend()
 plt.ylabel("Frames")
 

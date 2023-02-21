@@ -135,6 +135,8 @@ class BasicEnv(gym.Env):
         self.r_history = []
         self.h_history = []
         self.rwd_history = []
+        self.rwd_time_h = []
+        self.rwd_energy_h = []
         
     def get_frame(self):
         global frame
@@ -1035,6 +1037,8 @@ class BasicEnv(gym.Env):
                 self.rwd_history.append([reward]) # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
                 self.h_history.append([self.person_state])
                 self.r_history.append([self.robot_state])
+                self.rwd_time_h.append([self.reward_time])
+                self.rwd_energy_h.append([self.reward_energy])
                 
                 #print("In STEP\nFrame: ", frame, "\nHuman: ", self.person_state, " |  Robot: ", self.robot_state)
                 
@@ -1117,7 +1121,13 @@ class BasicEnv(gym.Env):
     		if not os.path.exists(path): os.makedirs(path)
     		
     		file_name = "{0}.npz".format(video_idx)
-    		np.savez(os.path.join(path, file_name), h_history=self.h_history, r_history=self.r_history, rwd_history=self.rwd_history)
+    		np.savez(os.path.join(path, file_name), 
+    		h_history=self.h_history, 
+    		r_history=self.r_history, 
+    		rwd_history=self.rwd_history,
+    		rwd_time_h = self.rwd_time_h,
+    		rwd_energy_h = self.rwd_energy_h
+    		)
     
     
     def reset(self):
@@ -1200,6 +1210,8 @@ class BasicEnv(gym.Env):
         self.r_history = []
         self.h_history = []
         self.rwd_history = []
+        self.rwd_time_h = []
+        self.rwd_energy_h = []
         
         self.objects_in_table = OBJECTS_INIT_STATE.copy()
         memory_objects_in_table.append(list(self.objects_in_table.values()))

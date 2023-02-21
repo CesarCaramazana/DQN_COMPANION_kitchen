@@ -7,7 +7,6 @@ REPLAY_MEMORY = 2048 #Size of replay memory (deque object)
 NUM_EPOCH = 2000
 NUM_EPISODES = 63 #"Number of training epochs"
 BATCH_SIZE = 512
-# BATCH_SIZE = 2048
 GAMMA = 0.0 #Discount rate for future rewards
 EPS_START = 0.99 #Initial exporation rate
 EPS_END = 0.01 #Final exploration rate

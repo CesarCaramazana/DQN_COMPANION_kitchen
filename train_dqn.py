@@ -32,7 +32,7 @@ warnings.filterwarnings("ignore")
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--pretrained', action='store_true', default=False, help="(bool) Inizializate the model with a pretrained model.")
+parser.add_argument('--pretrained', action='store_true', default=True, help="(bool) Inizializate the model with a pretrained model.")
 parser.add_argument('--freeze', type=str, default='False', help="(bool) Inizializate the model with a pretrained moddel freezing the layers but the last one.")
 parser.add_argument('--experiment_name', type=str, default=cfg.EXPERIMENT_NAME, help="(str) Name of the experiment. Used to name the folder where the model is saved. For example: my_first_DQN.")
 
@@ -111,9 +111,11 @@ target_net = DQN(n_states, n_actions).to(device)
 if PRETRAINED:
     # path_model = './Pretrained/model_real_data.pt' #Path al modelo pre-entrenado
     if cfg.Z_hidden_state:
-        path_model = './Pretrained/model_real_data_correct_frames.pt'
+        path_model = './Pretrained/model_real_data_with_z.pt'
+        print("With Z variable")
     else:
-        path_model = './Pretrained/model_correct_frames_without_z_v2.pt'
+        path_model = './Pretrained/model_real_data_without_z.pt'
+        print("Without Z variable")
   
     print("\nUSING PRETRAINED MODEL---------------")
     
@@ -401,6 +403,44 @@ total_II_epoch_val = []
 prev_decision_rate = 1
 steps_done = 0 
 
+
+
+
+
+# Get minimum and maximum time from dataset
+
+video_max_times = []
+video_min_times = []
+
+
+root = "./video_annotations/Real_data/train/*" #!
+videos = glob.glob(root)  
+
+
+#GET VIDEO TIME AND OPTIMAL TIME (MIN)
+for video in videos:
+	path = video + '/human_times'
+	human_times = np.load(path, allow_pickle=True)  
+	
+	min_time = human_times['min']
+	max_time = human_times['max']
+	
+	video_max_times.append(max_time)
+	video_min_times.append(min_time)
+	
+minimum_time = sum(video_min_times)
+maximum_time = sum(video_max_times)	
+
+
+
+#minimum_time = sum(total_minimum_time_execution_epoch)
+#maximum_time = sum(total_maximum_time_execution_epoch)
+
+
+
+
+
+
 for i_epoch in range (args.load_episode,NUM_EPOCH):
 
     
@@ -442,8 +482,8 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
         total_CI = []
         total_II = []
         
-        total_minimum_time_execution_epoch = []
-        total_maximum_time_execution_epoch = []
+        #total_minimum_time_execution_epoch = []
+        #total_maximum_time_execution_epoch = []
         total_interaction_time_epoch = []
         
         videos_mejorables = []
@@ -490,7 +530,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                         
                 
                 array_action = [action,flag_decision,phase]
-                next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, hri_time, correct_action, type_threshold, error_pred, total_pred, min_time, max_time = env.step(array_action)
+                next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, hri_time, correct_action, type_threshold, error_pred, total_pred = env.step(array_action)
         
                 reward = torch.tensor([reward], device=device)
 
@@ -512,6 +552,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                     num_optim += 1
                     
                     # DECISION FRAME HISTOGRAM
+                    """
                     if type_threshold != "second":
                         fr_init_prev = annotations['frame_end'][action_idx-1]
                         if action_idx > len(annotations):
@@ -552,6 +593,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                                 good_reward_action_VAL.append(index_frame_decision)
                             else:
                                 good_reward_noaction_VAL.append(index_frame_decision)
+                    """
                     # # Semi -supervised case where the correction is also taken into account to train the DQN
                     # if (action != correct_action):
                     #     memory.push(decision_state, torch.tensor([[correct_action]], device=device), next_state, torch.tensor([0], device=device))
@@ -589,9 +631,9 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                     total_interaction_time_epoch.append(hri_time)
                     
                     #Baseline times
-                    total_minimum_time_execution_epoch.append(min_time) #Minimum possible time
-                    total_maximum_time_execution_epoch.append(max_time) #Human max time -> no HRI
-              
+                    #total_minimum_time_execution_epoch.append(min_time) #Minimum possible time
+                    #total_maximum_time_execution_epoch.append(max_time) #Human max time -> no HRI
+                                 
 
                     break #Finish episode
         
@@ -607,8 +649,8 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                             
         #total_time_video = list(list(zip(*total_times_execution))[0])
         #total_time_interaction = list(list(zip(*total_times_execution))[1])
-        minimum_time = sum(total_minimum_time_execution_epoch)
-        maximum_time = sum(total_maximum_time_execution_epoch)
+        #minimum_time = sum(total_minimum_time_execution_epoch)
+        #maximum_time = sum(total_maximum_time_execution_epoch)
         interaction_time = sum(total_interaction_time_epoch)
         
         #print("\n\n\n\nIN TRAIN, minimum: ", minimum_time)
@@ -749,9 +791,12 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             'prediction error': np.mean(total_reward_error_pred)
             }
 
-            df_train = pd.DataFrame(data_train)
-            df_train.to_csv(save_path+'/data_train.csv')
+            #df_train = pd.DataFrame(data_train)
+            #df_train.to_csv(save_path+'/data_train.csv')
             
+            
+            """
+            #HISTOGRAM TRAIN
             fig1 = plt.figure(figsize=(12, 7))
             plt.hist(decision_index_histogram_TRAIN, bins = 100, edgecolor="black")
             plt.title("DECISION FRAME (ALL ACTIONS)")
@@ -778,6 +823,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             plt.title("DECISION FRAME (ALL ACTIONS BUT NO ACTION(18))")
             fig1.savefig(save_path_hist+'/train_hist_action_epoch_'+str(i_epoch)+'.jpg')
             plt.close()
+            """
             
 
 
@@ -818,8 +864,12 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_reward_energy_epoch_val,
             total_reward_time_epoch_val)
             
+            
+            
+            #---------------------------------------------------------------------------------------
+            
             #PLOT TOGETHER
-            plot_each_epoch_together(i_epoch,save_path,
+            if i_epoch % 5 == 0: plot_each_epoch_together(i_epoch,save_path,
             minimum_time,
             total_results_train,
             total_loss_epoch_train,
@@ -852,11 +902,12 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             }
             
     
-            df_val = pd.DataFrame(data_val)
-            df_val.to_csv(save_path+'/data_val.csv')
+            #df_val = pd.DataFrame(data_val)
+            #df_val.to_csv(save_path+'/data_val.csv')
             
             
             #HISTOGRAM VALIDATION
+            """
             fig1 = plt.figure(figsize=(12, 7))
             plt.hist(decision_index_histogram_VAL, bins = 100, edgecolor="black")
             plt.title("DECISION FRAME (ALL ACTIONS)")
@@ -882,7 +933,8 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             plt.title("DECISION FRAME (BAD REWARD)")
             fig1.savefig(save_path_hist+'/val_BAD_hist_epoch_'+str(i_epoch)+'.jpg')
             plt.close()
-            print("(val) PREDICTION ERROR: %.2f%%\n" %(np.mean(total_reward_error_pred)*100))
+            #print("(val) PREDICTION ERROR: %.2f%%\n" %(np.mean(total_reward_error_pred)*100))
+            """
             
             
 

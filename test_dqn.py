@@ -303,7 +303,7 @@ for f in pt_files:
 	    		
 	    		#Human baseline
 	    		total_minimum_time_execution_epoch.append(min_time)
-	    		total_maximum_time_execution_epoch.append(max_time)
+	    		total_maximum_time_execution_epoch.append(max_time)	    		
 
 	    		
 	    		#print(total_time_video)
@@ -331,8 +331,13 @@ for f in pt_files:
 	
 	epoch_reward.append(np.sum(total_reward))
 	
+	
 	maximum_time = sum(total_maximum_time_execution_epoch) #Human times
 	minimum_time = sum(total_minimum_time_execution_epoch)
+	
+	
+
+
  
 
 
@@ -442,23 +447,30 @@ sizes2 = [stci + stcl,
 labels3 = 'In time', 'Late'
 sizes3 = [stci + ltci + ui + iai,
 	stcl + ltcl + ul + ial]
-	
+
+labels4 = 'Useful actions', 'Useless actions' #Kinda like correct vs Incorrect+Unnecs
+sizes4 = [stci + stcl + ltci + ltcl,
+	ui + ul + iai + ial]	
 
 fig1 = plt.figure(figsize=(20,10))
 
-plt.subplot(1,3,1)
+plt.subplot(1,4,1)
 plt.title("Action decisions")
 plt.pie(sizes1, labels=labels1, autopct='%1.1f%%')
 
-plt.subplot(1,3,2)
+plt.subplot(1,4,2)
 plt.title("Short-term vs. Long-term")
 plt.pie(sizes2, labels=labels2, autopct='%1.1f%%')
 
 
-plt.subplot(1,3,3)
+plt.subplot(1,4,3)
 plt.title("In time vs. Late")
-plt.pie(sizes3, labels=labels3, autopct='%1.1f%%')
+plt.pie(sizes3, labels=labels3, autopct='%1.1f%%', colors=['mediumseagreen', 'crimson'])
 
+
+plt.subplot(1,4,4)
+plt.title("Useful vs. Useless")
+plt.pie(sizes4, labels=labels4, autopct='%1.1f%%', colors=['mediumseagreen', 'crimson'])
 
 if env.test: fig1.savefig(save_path+'/00_TEST_ACTIONS_PIE.jpg')
 else: fig1.savefig(save_path+'/00_TRAIN_ACTIONS_PIE.jpg')

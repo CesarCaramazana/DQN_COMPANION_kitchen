@@ -20,7 +20,6 @@ There are three types of functions:
     1) General purpose: regarding the management of array variables.
     2) Get state: as interface functions between the input systems and the environment. Right now using video_annotations. In the future, these functions will be used to retrieve the outputs of the Action Prediction system (among others).
     3) Reward: user interfaces to get the reward value. 
-
 """
 
 
@@ -125,10 +124,7 @@ def undo_concat_state(state):
     
 
 """
-
 MOVING AVERAGE
-
-
 """
 
 def moving_average(x, w):
@@ -296,7 +292,7 @@ def reward_confirmation_perform(action):
 
 
 
-def plot_each_epoch(i_epoch, phase,save_path, total_results,total_loss_epoch,total_reward_epoch,total_time_video,total_time_execution_epoch,total_reward_energy_epoch,total_reward_time_epoch,ex_rate=0):
+def plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_loss_epoch,total_reward_epoch,maximum_time,total_time_execution_epoch,total_reward_energy_epoch,total_reward_time_epoch,ex_rate=0):
                 
     n = int(cfg.NUM_EPOCH*0.05)
     if i_epoch >= 2*n: 
@@ -390,11 +386,14 @@ def plot_each_epoch(i_epoch, phase,save_path, total_results,total_loss_epoch,tot
     
     
     # ---------- INTERACTION TIME ------------------------------
-    total_time_video_epoch = [sum(total_time_video)]*len(total_time_execution_epoch)
+    #total_time_video_epoch = [sum(total_time_video)]*len(total_time_execution_epoch)
+    
+    
     fig1 = plt.figure(figsize=(15, 6))
-    plt.plot(total_time_video_epoch, 'k')
+    plt.axhline(y=maximum_time, color='k')
     plt.plot(total_time_execution_epoch, 'b--')
-    plt.legend(["Video","Interaction"])
+    plt.axhline(y=minimum_time, color='r')
+    plt.legend(["Video","Interaction", "Minimum"])
     plt.xlabel("Epoch")
     plt.ylabel("Frames")
     plt.title(phase+" | Interaction time")
@@ -434,7 +433,7 @@ def plot_each_epoch(i_epoch, phase,save_path, total_results,total_loss_epoch,tot
     
     
     
-def plot_each_epoch_together(i_epoch,save_path, total_results_train,total_loss_epoch_train,total_reward_epoch_train,total_time_video,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate,total_results,total_loss_epoch_val,total_reward_epoch_val,total_time_execution_epoch_val,total_reward_energy_epoch_val,total_reward_time_epoch_val):
+def plot_each_epoch_together(i_epoch,save_path,minimum_time, total_results_train,total_loss_epoch_train,total_reward_epoch_train,maximum_time,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate,total_results,total_loss_epoch_val,total_reward_epoch_val,total_time_execution_epoch_val,total_reward_energy_epoch_val,total_reward_time_epoch_val):
                  
     
     
@@ -525,12 +524,13 @@ def plot_each_epoch_together(i_epoch,save_path, total_results_train,total_loss_e
     
     
     #------------------ INTERACTION TIME------------------------------------------
-    total_time_video_epoch = [sum(total_time_video)]*len(total_time_execution_epoch_train)
+    #total_time_video_epoch = [sum(total_time_video)]*len(total_time_execution_epoch_train)
     
     fig1 = plt.figure(figsize=(15, 6))
-    plt.plot(total_time_video_epoch,'k', label='Video')
+    plt.axhline(y=maximum_time,color='k', label='Video')
     plt.plot(total_time_execution_epoch_train,'b--',label='Train')
     plt.plot(total_time_execution_epoch_val,'m--',label='Validation')
+    plt.axhline(y=minimum_time, color='r', label='Minimum')
     
     plt.legend(["Video","Train Interaction","Val Interaction"])
     plt.xlabel("Epoch")
@@ -755,35 +755,8 @@ def get_estimations_action_time_human():
                 
     return ROBOT_ACTION_DURATIONS
        
-# def get_sentiment_keyboard():
-#     """
-#     Returns an integer reward value extracted from the sentiment analysis of an input sentence.
-    
-#     Output:
-#         reward: (int) value +1 if text was positive, -1 if text was negative, 0 if neutral.
-
-#     """
-#     sentence = input("Type text\n")
-#     analyzer = SentimentIntensityAnalyzer()
-    
-#     score = analyzer.polarity_scores(sentence)
-#     #print("Score : ", score['compound'])
-        
-#     if score['compound'] > 0.1: reward = 1
-#     elif score['compound'] < -0.1: reward = -1
-#     else : reward = 0
-    
-#     #print("Sentiment - ", score['compound'])
-#     #print("Reward - ", reward)
-    
-
-#     return reward
 
 
 
 
-
-
-
-    
 

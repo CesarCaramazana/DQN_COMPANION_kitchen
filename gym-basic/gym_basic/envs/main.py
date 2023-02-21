@@ -14,6 +14,7 @@ import random
 from collections import Counter
 import copy 
 from natsort import natsorted, ns
+import pickle
 
 #CONFIGURATION GLOBAL ENVIRONMENT VARIABLES
 ACTION_SPACE = cfg.ACTION_SPACE
@@ -275,7 +276,7 @@ class BasicEnv(gym.Env):
             df_video_dataset.sort_values("Frame init")
             # print(df_video_dataset)
             total_minimum_time_execution = annotations['frame_end'][len(annotations)-1] - df_video_dataset['Max_time_to_save'].sum()
-        return df_video_dataset, total_minimum_time_execution
+        return total_minimum_time_execution
     
     def get_energy_robot_reward(self,action,frame):
         global memory_objects_in_table
@@ -935,7 +936,10 @@ class BasicEnv(gym.Env):
         self.flags['threshold'] = " "
 
         len_prev = 2
-        total_minimum_time_execution = 0
+        
+        min_time = 0 #Optimal time for recipe
+        max_time = 0 #Human time withour HRI
+        hri_time = 0
         
         threshold, fr_execution, fr_end = self.time_course(action)
         
@@ -945,7 +949,7 @@ class BasicEnv(gym.Env):
        
        
         frame_post = []
-        execution_times = []
+
         
         if action != 6:
             self.update_objects_in_table(action)
@@ -965,8 +969,8 @@ class BasicEnv(gym.Env):
                 
                 self.transition() 
                  
-            execution_times.append(annotations['frame_end'].iloc[-1])
-            execution_times.append(self.time_execution)
+            #execution_times.append(annotations['frame_end'].iloc[-1])
+            hri_time = self.time_execution
             self.flags['pdb'] = True
             # pdb.set_trace()
                         
@@ -1064,19 +1068,38 @@ class BasicEnv(gym.Env):
                 # pdb.set_trace()
              
         if done: 
-            df, total_minimum_time_execution = self.get_minimum_execution_times()
-            # print(df)
-            # self.prints_terminal(action, frame_prev, frame_post, reward)
-            # print("Done: ",total_minimum_time_execution)
-            path_env = path_labels_pkl.split("/")[-2]
-            # pdb.set_trace()
-            # print(path_labels_pkl)
+            #total_minimum_time_execution = self.get_minimum_execution_times()
+            """
+            print(annotations)
+            print("Here, at the done: ", videos_realData[video_idx])
+            print("Minimum time: !, ", total_minimum_time_execution)
+            print("Execution timees: ", execution_times[0])
+            
+            path_to_save = videos_realData[video_idx] + '/human_times'
+            
+            print("Path: ", path_to_save)
+            
+            human_times = {'min': total_minimum_time_execution, 'max': execution_times[0]}
+            
+            with open(path_to_save, 'wb') as handle:
+            	pickle.dump(human_times, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            """
+            
+            path_to_times = videos_realData[video_idx] + '/human_times'
+            human_times = np.load(path_to_times, allow_pickle=True)            
+            
+            min_time = human_times['min']
+            max_time = human_times['max']
+            
+            #print("min: ",min_time)
+            #print("max: ", max_time)            
+            #print("hri: ", hri_time)
+  
             
         self.total_reward += reward 
-        # print(path_labels_pkl)
-        # print(total_minimum_time_execution)
-        # pdb.set_trace()
-        return self.state, reward, done, optim,  self.flags['pdb'], self.reward_time, self.reward_energy, execution_times, action, self.flags['threshold'], self.prediction_error, self.total_prediction, total_minimum_time_execution, path_env       
+        
+
+        return self.state, reward, done, optim,  self.flags['pdb'], self.reward_time, self.reward_energy, hri_time, action, self.flags['threshold'], self.prediction_error, self.total_prediction, min_time, max_time       
         
         
     def get_total_reward(self):
@@ -1505,6 +1528,12 @@ class BasicEnv(gym.Env):
             self.time_execution += 1
         
         length = len(annotations['label']) - 1
+        
+        
+        #print("Flag decision: ", self.flags['decision'])
+        
+        if frame % cfg.DECISION_RATE != 0: return
+        
            
         # 1)
         #GET TIME STEP () (Updates the action_idx)
@@ -1778,9 +1807,7 @@ class BasicEnv(gym.Env):
             state_env= new_no_actions_state
             action_env= new_no_actions
             
-        
 
-       
         return state_env, action_env, done
     
     def get_video_idx(self):

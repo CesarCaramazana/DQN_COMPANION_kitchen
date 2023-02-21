@@ -32,7 +32,7 @@ warnings.filterwarnings("ignore")
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--pretrained', action='store_true', default=True, help="(bool) Inizializate the model with a pretrained model.")
+parser.add_argument('--pretrained', action='store_true', default=False, help="(bool) Inizializate the model with a pretrained model.")
 parser.add_argument('--freeze', type=str, default='False', help="(bool) Inizializate the model with a pretrained moddel freezing the layers but the last one.")
 parser.add_argument('--experiment_name', type=str, default=cfg.EXPERIMENT_NAME, help="(str) Name of the experiment. Used to name the folder where the model is saved. For example: my_first_DQN.")
 
@@ -115,7 +115,7 @@ if PRETRAINED:
     else:
         path_model = './Pretrained/model_correct_frames_without_z_v2.pt'
   
-    print("USING PRETRAINED MODEL---------------")
+    print("\nUSING PRETRAINED MODEL---------------")
     
     policy_net.load_state_dict(torch.load(path_model))
     policy_net.to(device)
@@ -510,6 +510,48 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                     
                     optimize_model(phase)
                     num_optim += 1
+                    
+                    # DECISION FRAME HISTOGRAM
+                    if type_threshold != "second":
+                        fr_init_prev = annotations['frame_end'][action_idx-1]
+                        if action_idx > len(annotations):
+                            action_idx = len(annotations)-1
+                            
+                        if action_idx < 2:
+                            fr_init_prev = 0
+                        else:
+                            fr_init_prev = annotations['frame_end'][action_idx-2]
+                       
+    
+                        fr_init = annotations['frame_init'][action_idx]
+                        if type_threshold == "first":
+                            fr_init = annotations['frame_end'][action_idx-1]
+                        
+                        index_frame_decision = 1 - ((fr_init-frame_decision)/(fr_init-fr_init_prev))
+                    if phase=='train':
+                        decision_index_histogram_TRAIN.append(index_frame_decision)
+                        if action != 18:
+                            decision_action_index_histogram_TRAIN.append(index_frame_decision)
+                        
+                        if reward < 0:
+                            bad_reward_TRAIN.append(index_frame_decision)
+                        else:
+                            if action != 18:
+                                good_reward_action_TRAIN.append(index_frame_decision)
+                            else:
+                                good_reward_noaction_TRAIN.append(index_frame_decision)
+                    else:
+                        decision_index_histogram_VAL.append(index_frame_decision)
+                        if action != 18:
+                            decision_action_index_histogram_VAL.append(index_frame_decision)
+                        
+                        if reward < 0:
+                            bad_reward_VAL.append(index_frame_decision)
+                        else:
+                            if action != 18:
+                                good_reward_action_VAL.append(index_frame_decision)
+                            else:
+                                good_reward_noaction_VAL.append(index_frame_decision)
                     # # Semi -supervised case where the correction is also taken into account to train the DQN
                     # if (action != correct_action):
                     #     memory.push(decision_state, torch.tensor([[correct_action]], device=device), next_state, torch.tensor([0], device=device))
@@ -678,7 +720,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
 
  
             #PLOT TRAIN
-            plot_each_epoch(i_epoch, phase,save_path,
+            if i_epoch % 50 == 0: plot_each_epoch(i_epoch, phase,save_path,
             minimum_time,
             total_results_train,
             total_loss_epoch_train,
@@ -708,7 +750,34 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             }
 
             df_train = pd.DataFrame(data_train)
-            #df_train.to_csv(save_path+'/data_train.csv')
+            df_train.to_csv(save_path+'/data_train.csv')
+            
+            fig1 = plt.figure(figsize=(12, 7))
+            plt.hist(decision_index_histogram_TRAIN, bins = 100, edgecolor="black")
+            plt.title("DECISION FRAME (ALL ACTIONS)")
+            fig1.savefig(save_path_hist+'/train_hist_epoch_'+str(i_epoch)+'.jpg')
+            # plt.show()
+            plt.close()
+
+            fig1 = plt.figure(figsize=(12, 7))
+            plt.hist(good_reward_action_TRAIN, bins = 100, edgecolor="black")
+            plt.title("DECISION FRAME (ONLY ACTIONS, GOOD REWARD)")
+            fig1.savefig(save_path_hist+'/train_GOOD_action_hist_epoch_'+str(i_epoch)+'.jpg')
+            plt.close()
+
+
+            fig1 = plt.figure(figsize=(12, 7))
+            plt.hist(bad_reward_TRAIN, bins = 100, edgecolor="black")
+            plt.title("DECISION FRAME (BAD REWARD)")
+            fig1.savefig(save_path_hist+'/train_BAD_hist_epoch_'+str(i_epoch)+'.jpg')
+            plt.close()
+
+            # pdb.set_trace()
+            fig1 = plt.figure(figsize=(12, 7))
+            plt.hist(decision_action_index_histogram_TRAIN, bins = 100, edgecolor="black")
+            plt.title("DECISION FRAME (ALL ACTIONS BUT NO ACTION(18))")
+            fig1.savefig(save_path_hist+'/train_hist_action_epoch_'+str(i_epoch)+'.jpg')
+            plt.close()
             
 
 
@@ -737,7 +806,9 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_results = [total_CA_intime_epoch_val,total_CA_late_epoch_val,total_IA_intime_epoch_val,total_IA_late_epoch_val,total_UAC_intime_epoch_val,total_UAC_late_epoch_val,total_UAI_intime_epoch_val,total_UAI_late_epoch_val,total_CI_epoch_val,total_II_epoch_val]
             
             #PLOT VALIDATION
-            plot_each_epoch(i_epoch, phase,save_path,
+            
+            
+            if i_epoch % 50 == 0: plot_each_epoch(i_epoch, phase,save_path,
             minimum_time, 
             total_results,
             total_loss_epoch_val,
@@ -783,6 +854,35 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
     
             df_val = pd.DataFrame(data_val)
             df_val.to_csv(save_path+'/data_val.csv')
+            
+            
+            #HISTOGRAM VALIDATION
+            fig1 = plt.figure(figsize=(12, 7))
+            plt.hist(decision_index_histogram_VAL, bins = 100, edgecolor="black")
+            plt.title("DECISION FRAME (ALL ACTIONS)")
+            fig1.savefig(save_path_hist+'/val_hist_epoch_'+str(i_epoch)+'.jpg')
+            # plt.show()
+            plt.close()
+
+            fig1 = plt.figure(figsize=(12, 7))
+            plt.hist(decision_action_index_histogram_VAL, bins = 100, edgecolor="black")
+            plt.title("DECISION FRAME (ALL ACTIONS BUT NO ACTION(18))")
+            fig1.savefig(save_path_hist+'/val_hist_action_epoch_'+str(i_epoch)+'.jpg')
+            plt.close()
+
+            fig1 = plt.figure(figsize=(12, 7))
+            plt.hist(good_reward_action_VAL, bins = 100, edgecolor="black")
+            plt.title("DECISION FRAME (ONLY ACTIONS, GOOD REWARD)")
+            fig1.savefig(save_path_hist+'/val_GOOD_action_hist_epoch_'+str(i_epoch)+'.jpg')
+            plt.close()
+
+
+            fig1 = plt.figure(figsize=(12, 7))
+            plt.hist(bad_reward_VAL, bins = 100, edgecolor="black")
+            plt.title("DECISION FRAME (BAD REWARD)")
+            fig1.savefig(save_path_hist+'/val_BAD_hist_epoch_'+str(i_epoch)+'.jpg')
+            plt.close()
+            print("(val) PREDICTION ERROR: %.2f%%\n" %(np.mean(total_reward_error_pred)*100))
             
             
 

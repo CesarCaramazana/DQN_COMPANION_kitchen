@@ -32,7 +32,7 @@ warnings.filterwarnings("ignore")
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--pretrained', action='store_true', default=True, help="(bool) Inizializate the model with a pretrained model.")
+parser.add_argument('--pretrained', action='store_true', default=False, help="(bool) Inizializate the model with a pretrained model.")
 parser.add_argument('--freeze', type=str, default='False', help="(bool) Inizializate the model with a pretrained moddel freezing the layers but the last one.")
 parser.add_argument('--experiment_name', type=str, default=cfg.EXPERIMENT_NAME, help="(str) Name of the experiment. Used to name the folder where the model is saved. For example: my_first_DQN.")
 
@@ -443,6 +443,9 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
         total_II = []
         
         total_minimum_time_execution_epoch = []
+        total_maximum_time_execution_epoch = []
+        total_interaction_time_epoch = []
+        
         videos_mejorables = []
         total_times_execution = []
         if phase == 'train':
@@ -487,7 +490,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                         
                 
                 array_action = [action,flag_decision,phase]
-                next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times, correct_action, type_threshold, error_pred, total_pred, total_minimum_time_execution, path_labels_pkl = env.step(array_action)
+                next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, hri_time, correct_action, type_threshold, error_pred, total_pred, min_time, max_time = env.step(array_action)
         
                 reward = torch.tensor([reward], device=device)
 
@@ -505,58 +508,11 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
 
                     memory.push(decision_state, action_, next_state, reward)
                     
-
                     optimize_model(phase)
                     num_optim += 1
                     # # Semi -supervised case where the correction is also taken into account to train the DQN
                     # if (action != correct_action):
                     #     memory.push(decision_state, torch.tensor([[correct_action]], device=device), next_state, torch.tensor([0], device=device))
-                    
-                    # optimize_model(phase)
-                    # num_optim += 1
-                    
-                    # # DECISION FRAME HISTOGRAM
-                    # if type_threshold != "second":
-                    #     fr_init_prev = annotations['frame_end'][action_idx-1]
-                    #     if action_idx > len(annotations):
-                    #         action_idx = len(annotations)-1
-                            
-                    #     if action_idx < 2:
-                    #         fr_init_prev = 0
-                    #     else:
-                    #         fr_init_prev = annotations['frame_end'][action_idx-2]
-                       
-    
-                    #     fr_init = annotations['frame_init'][action_idx]
-                    #     if type_threshold == "first":
-                    #         fr_init = annotations['frame_end'][action_idx-1]
-                        
-                    #     index_frame_decision = 1 - ((fr_init-frame_decision)/(fr_init-fr_init_prev))
-                    #     if phase=='train':
-                    #         decision_index_histogram_TRAIN.append(index_frame_decision)
-                    #         if action != 6:
-                    #             decision_action_index_histogram_TRAIN.append(index_frame_decision)
-                            
-                    #         if reward < 0:
-                    #             bad_reward_TRAIN.append(index_frame_decision)
-                    #         else:
-                    #             if action != 6:
-                    #                 good_reward_action_TRAIN.append(index_frame_decision)
-                    #             else:
-                    #                 good_reward_noaction_TRAIN.append(index_frame_decision)
-                    #     else:
-                    #         decision_index_histogram_VAL.append(index_frame_decision)
-                    #         if action != 6:
-                    #             decision_action_index_histogram_VAL.append(index_frame_decision)
-                            
-                    #         if reward < 0:
-                    #             bad_reward_VAL.append(index_frame_decision)
-                    #         else:
-                    #             if action != 6:
-                    #                 good_reward_action_VAL.append(index_frame_decision)
-                    #             else:
-                    #                 good_reward_noaction_VAL.append(index_frame_decision)
-
 
                 if not done: 
                     state = next_state
@@ -573,8 +529,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                     total_reward.append(env.get_total_reward())
                     total_reward_energy_ep.append(reward_energy_ep)
                     total_reward_time_ep.append(reward_time_ep)
-                    total_reward_error_pred.append(error_pred_ep/total_pred_ep)
-                    total_times_execution.append(execution_times)
+                    total_reward_error_pred.append(error_pred_ep/total_pred_ep)                    
                     total_CA_intime.append(env.CA_intime)
                     total_CA_late.append(env.CA_late)
                     total_IA_intime.append(env.IA_intime)
@@ -588,7 +543,12 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                     
                     #memory.show_batch(10)
                     
-                    total_minimum_time_execution_epoch.append(total_minimum_time_execution)
+                    #Interaction
+                    total_interaction_time_epoch.append(hri_time)
+                    
+                    #Baseline times
+                    total_minimum_time_execution_epoch.append(min_time) #Minimum possible time
+                    total_maximum_time_execution_epoch.append(max_time) #Human max time -> no HRI
               
 
                     break #Finish episode
@@ -603,15 +563,17 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                 
 
                             
-        total_time_video = list(list(zip(*total_times_execution))[0])
-        total_time_interaction = list(list(zip(*total_times_execution))[1])
+        #total_time_video = list(list(zip(*total_times_execution))[0])
+        #total_time_interaction = list(list(zip(*total_times_execution))[1])
         minimum_time = sum(total_minimum_time_execution_epoch)
+        maximum_time = sum(total_maximum_time_execution_epoch)
+        interaction_time = sum(total_interaction_time_epoch)
         
         #print("\n\n\n\nIN TRAIN, minimum: ", minimum_time)
      
             
-        data = {'video': total_time_video,
-        'interaction': total_time_interaction,
+        data = {'video': maximum_time,
+        'interaction': interaction_time,
         'CA_intime': total_CA_intime,
         'CA_late':total_CA_late,
         'IA_intime': total_IA_intime,
@@ -697,7 +659,8 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_reward_energy_epoch_train.append(sum(total_reward_energy_ep))
             total_reward_time_epoch_train.append(sum(total_reward_time_ep))
 
-            total_time_execution_epoch_train.append(sum(total_time_interaction))
+            #total_time_execution_epoch_train.append(sum(total_time_interaction))
+            total_time_execution_epoch_train.append(interaction_time)
 
             total_CA_intime_epoch_train.append(sum(total_CA_intime))
             total_CA_late_epoch_train.append(sum(total_CA_late))
@@ -712,9 +675,19 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_results_train = [total_CA_intime_epoch_train,total_CA_late_epoch_train,total_IA_intime_epoch_train,total_IA_late_epoch_train,total_UAC_intime_epoch_train,total_UAC_late_epoch_train,total_UAI_intime_epoch_train,total_UAI_late_epoch_train,total_CI_epoch_train,total_II_epoch_train]
            
             
-            # if i_epoch % 5 == 0: plot_each_epoch(i_epoch, phase,save_path, total_results_train,total_loss_epoch_train,total_reward_epoch_train,total_time_video,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate)
-            
-            plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results_train,total_loss_epoch_train,total_reward_epoch_train,total_time_video,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate)
+
+ 
+            #PLOT TRAIN
+            plot_each_epoch(i_epoch, phase,save_path,
+            minimum_time,
+            total_results_train,
+            total_loss_epoch_train,
+            total_reward_epoch_train,
+            maximum_time,
+            total_time_execution_epoch_train,
+            total_reward_energy_epoch_train,
+            total_reward_time_epoch_train,
+            ex_rate)
             
             
             
@@ -738,32 +711,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             #df_train.to_csv(save_path+'/data_train.csv')
             
 
-            # HISTOGRAMS
-            """
-            fig1 = plt.figure(figsize=(12, 7))
-            plt.hist(decision_index_histogram_TRAIN, bins = 100, edgecolor="black")
-            plt.title("DECISION FRAME (ALL ACTIONS)")
-            fig1.savefig(save_path_hist+'/train_hist_epoch_'+str(i_epoch)+'.jpg')
-            # plt.show()
-            plt.close()
-            fig1 = plt.figure(figsize=(12, 7))
-            plt.hist(good_reward_action_TRAIN, bins = 100, edgecolor="black")
-            plt.title("DECISION FRAME (ONLY ACTIONS, GOOD REWARD)")
-            fig1.savefig(save_path_hist+'/train_GOOD_action_hist_epoch_'+str(i_epoch)+'.jpg')
-            plt.close()
-            fig1 = plt.figure(figsize=(12, 7))
-            plt.hist(bad_reward_TRAIN, bins = 100, edgecolor="black")
-            plt.title("DECISION FRAME (BAD REWARD)")
-            fig1.savefig(save_path_hist+'/train_BAD_hist_epoch_'+str(i_epoch)+'.jpg')
-            plt.close()
-            # pdb.set_trace()
-            fig1 = plt.figure(figsize=(12, 7))
-            plt.hist(decision_action_index_histogram_TRAIN, bins = 100, edgecolor="black")
-            plt.title("DECISION FRAME (ALL ACTIONS BUT NO ACTION(18))")
-            fig1.savefig(save_path_hist+'/train_hist_action_epoch_'+str(i_epoch)+'.jpg')
-            plt.close()
-            # plt.show()
-            """
+
             #print("\n(train) PREDICTION ERROR: %.2f%%" %(np.mean(total_reward_error_pred)*100))
         elif phase=='val':
             # print(len(total_loss))
@@ -773,7 +721,8 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_reward_energy_epoch_val.append(sum(total_reward_energy_ep))
             total_reward_time_epoch_val.append(sum(total_reward_time_ep))
 
-            total_time_execution_epoch_val.append(sum(total_time_interaction))
+            #total_time_execution_epoch_val.append(sum(total_time_interaction))
+            total_time_execution_epoch_val.append(interaction_time)
 
             total_CA_intime_epoch_val.append(sum(total_CA_intime))
             total_CA_late_epoch_val.append(sum(total_CA_late))
@@ -787,10 +736,34 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_II_epoch_val.append(sum(total_II))
             total_results = [total_CA_intime_epoch_val,total_CA_late_epoch_val,total_IA_intime_epoch_val,total_IA_late_epoch_val,total_UAC_intime_epoch_val,total_UAC_late_epoch_val,total_UAI_intime_epoch_val,total_UAI_late_epoch_val,total_CI_epoch_val,total_II_epoch_val]
             
-            plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_loss_epoch_val,total_reward_epoch_val,total_time_video,total_time_execution_epoch_val,total_reward_energy_epoch_val,total_reward_time_epoch_val)
+            #PLOT VALIDATION
+            plot_each_epoch(i_epoch, phase,save_path,
+            minimum_time, 
+            total_results,
+            total_loss_epoch_val,
+            total_reward_epoch_val,
+            maximum_time,
+            total_time_execution_epoch_val,
+            total_reward_energy_epoch_val,
+            total_reward_time_epoch_val)
             
-            
-            plot_each_epoch_together(i_epoch,save_path, minimum_time,total_results_train,total_loss_epoch_train,total_reward_epoch_train,total_time_video,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate,total_results,total_loss_epoch_val,total_reward_epoch_val,total_time_execution_epoch_val,total_reward_energy_epoch_val,total_reward_time_epoch_val)
+            #PLOT TOGETHER
+            plot_each_epoch_together(i_epoch,save_path,
+            minimum_time,
+            total_results_train,
+            total_loss_epoch_train,
+            total_reward_epoch_train,
+            maximum_time,
+            total_time_execution_epoch_train,
+            total_reward_energy_epoch_train,
+            total_reward_time_epoch_train,
+            ex_rate,
+            total_results,
+            total_loss_epoch_val,
+            total_reward_epoch_val,
+            total_time_execution_epoch_val,
+            total_reward_energy_epoch_val,
+            total_reward_time_epoch_val)
             
             # if i_epoch == NUM_EPOCH-1:
             data_val = {

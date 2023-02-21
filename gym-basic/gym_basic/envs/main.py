@@ -14,6 +14,7 @@ import random
 from collections import Counter
 import copy 
 from natsort import natsorted, ns
+import pickle
 
 #CONFIGURATION GLOBAL ENVIRONMENT VARIABLES
 ACTION_SPACE = cfg.ACTION_SPACE
@@ -30,6 +31,7 @@ OBJECTS_INIT_STATE = copy.deepcopy(cfg.OBJECTS_INIT_STATE)
 VERSION = cfg.VERSION
 POSITIVE_REWARD = cfg.POSITIVE_REWARD
 
+Z_hidden_state = cfg.Z_hidden_state
 
 INTERACTIVE_OBJECTS_ROBOT = cfg.INTERACTIVE_OBJECTS_ROBOT
 
@@ -52,23 +54,26 @@ frame = 0 #Current frame
 correct_action = -1 # esto para que es
 
 
-labels_pkl = 'labels_margins.pkl'
+labels_pkl = 'labels_updated.pkl'
 path_labels_pkl = os.path.join(videos_realData[video_idx], labels_pkl)
 
 annotations = np.load(path_labels_pkl, allow_pickle=True)
 
-#print(annotations)
+
 
 
 class BasicEnv(gym.Env):
     message = "Custom environment for recipe preparation scenario."
-          
+        
+
+    
     def __init__(self, display=False, test=False):
         self.action_space = gym.spaces.Discrete(ACTION_SPACE) #[0, ACTION_SPACE-1]
 
-        self.observation_space = gym.spaces.Discrete(1157) # Next Action + Action Recog + VWM + Obj in table + Z 
-        
-        self.observation_space = gym.spaces.Discrete(133)
+        if Z_hidden_state:
+            self.observation_space = gym.spaces.Discrete(1157) # Next Action + Action Recog + VWM + Obj in table + Z 
+        else:   
+            self.observation_space = gym.spaces.Discrete(N_ATOMIC_ACTIONS*2+(N_OBJECTS-1)*2+ACTION_SPACE)
             
         self.state = [] #One hot encoded state        
         self.total_reward = 0
@@ -106,7 +111,7 @@ class BasicEnv(gym.Env):
             
             total_videos = len(videos_realData)
             
-            labels_pkl = 'labels_margins.pkl'
+            labels_pkl = 'labels_updated.pkl'
             path_labels_pkl = os.path.join(videos_realData[video_idx], labels_pkl)
             
             annotations = np.load(path_labels_pkl, allow_pickle=True)
@@ -130,8 +135,6 @@ class BasicEnv(gym.Env):
         self.r_history = []
         self.h_history = []
         self.rwd_history = []
-        self.rwd_time_h = []
-        self.rwd_energy_h = []
         
     def get_frame(self):
         global frame
@@ -151,7 +154,7 @@ class BasicEnv(gym.Env):
    
     def energy_robot_reward (self, action):
          
-        self.reward_energy = -ROBOT_ACTION_DURATIONS[action]/1
+        self.reward_energy = -ROBOT_ACTION_DURATIONS[action]/10 
     
     def get_possibility_objects_in_table (self):
         global annotations
@@ -215,6 +218,65 @@ class BasicEnv(gym.Env):
         return df_video
        
         
+    def get_minimum_execution_times(self):
+        
+        global annotations
+        df_video = self.get_possibility_objects_in_table()
+        
+        name_actions = []
+        for index, row in df_video.iterrows():
+            if row['In table'] == 1:
+                name_actions.append("bring "+row['Object'])
+            else:
+                name_actions.append("put "+row['Object']+ ' fridge')
+            
+        df_video['Actions'] = name_actions
+        
+        keys = list(df_video['Actions'])
+        video_dict = {}
+        for i in keys:
+            video_dict[i] = 0
+            
+        person_states = annotations['label']
+        
+       
+        total_minimum_time_execution = annotations['frame_end'][len(annotations)-1]
+        # total_minimum_time_execution = 0
+        df_video_dataset = df_video.copy()
+        # df_video_dataset = df_video
+        df_video_dataset['Max_time_to_save'] = [0]*len(df_video_dataset)
+        if not df_video_dataset.empty:
+            # print(df_video)
+            
+            for idx,value in enumerate(person_states):
+                for obj in INTERACTIVE_OBJECTS_ROBOT:
+                    if obj in ATOMIC_ACTIONS_MEANINGS[value]: 
+                        
+                        if 'extract' in ATOMIC_ACTIONS_MEANINGS[value]:
+                            if idx != 0: 
+                                action_name = 'bring '+ obj
+                                fr_init = annotations['frame_init'][idx-1]
+                                
+                                df_video_dataset['Frame init'].loc[df_video_dataset['Actions']==action_name] = fr_init
+                                keys = [k for k, v in ROBOT_ACTIONS_MEANINGS.items() if v == action_name]
+                                df_video_dataset['Max_time_to_save'].loc[df_video_dataset['Actions']==action_name] = annotations['frame_end'][idx] - annotations['frame_end'][idx-1] 
+
+                        elif 'put' in ATOMIC_ACTIONS_MEANINGS[value]: 
+                            action_name = 'put '+ obj +' fridge'
+                            fr_init = annotations['frame_init'][idx-1]
+                            # df_selected = df_video_dataset.loc[df_video_dataset['Actions']==action_name]
+                            df_video_dataset['Frame init'].loc[df_video_dataset['Actions']==action_name] = fr_init
+                            keys = [k for k, v in ROBOT_ACTIONS_MEANINGS.items() if v == action_name]
+                            
+                            df_video_dataset['Max_time_to_save'].loc[df_video_dataset['Actions']==action_name] = annotations['frame_end'][idx] - annotations['frame_end'][idx-1] 
+                            # df_video_dataset['Max_time_to_save'].loc[df_video_dataset['Actions']==action_name] = annotations['frame_end'][idx] - annotations['frame_end'][idx-1] - ROBOT_ACTION_DURATIONS[keys[0]]
+                 
+                
+                
+            df_video_dataset.sort_values("Frame init")
+            # print(df_video_dataset)
+            total_minimum_time_execution = annotations['frame_end'][len(annotations)-1] - df_video_dataset['Max_time_to_save'].sum()
+        return total_minimum_time_execution
     
     def get_energy_robot_reward(self,action,frame):
         global memory_objects_in_table
@@ -851,7 +913,7 @@ class BasicEnv(gym.Env):
             done: (bool) True if the episode is finished (the recipe has reached its end).
             info:    
         """
-        global frame, action_idx, annotations, inaction, memory_objects_in_table, correct_action
+        global frame, action_idx, annotations, inaction, memory_objects_in_table, correct_action, path_labels_pkl
         
 
         
@@ -863,7 +925,7 @@ class BasicEnv(gym.Env):
         reward = 0
         self.reward_energy = 0
         self.reward_time = 0
-       
+        path_env = 0
         done = False
         optim = False
         
@@ -875,15 +937,19 @@ class BasicEnv(gym.Env):
 
         len_prev = 2
         
+        min_time = 0 #Optimal time for recipe
+        max_time = 0 #Human time withour HRI
+        hri_time = 0
+        
         threshold, fr_execution, fr_end = self.time_course(action)
         
         # print('\nFrame prev: ', frame)
 
         frame_prev = frame 
-        #prev_state = self.state
+       
        
         frame_post = []
-        execution_times = []
+
         
         if action != 6:
             self.update_objects_in_table(action)
@@ -891,8 +957,8 @@ class BasicEnv(gym.Env):
             # print("Threshold: ",threshold)
 
 
-        #prev_state = self.prev_state
-        
+        # print(annotations)
+        # pdb.set_trace()
         if frame >= annotations['frame_init'].iloc[-1]:
   
             while frame <= annotations['frame_end'].iloc[-1]:
@@ -903,8 +969,8 @@ class BasicEnv(gym.Env):
                 
                 self.transition() 
                  
-            execution_times.append(annotations['frame_end'].iloc[-1])
-            execution_times.append(self.time_execution)
+            #execution_times.append(annotations['frame_end'].iloc[-1])
+            hri_time = self.time_execution
             self.flags['pdb'] = True
             # pdb.set_trace()
                         
@@ -969,12 +1035,8 @@ class BasicEnv(gym.Env):
                 self.rwd_history.append([reward]) # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
                 self.h_history.append([self.person_state])
                 self.r_history.append([self.robot_state])
-                self.rwd_time_h.append([self.reward_time])
-                self.rwd_energy_h.append([self.reward_energy])
                 
-                #print("In history saving\nReward: ", reward, " | Reward time: ", self.reward_time, " | Reward energy: ", self.reward_energy)
-                
-                #print("Frame: ", frame, "| Human: ", self.person_state, " |  Robot: ", self.robot_state)
+                #print("In STEP\nFrame: ", frame, "\nHuman: ", self.person_state, " |  Robot: ", self.robot_state)
                 
 
                 #print("Frame: ", frame, "Human: ", self.person_state, " | Robot: ", self.robot_state)
@@ -999,16 +1061,45 @@ class BasicEnv(gym.Env):
         if self.flags['decision'] == True:
             self.state[110:133] = memory_objects_in_table[len(memory_objects_in_table)-1]
 	
-        #if optim:
-        #        self.prints_terminal(action, frame_prev, frame_post, reward)
-        #        self.prints_debug(action)
-               
-        #        pdb.set_trace()
-             
-        self.total_reward += reward 
+        # if optim:
+        #         self.prints_terminal(action, frame_prev, frame_post, reward)
+                # self.prints_debug(action)
 
+                # pdb.set_trace()
+             
+        if done: 
+            #total_minimum_time_execution = self.get_minimum_execution_times()
+            """
+            print(annotations)
+            print("Here, at the done: ", videos_realData[video_idx])
+            print("Minimum time: !, ", total_minimum_time_execution)
+            print("Execution timees: ", execution_times[0])
+            
+            path_to_save = videos_realData[video_idx] + '/human_times'
+            
+            print("Path: ", path_to_save)
+            
+            human_times = {'min': total_minimum_time_execution, 'max': execution_times[0]}
+            
+            with open(path_to_save, 'wb') as handle:
+            	pickle.dump(human_times, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            """
+            
+            path_to_times = videos_realData[video_idx] + '/human_times'
+            human_times = np.load(path_to_times, allow_pickle=True)            
+            
+            min_time = human_times['min']
+            max_time = human_times['max']
+            
+            #print("min: ",min_time)
+            #print("max: ", max_time)            
+            #print("hri: ", hri_time)
+  
+            
+        self.total_reward += reward 
         
-        return self.state, reward, done, optim,  self.flags['pdb'], self.reward_time, self.reward_energy, execution_times, action, self.flags['threshold'], self.prediction_error, self.total_prediction       
+
+        return self.state, reward, done, optim,  self.flags['pdb'], self.reward_time, self.reward_energy, hri_time, action, self.flags['threshold'], self.prediction_error, self.total_prediction, min_time, max_time       
         
         
     def get_total_reward(self):
@@ -1026,7 +1117,7 @@ class BasicEnv(gym.Env):
     		if not os.path.exists(path): os.makedirs(path)
     		
     		file_name = "{0}.npz".format(video_idx)
-    		np.savez(os.path.join(path, file_name), h_history=self.h_history, r_history=self.r_history, rwd_history=self.rwd_history, rwd_time_h=self.rwd_time_h, rwd_energy_h=self.rwd_energy_h)
+    		np.savez(os.path.join(path, file_name), h_history=self.h_history, r_history=self.r_history, rwd_history=self.rwd_history)
     
     
     def reset(self):
@@ -1035,7 +1126,7 @@ class BasicEnv(gym.Env):
         """
         super().reset()
         
-        global video_idx, action_idx, annotations, frame, inaction, memory_objects_in_table
+        global video_idx, action_idx, annotations, frame, inaction, memory_objects_in_table, path_labels_pkl
         
         inaction = []
         memory_objects_in_table = []
@@ -1061,7 +1152,7 @@ class BasicEnv(gym.Env):
         # FOR REAL DATA --------------------------------------------------------------- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
         # 1) Read labels and store it in annotation_pkl
-        labels_pkl = 'labels_margins.pkl'
+        labels_pkl = 'labels_updated.pkl'
         path_labels_pkl = os.path.join(videos_realData[video_idx], labels_pkl)
         
         #print("\n\nPath to annotation pkl: ", path_labels_pkl)
@@ -1086,9 +1177,11 @@ class BasicEnv(gym.Env):
         
         self.total_reward = 0   
             
-        #self.state = concat_3_vectors(data, list(OBJECTS_INIT_STATE.values()), z) #With Z variable
-        self.state = concat_vectors(data, list(OBJECTS_INIT_STATE.values())) #Without Z variable
-
+        if Z_hidden_state:
+            self.state = concat_3_vectors(data, list(OBJECTS_INIT_STATE.values()), z)
+        else:
+            self.state = concat_vectors(data, list(OBJECTS_INIT_STATE.values()))
+        
         self.CA_intime = 0
         self.CA_late = 0
         self.IA_intime = 0
@@ -1107,8 +1200,6 @@ class BasicEnv(gym.Env):
         self.r_history = []
         self.h_history = []
         self.rwd_history = []
-        self.rwd_time_h = []
-        self.rwd_energy_h = []
         
         self.objects_in_table = OBJECTS_INIT_STATE.copy()
         memory_objects_in_table.append(list(self.objects_in_table.values()))
@@ -1437,6 +1528,12 @@ class BasicEnv(gym.Env):
             self.time_execution += 1
         
         length = len(annotations['label']) - 1
+        
+        
+        #print("Flag decision: ", self.flags['decision'])
+        
+        if frame % 100 != 0: return
+        
            
         # 1)
         #GET TIME STEP () (Updates the action_idx)
@@ -1479,13 +1576,10 @@ class BasicEnv(gym.Env):
         	oit = memory_objects_in_table[variations_in_table-1]
         		
 
-        
-        
-        #self.state = concat_3_vectors(data, oit, z)  #With Z variable      
-        self.state = concat_vectors(data, oit) #Without Z variable
-        
-        #print("STATE in transition: \n", self.state)
-
+        if Z_hidden_state:
+            self.state = concat_3_vectors(data, oit, z)
+        else:
+            self.state = concat_vectors(data,oit)
 
 
 
@@ -1494,7 +1588,7 @@ class BasicEnv(gym.Env):
         #ver porque los states aveces tienen un elemento, de resto creo que esta todo ok
         global frame, action_idx, annotations
         
-        guarda = 20 
+        guarda = 50 
         done = False
         state = []
         action = []
@@ -1505,8 +1599,8 @@ class BasicEnv(gym.Env):
         self.transition()
         fr_end = int(annotations['frame_end'][action_idx-1])
        
-        print("          Frame: ", frame)
-        print("Action idx: ",action_idx)
+        # print("          Frame: ", frame)
+        # print("Action idx: ",action_idx)
         # print(annotations['frame_end'].iloc[-2])
         
         if frame >= annotations['frame_end'].iloc[-2]:
@@ -1535,7 +1629,7 @@ class BasicEnv(gym.Env):
         df_video_dataset = df_video.copy()
         
         if not df_video_dataset.empty:
-            print(df_video)
+            # print(df_video)
             
             for idx,value in enumerate(person_states):
                 for obj in INTERACTIVE_OBJECTS_ROBOT:
@@ -1558,11 +1652,11 @@ class BasicEnv(gym.Env):
                       
                    
             df_video_dataset.sort_values("Frame init")
-            print(df_video_dataset)
+            # print(df_video_dataset)
             
 
         # print(frame)
-        print("fr end: ",fr_end)        
+        # print("fr end: ",fr_end)        
         while frame < fr_end:
             if not df_video_dataset.empty:
                 
@@ -1585,16 +1679,16 @@ class BasicEnv(gym.Env):
                                     if 'bring' in ROBOT_ACTIONS_MEANINGS[correct_action]:
                                         if self.objects_in_table[current_obj] == 1:
                                             self.objects_in_table[current_obj] = 0
-                                            print(ROBOT_ACTIONS_MEANINGS[correct_action])
-                                            print(self.objects_in_table)
-                                            print("SE HA REAJUSTADO PARA bring")
+                                            # print(ROBOT_ACTIONS_MEANINGS[correct_action])
+                                            # print(self.objects_in_table)
+                                            # print("SE HA REAJUSTADO PARA bring")
                                             # pdb.set_trace()
                                     elif 'put' in ROBOT_ACTIONS_MEANINGS[correct_action]:
                                         if self.objects_in_table[current_obj] == 0:
                                             self.objects_in_table[current_obj] = 1
-                                            print(ROBOT_ACTIONS_MEANINGS[correct_action])
-                                            print(self.objects_in_table)
-                                            print("SE HA REAJUSTADO PARA PUT")
+                                            # print(ROBOT_ACTIONS_MEANINGS[correct_action])
+                                            # print(self.objects_in_table)
+                                            # print("SE HA REAJUSTADO PARA PUT")
                                             # pdb.set_trace()
                                     memory_objects_in_table = list(self.objects_in_table.values())
                                     self.update_objects_in_table(correct_action)
@@ -1629,25 +1723,25 @@ class BasicEnv(gym.Env):
         if len(action)>0:
             new_no_actions = []
             new_no_actions_state = []
-            number_of_actions = round(len(action)*0.6)
-            random_positions = random.sample(range(0,len(action)),number_of_actions)        
-            action = ([action[i] for i in random_positions])
-            state = ([state[i] for i in random_positions])
+            # number_of_actions = round(len(action)*0.6)
+            # random_positions = random.sample(range(0,len(action)),number_of_actions)        
+            # action = ([action[i] for i in random_positions])
+            # state = ([state[i] for i in random_positions])
         else: 
-            number_of_no_actions = round(len(no_actions)*0.2)
+            number_of_no_actions = round(len(no_actions)*0.05)
             random_positions = random.sample(range(0,len(no_actions)),number_of_no_actions)        
             new_no_actions = ([no_actions[i] for i in random_positions])
             new_no_actions_state = ([no_action_state[i] for i in random_positions])
             
 
             
-        print("Post: ",action)
-        print("Frame: ", frame)
-        print("")
-        # self.prints_terminal(18, 0, frame, 1)
-        print("State: ",len(state))
-        print("No actions: ",len(no_actions))
-        print("New no actions: ", len(new_no_actions))
+        # print("Post: ",action)
+        # print("Frame: ", frame)
+        # print("")
+        # # self.prints_terminal(18, 0, frame, 1)
+        # print("State: ",len(state))
+        # print("No actions: ",len(no_actions))
+        # print("New no actions: ", len(new_no_actions))
         
        
         
@@ -1656,12 +1750,12 @@ class BasicEnv(gym.Env):
         
         # if (len(new_no_actions)==0 and len(state)==0):
         #     pdb.set_trace()
-        # self.prints_terminal(18, 0, frame, 1)
+        # self.prints_terminal(5, 0, frame, 1)
         
         if len(action)>0:
             state_env = state
             action_env = action
-            print("accion: ",ROBOT_ACTIONS_MEANINGS[action_env[0]] )
+            # print("accion: ",ROBOT_ACTIONS_MEANINGS[action_env[0]] )
             # if action_env[0] == 6:
                 # pdb.set_trace()
             # for mem in memory_objects_in_table:
@@ -1713,9 +1807,7 @@ class BasicEnv(gym.Env):
             state_env= new_no_actions_state
             action_env= new_no_actions
             
-        
 
-       
         return state_env, action_env, done
     
     def get_video_idx(self):

@@ -1,20 +1,19 @@
-
-
 #DQN PARAMETERS ------
 #---------------------------------------------------------------------------------
 
 
 REPLAY_MEMORY = 2048 #Size of replay memory (deque object)
 
-NUM_EPOCH = 20000
-
+NUM_EPOCH = 100
+NUM_EPISODES = 63 #"Number of training epochs"
 BATCH_SIZE = 512
+# BATCH_SIZE = 2048
 GAMMA = 0.0 #Discount rate for future rewards
-EPS_START = 0.99 #Initial exporation rate
+EPS_START = 0.95 #Initial exporation rate
 EPS_END = 0.01 #Final exploration rate
 EPS_DECAY = NUM_EPOCH #Exploration rate decay factor
 TARGET_UPDATE = 10 #Episodes between target network update (policy net parameters -> target net)
-LR = 1e-5 #Learning rate
+LR = 1e-3 #Learning rate
 POSITIVE_REWARD = 0
 NO_ACTION_PROBABILITY = 70
 
@@ -25,7 +24,8 @@ SAVE_EPISODE = 100
 LOAD_MODEL = False
 LOAD_EPISODE = 0
 
-DECISION_RATE = 60 
+DECISION_RATE = 180 
+Z_hidden_state = False
 #ENVIRONMENT PARAMETERS ------
 #---------------------------------------------------------------------------------
 
@@ -33,7 +33,7 @@ VERSION = 4
 
 N_ATOMIC_ACTIONS = 33 #Number of total atomic actions. 33 = 31 actions + 1 'other manipulation' + 1 Terminal state
 N_OBJECTS = 23 #Number of objects. Input variables: "Active Object" and "VWM" (Visual Working Memory)
-
+ACTION_SPACE = 12 #Number of robot actions. Output variable
 
 INTERACTIVE_OBJECTS_ROBOT = ['butter','jam','milk','nutella','tomato sauce']
 
@@ -75,8 +75,6 @@ ATOMIC_ACTIONS_MEANINGS = {
 }
 
 """
-
-
 Objects that are in the fridge:
 	butter
 	jam
@@ -84,10 +82,8 @@ Objects that are in the fridge:
 	nutella
 	tomato sauce
 	water
-
 Objects that are at human's reach:
 	everything else
-
 """
 
 OBJECTS_MEANINGS = {
@@ -116,6 +112,7 @@ OBJECTS_MEANINGS = {
 	22: 'water'
 }
 
+
 OBJECTS_INIT_STATE = {
     'background': 0,
 	'bowl': 1,
@@ -142,6 +139,34 @@ OBJECTS_INIT_STATE = {
 	'water': 1
     } 
 
+"""
+ROBOT_ACTIONS_MEANINGS = {	
+	0: 'bring bowl',
+	1: 'bring butter',
+	2: 'bring cereals',
+	3: 'bring coffee',
+	4: 'bring cup',
+	5: 'bring fork',
+	6: 'bring jam',
+	7: 'bring knife',
+	8: 'bring milk',
+	9: 'bring nesquik',
+	10: 'bring nutella',
+	11: 'bring olive oil',
+	12: 'bring plate',
+	13: 'bring sliced bread',
+	14: 'bring spoon',
+	15: 'bring sugar',
+	16: 'bring tomato sauce',
+	17: 'bring water',
+	18: 'do nothing',
+	19: 'put jam fridge',
+	20: 'put butter fridge',
+	21: 'put tomato sauce fridge',
+	22: 'put nutella fridge',
+	23: 'put milk fridge'
+}
+"""
 
 #Reduced action repertoire
 ROBOT_ACTIONS_MEANINGS = {
@@ -159,8 +184,6 @@ ROBOT_ACTIONS_MEANINGS = {
 	11: 'put milk fridge'
 
 }
-
-#Reduced action repertoire durations (from get_human_estimates)
 
 # VERSION 1) AVERAGE OF HUMAN ACTION DURATIONS
 ROBOT_ACTION_DURATIONS = {
@@ -194,8 +217,6 @@ ROBOT_ACTION_DURATIONS = {
 	10: 84, # put nutella fridge
 	11: 75  # put milk fridge
 }
-
-
 # VERSION 3) 2*HUMAN ---> SLOW (MORE REALISTIC) ROBOT
 ROBOT_ACTION_DURATIONS = {
 	0: 348,  # bring butter
@@ -211,8 +232,8 @@ ROBOT_ACTION_DURATIONS = {
 	10: 336, # put nutella fridge
 	11: 300  # put milk fridge
 }
-
 """
+
 
 ROBOT_POSSIBLE_INIT_ACTIONS = {
 	0: 1,
@@ -226,8 +247,10 @@ ROBOT_POSSIBLE_INIT_ACTIONS = {
 	8: 0,
 	9: 0,
 	10: 0,
-	11: 0	
+	11: 0
+	
 }
+
 
 
 
@@ -263,3 +286,4 @@ def print_setup(args):
 	print("| LOAD EPISODE              | {0:<6g}".format(args.load_episode), " |")
 	
 	print("="*39)	
+

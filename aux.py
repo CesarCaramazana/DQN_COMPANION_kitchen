@@ -292,7 +292,7 @@ def reward_confirmation_perform(action):
 
 
 
-def plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_loss_epoch,total_reward_epoch,total_time_video,total_time_execution_epoch,total_reward_energy_epoch,total_reward_time_epoch,ex_rate=0):
+def plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_loss_epoch,total_reward_epoch,maximum_time,total_time_execution_epoch,total_reward_energy_epoch,total_reward_time_epoch,ex_rate=0):
                 
     n = int(cfg.NUM_EPOCH*0.05)
     if i_epoch >= 2*n: 
@@ -386,9 +386,11 @@ def plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_l
     
     
     # ---------- INTERACTION TIME ------------------------------
-    total_time_video_epoch = [sum(total_time_video)]*len(total_time_execution_epoch)
+    #total_time_video_epoch = [sum(total_time_video)]*len(total_time_execution_epoch)
+    
+    
     fig1 = plt.figure(figsize=(15, 6))
-    plt.plot(total_time_video_epoch, 'k')
+    plt.axhline(y=maximum_time, color='k')
     plt.plot(total_time_execution_epoch, 'b--')
     plt.axhline(y=minimum_time, color='r')
     plt.legend(["Video","Interaction", "Minimum"])
@@ -431,7 +433,7 @@ def plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_l
     
     
     
-def plot_each_epoch_together(i_epoch,save_path,minimum_time, total_results_train,total_loss_epoch_train,total_reward_epoch_train,total_time_video,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate,total_results,total_loss_epoch_val,total_reward_epoch_val,total_time_execution_epoch_val,total_reward_energy_epoch_val,total_reward_time_epoch_val):
+def plot_each_epoch_together(i_epoch,save_path,minimum_time, total_results_train,total_loss_epoch_train,total_reward_epoch_train,maximum_time,total_time_execution_epoch_train,total_reward_energy_epoch_train,total_reward_time_epoch_train,ex_rate,total_results,total_loss_epoch_val,total_reward_epoch_val,total_time_execution_epoch_val,total_reward_energy_epoch_val,total_reward_time_epoch_val):
                  
     
     
@@ -522,10 +524,10 @@ def plot_each_epoch_together(i_epoch,save_path,minimum_time, total_results_train
     
     
     #------------------ INTERACTION TIME------------------------------------------
-    total_time_video_epoch = [sum(total_time_video)]*len(total_time_execution_epoch_train)
+    #total_time_video_epoch = [sum(total_time_video)]*len(total_time_execution_epoch_train)
     
     fig1 = plt.figure(figsize=(15, 6))
-    plt.plot(total_time_video_epoch,'k', label='Video')
+    plt.axhline(y=maximum_time,color='k', label='Video')
     plt.plot(total_time_execution_epoch_train,'b--',label='Train')
     plt.plot(total_time_execution_epoch_val,'m--',label='Validation')
     plt.axhline(y=minimum_time, color='r', label='Minimum')

@@ -394,6 +394,64 @@ else: fig.savefig(save_path+'/00_TRAIN_ACTIONS.jpg')
 
 
 
+
+
+ # ---------------------------------------------------------------------------------------------
+
+# ------------------- ACTIONS ------ PIE CHART
+# (ONLY IN THE LAST EPOCH)
+
+stci = np.sum(total_CA_intime) #short term correct intime
+stcl = np.sum(total_CA_late) #short term correct late
+ltci = np.sum(total_UAC_intime) #long term correct intime
+ltcl = np.sum(total_UAC_late) #long term correct late
+ci = np.sum(total_CI) #correct inactions
+ii = np.sum(total_II) #incorrect inactions
+ui = np.sum(total_UAI_intime) #unnec intime
+ul = np.sum(total_UAI_late) #unnec late
+iai = np.sum(total_IA_intime) #incorrect intime
+ial = np.sum(total_IA_late) #incorrect late
+
+labels1 = 'Short-term in time', 'Short-term late', 'Long-term in time', 'Long-term late', 'Unnecessary in time', 'Unnecessary late', 'Incorrect in time', 'Incorrect late'
+sizes1 = [stci, stcl, ltci, ltcl, ui, ul, iai, ial]
+
+labels2 = 'Short-term', 'Long-term'
+sizes2 = [stci + stcl, 
+	ltci + ltcl]
+
+
+labels3 = 'In time', 'Late'
+sizes3 = [stci + ltci + ui + iai,
+	stcl + ltcl + ul + ial]
+	
+
+fig1 = plt.figure(figsize=(20,10))
+
+plt.subplot(1,3,1)
+plt.title("Action decisions")
+plt.pie(sizes1, labels=labels1, autopct='%1.1f%%')
+
+plt.subplot(1,3,2)
+plt.title("Short-term vs. Long-term")
+plt.pie(sizes2, labels=labels2, autopct='%1.1f%%')
+
+
+plt.subplot(1,3,3)
+plt.title("In time vs. Late")
+plt.pie(sizes3, labels=labels3, autopct='%1.1f%%')
+
+
+if env.test: fig1.savefig(save_path+'/00_TEST_ACTIONS_PIE.jpg')
+else: fig1.savefig(save_path+'/00_TRAIN_ACTIONS_PIE.jpg')
+
+
+
+
+
+
+
+
+
 # -------------__REWARDS -------------------------
 fig2 = plt.figure(figsize=(20,6))
 

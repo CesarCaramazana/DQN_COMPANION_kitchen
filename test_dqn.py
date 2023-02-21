@@ -147,10 +147,32 @@ env = gym.make("gym_basic:basic-v0", display=args.display, test=not args.train, 
 if env.test: 
 	NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/test/*")) #Run the test only once for every video in the testset
 	print("Test set")
+	root = './video_annotations/Real_data/test/*'
 else:
 	NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/train/*"))
 	print("Train set")
+	root = './video_annotations/Real_data/train/*'
 	
+video_max_times = []
+video_min_times = []
+
+
+videos = glob.glob(root)  
+
+#GET VIDEO TIME AND OPTIMAL TIME (MIN)
+for video in videos:
+	path = video + '/human_times'
+	human_times = np.load(path, allow_pickle=True)  
+	
+	min_time = human_times['min']
+	max_time = human_times['max']
+	
+	video_max_times.append(max_time)
+	video_min_times.append(min_time)
+	
+minimum_time = sum(video_min_times)
+maximum_time = sum(video_max_times)
+
 	
 n_actions = env.action_space.n
 n_states = env.observation_space.n
@@ -227,8 +249,8 @@ for f in pt_files:
 	total_II = []
 	
 	total_interaction_time_epoch = []
-	total_maximum_time_execution_epoch = []
-	total_minimum_time_execution_epoch = []
+	#total_maximum_time_execution_epoch = []
+	#total_minimum_time_execution_epoch = []
 	
 	
 	
@@ -264,7 +286,7 @@ for f in pt_files:
 	    	
 	    	array_action = [action,flag_decision, 'val']
 	    	#next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times, correct_action, _ = env.step(array_action)
-	    	next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, hri_time, correct_action, type_threshold, error_pred, total_pred, min_time, max_time = env.step(array_action)
+	    	next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, hri_time, correct_action, type_threshold, error_pred, total_pred = env.step(array_action)
 	    	
 	    	
 	    	reward = torch.tensor([reward], device=device)
@@ -302,8 +324,8 @@ for f in pt_files:
 	    		total_interaction_time_epoch.append(hri_time)
 	    		
 	    		#Human baseline
-	    		total_minimum_time_execution_epoch.append(min_time)
-	    		total_maximum_time_execution_epoch.append(max_time)	    		
+	    		#total_minimum_time_execution_epoch.append(min_time)
+	    		#total_maximum_time_execution_epoch.append(max_time)	    		
 
 	    		
 	    		#print(total_time_video)
@@ -332,8 +354,8 @@ for f in pt_files:
 	epoch_reward.append(np.sum(total_reward))
 	
 	
-	maximum_time = sum(total_maximum_time_execution_epoch) #Human times
-	minimum_time = sum(total_minimum_time_execution_epoch)
+	#maximum_time = sum(total_maximum_time_execution_epoch) #Human times
+	#minimum_time = sum(total_minimum_time_execution_epoch)
 	
 	
 

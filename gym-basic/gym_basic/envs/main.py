@@ -99,20 +99,22 @@ class BasicEnv(gym.Env):
         
         self.objects_in_table = OBJECTS_INIT_STATE.copy()
         
-        global root, videos, total_videos, annotations
+        global root, videos_realData, total_videos, annotations
         
         if self.test:
             print("==== TEST SET ====")
 
             root_realData = "./video_annotations/Real_data/test/*" #!
-            videos_realData = glob.glob(root_realData)           
-
-            random.shuffle(videos_realData)
+            videos_realData = glob.glob(root_realData)   
+            
+            #random.shuffle(videos_realData)
             
             total_videos = len(videos_realData)
             
             labels_pkl = 'labels_updated.pkl'
             path_labels_pkl = os.path.join(videos_realData[video_idx], labels_pkl)
+            
+
             
             annotations = np.load(path_labels_pkl, allow_pickle=True)
 
@@ -156,7 +158,7 @@ class BasicEnv(gym.Env):
    
     def energy_robot_reward (self, action):
          
-        self.reward_energy = -ROBOT_ACTION_DURATIONS[action]/10 
+        self.reward_energy = -ROBOT_ACTION_DURATIONS[action]/1
     
     def get_possibility_objects_in_table (self):
         global annotations
@@ -1071,7 +1073,7 @@ class BasicEnv(gym.Env):
 
                 # pdb.set_trace()
              
-        if done: 
+        #if done: 
             #total_minimum_time_execution = self.get_minimum_execution_times()
             """
             print(annotations)
@@ -1089,11 +1091,14 @@ class BasicEnv(gym.Env):
             	pickle.dump(human_times, handle, protocol=pickle.HIGHEST_PROTOCOL)
             """
             
-            path_to_times = videos_realData[video_idx] + '/human_times'
-            human_times = np.load(path_to_times, allow_pickle=True)            
+            #path_to_times = videos_realData[video_idx] + '/human_times'
+            #human_times = np.load(path_to_times, allow_pickle=True)            
             
-            min_time = human_times['min']
-            max_time = human_times['max']
+            #min_time = human_times['min']
+            #max_time = human_times['max']
+            
+            #print("\n\n")
+            #print(annotations)
             
             #print("min: ",min_time)
             #print("max: ", max_time)            
@@ -1103,7 +1108,7 @@ class BasicEnv(gym.Env):
         self.total_reward += reward 
         
 
-        return self.state, reward, done, optim,  self.flags['pdb'], self.reward_time, self.reward_energy, hri_time, action, self.flags['threshold'], self.prediction_error, self.total_prediction, min_time, max_time       
+        return self.state, reward, done, optim,  self.flags['pdb'], self.reward_time, self.reward_energy, hri_time, action, self.flags['threshold'], self.prediction_error, self.total_prediction
         
         
     def get_total_reward(self):

@@ -32,7 +32,7 @@ warnings.filterwarnings("ignore")
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--pretrained', action='store_true', default=False, help="(bool) Inizializate the model with a pretrained model.")
+parser.add_argument('--pretrained', action='store_true', default=True, help="(bool) Inizializate the model with a pretrained model.")
 parser.add_argument('--freeze', type=str, default='False', help="(bool) Inizializate the model with a pretrained moddel freezing the layers but the last one.")
 parser.add_argument('--experiment_name', type=str, default=cfg.EXPERIMENT_NAME, help="(str) Name of the experiment. Used to name the folder where the model is saved. For example: my_first_DQN.")
 

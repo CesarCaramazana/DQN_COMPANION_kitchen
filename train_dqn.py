@@ -32,7 +32,7 @@ warnings.filterwarnings("ignore")
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--pretrained', action='store_true', default=True, help="(bool) Inizializate the model with a pretrained model.")
+parser.add_argument('--pretrained', action='store_true', default=False, help="(bool) Inizializate the model with a pretrained model.")
 parser.add_argument('--freeze', type=str, default='False', help="(bool) Inizializate the model with a pretrained moddel freezing the layers but the last one.")
 parser.add_argument('--experiment_name', type=str, default=cfg.EXPERIMENT_NAME, help="(str) Name of the experiment. Used to name the folder where the model is saved. For example: my_first_DQN.")
 
@@ -219,6 +219,9 @@ def select_action(state, phase):
     eps_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY) #Get current exploration rate
     
     posible_actions = env.possible_actions_taken_robot()
+    
+    #print("Posibleu actiones: \n", posible_actions) 
+    
     index_posible_actions = [i for i, x in enumerate(posible_actions) if x == 1]
     
     if phase == 'val':
@@ -233,6 +236,7 @@ def select_action(state, phase):
                  out = policy_net(state)
                  action = post_processed_possible_actions(out,index_posible_actions)
                  # pdb.set_trace()
+                 #print("Action: ", action)
                  return action
          else:
              
@@ -245,9 +249,12 @@ def select_action(state, phase):
                  # print(index_action)
                  # pdb.set_trace()
                  action = random.choices(index_posible_actions, weights, k=1)[0]
+                 
+                 #print("Action: ", action)
              else:
                  index_action = random.randrange(len(index_posible_actions))
                  action = index_posible_actions[index_action]
+                 #print("Action: ", action)
     
                 
                 # pdb.set_trace()
@@ -431,10 +438,6 @@ for video in videos:
 minimum_time = sum(video_min_times)
 maximum_time = sum(video_max_times)	
 
-
-
-#minimum_time = sum(total_minimum_time_execution_epoch)
-#maximum_time = sum(total_maximum_time_execution_epoch)
 
 
 

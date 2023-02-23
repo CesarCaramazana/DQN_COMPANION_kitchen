@@ -332,7 +332,7 @@ def plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_l
 
     plt.subplot2grid((2,6), (1,0))
     plt.title("Short-term correct actions (late)")
-    plt.plot(total_results[1], 'springgreen')
+    plt.plot(total_results[1], 'royalblue')
     plt.xlabel("Epoch")
 
        
@@ -354,7 +354,7 @@ def plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_l
 
     plt.subplot2grid((2,6), (1,1))
     plt.title("Long-term correct actions (late)")
-    plt.plot(total_results[5], 'springgreen')
+    plt.plot(total_results[5], 'royalblue')
     plt.xlabel("Epoch")
 
     
@@ -386,7 +386,7 @@ def plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_l
     
     plt.subplot2grid((2,6), (1,5))
     plt.title("Unn recipe-unrelated")
-    plt.plot(total_results[11], 'crimson')
+    plt.plot(total_results[11], 'red')
     plt.xlabel("Epoch")
 
 

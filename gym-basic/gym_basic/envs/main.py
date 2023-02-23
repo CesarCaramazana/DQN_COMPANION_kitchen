@@ -615,27 +615,21 @@ class BasicEnv(gym.Env):
                         else:
                             self.UAI_intime += 1
                             
+                            
+                            #123456 {
+                            if recipe == 'c' or recipe == 'd':
+                            	if action == 2: self.UA_related += 1
+                            	else: self.UA_unrelated += 1
+                            elif recipe == 't':
+                            	if action in [0, 1, 3, 5]: self.UA_related += 1
+                            	else: self.UA_unrelated += 1
+
+                            # }	
+                            
+     
+                            
                         
-                        #123456 - Comprobar si la acción pertenece a la receta 
-                        # {                        
-                        if recipe == 'c':
-                        	if action == 2: #bring milk
-                        		self.UA_related += 1
-                        	else:
-                        		self.UA_unrelated += 1
-                        		
-                        elif recipe == 't': 	
-                        	if action == 0 or action == 1 or action == 3 or action==5: #bring jam, butter, nutella or tomato
-                        		self.UA_related += 1
-                        	else:
-                        		self.UA_unrelated += 1
                         
-                        elif recipe == 'd': 
-                        	if action == 2: #bring milk
-                        		self.UA_related += 1
-                        	else:
-                        		self.UA_unrelated += 1						
-                        # }
                             
                         self.update("action")
                 else: 
@@ -656,28 +650,20 @@ class BasicEnv(gym.Env):
                             self.UAC_late += 1
                         else:
                             self.UAI_late += 1
+                            
+                            #123456 {
+                            if recipe == 'c' or recipe == 'd':
+                            	if action == 2: self.UA_related += 1
+                            	else: self.UA_unrelated += 1
+                            elif recipe == 't':
+                            	if action in [0, 1, 3, 5]: self.UA_related += 1
+                            	else: self.UA_unrelated += 1
+                            # }	
+                            
+                            
                         self.update("action")
                         
-                        #123456 - Comprobar si la acción pertenece a la receta 
-                        # {                        
-                        if recipe == 'c':
-                        	if action == 2: #bring milk
-                        		self.UA_related += 1
-                        	else:
-                        		self.UA_unrelated += 1
-                        		
-                        elif recipe == 't': 	
-                        	if action == 0 or action == 1 or action == 3 or action==5: #bring jam, butter, nutella or tomato
-                        		self.UA_related += 1
-                        	else:
-                        		self.UA_unrelated += 1
-                        
-                        elif recipe == 'd': 
-                        	if action == 2: #bring milk
-                        		self.UA_related += 1
-                        	else:
-                        		self.UA_unrelated += 1						
-                        # }
+  
                         
                         self.flags['break'] = True
             
@@ -790,6 +776,17 @@ class BasicEnv(gym.Env):
                                         self.UAC_intime += 1
                                     else:
                                         self.UAI_intime += 1
+                                        
+                                        #123456
+                                        if recipe == 'c' or recipe == 'd':
+                                        	if action == 2: self.UA_related += 1
+                                        	else: self.UA_unrelated += 1
+                                        elif recipe == 't':
+                                        	if action in [0, 1, 3, 5]: self.UA_related += 1
+                                        	else: self.UA_unrelated += 1	
+         
+                                        
+                                    
                                     self.update("unnecesary")
                             else: 
     
@@ -809,6 +806,14 @@ class BasicEnv(gym.Env):
                                         self.UAC_late += 1
                                     else:
                                         self.UAI_late += 1
+                                        
+                                        #123456
+                                        if recipe == 'c' or recipe == 'd':
+                                        	if action == 2: self.UA_related += 1
+                                        	else: self.UA_unrelated += 1
+                                        elif recipe == 't':
+                                        	if action in [0, 1, 3, 5]: self.UA_related += 1
+                                        	else: self.UA_unrelated += 1
                                     self.update("unnecesary")
                                     
                                     self.flags['break'] = True

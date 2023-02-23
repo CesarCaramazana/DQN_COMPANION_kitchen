@@ -528,15 +528,15 @@ def plot_each_epoch_together(i_epoch,save_path,minimum_time, total_results_train
     #123456 {
     plt.subplot2grid((2,6), (0,5))
     plt.title("Unn recipe-related")    
-    plt.plot(total_results_train[9], 'b', label='train')
-    plt.plot(total_results[9], 'm', label='val')
+    plt.plot(total_results_train[10], 'b', label='train')
+    plt.plot(total_results[10], 'm', label='val')
     plt.legend()
     
     
     plt.subplot2grid((2,6), (1,5))
     plt.title("Unn recipe-unrelated")
-    plt.plot(total_results_train[10], 'b', label='train')
-    plt.plot(total_results[10], 'm', label='val')
+    plt.plot(total_results_train[11], 'b', label='train')
+    plt.plot(total_results[11], 'm', label='val')
     plt.xlabel("Epoch")
     
     plt.legend()   

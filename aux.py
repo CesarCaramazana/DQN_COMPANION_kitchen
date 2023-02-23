@@ -361,7 +361,7 @@ def plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_l
     
     plt.subplot2grid((2,6), (0,3))
     plt.title("Unnecessary actions (in time)")
-    plt.plot(total_results[6], 'red')
+    plt.plot(total_results[6], 'royalblue')
 
 
     plt.subplot2grid((2,6), (1,3))

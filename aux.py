@@ -317,7 +317,7 @@ def plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_l
     	plt.ylabel("Epsilon")
     	plt.plot(ex_rate, 'c')
     	fig1.savefig(save_path+'/'+phase+'_LOSS_EXPLORATION.jpg')
-    plt.close()
+    plt.close('all')
     
     
     
@@ -382,7 +382,7 @@ def plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_l
 
 
     fig1.savefig(save_path+'/'+phase+'_ACTIONS.jpg')
-    plt.close()
+    plt.close(fig1)
     
     
     # ---------- INTERACTION TIME ------------------------------
@@ -399,7 +399,7 @@ def plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_l
     plt.title(phase+" | Interaction time")
 
     fig1.savefig(save_path+'/'+phase+'_INTERACTION_TIME.jpg')
-    plt.close()
+    plt.close(fig1)
     
     
     
@@ -428,7 +428,9 @@ def plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_l
     plt.title("Total reward")
 
     fig1.savefig(save_path+'/'+phase+'_REWARD.jpg')
-    plt.close()
+    plt.close(fig1)
+    
+    plt.close('all')
     
     
     
@@ -438,16 +440,19 @@ def plot_each_epoch_together(i_epoch,save_path,minimum_time, total_results_train
     
     
     #------------- ACTIONS --------------------------------
+    
+    
+    #123456 -> 6 columnas
     fig1 = plt.figure(figsize=(25, 8))
     
-    plt.subplot2grid((2,5), (0,0))
+    plt.subplot2grid((2,6), (0,0))
     plt.title("Short-term correct actions (in time)")
     plt.plot(total_results_train[0],'b',label='train')
     plt.plot(total_results[0], 'm',label='val')
 
 
     plt.legend()
-    plt.subplot2grid((2,5), (1,0))
+    plt.subplot2grid((2,6), (1,0))
     plt.title("Short-term correct actions (late)")
     plt.plot(total_results_train[1],'b',label='train')
     plt.plot(total_results[1],'m',label='val')
@@ -456,14 +461,14 @@ def plot_each_epoch_together(i_epoch,save_path,minimum_time, total_results_train
     plt.legend()
     
     
-    plt.subplot2grid((2,5), (0,4))
+    plt.subplot2grid((2,6), (0,4))
     plt.title("Incorrect actions (in time)")
     plt.plot(total_results_train[2],'b',label='train')
     plt.plot(total_results[2],'m',label='val')
 
 
     plt.legend()
-    plt.subplot2grid((2,5), (1,4))
+    plt.subplot2grid((2,6), (1,4))
     plt.title("Incorrect actions (late)")
     plt.plot(total_results_train[3],'b',label='train')
     plt.plot(total_results[3],'m',label='val')
@@ -472,14 +477,14 @@ def plot_each_epoch_together(i_epoch,save_path,minimum_time, total_results_train
     plt.legend()
     
     
-    plt.subplot2grid((2,5), (0,1))
+    plt.subplot2grid((2,6), (0,1))
     plt.title("Long-term correct actions (in time)")
     plt.plot(total_results_train[4],'b',label='train')
     plt.plot(total_results[4],'m',label='val')
 
 
     plt.legend()
-    plt.subplot2grid((2,5), (1,1))
+    plt.subplot2grid((2,6), (1,1))
     plt.title("Long-term correct actions (late)")
     plt.plot(total_results_train[5],'b',label='train')
     plt.plot(total_results[5],'m',label='val')
@@ -488,14 +493,14 @@ def plot_each_epoch_together(i_epoch,save_path,minimum_time, total_results_train
     plt.legend()
     
     
-    plt.subplot2grid((2,5), (0,3))
+    plt.subplot2grid((2,6), (0,3))
     plt.title("Unnecessary actions (in time)")
     plt.plot(total_results_train[6],'b',label='train')
     plt.plot(total_results[6],'m',label='val')
 
 
     plt.legend()
-    plt.subplot2grid((2,5), (1,3))
+    plt.subplot2grid((2,6), (1,3))
     plt.title("Unnecessary actions (late)")
     plt.plot(total_results_train[7],'b',label='train')
     plt.plot(total_results[7],'m',label='val')
@@ -504,27 +509,49 @@ def plot_each_epoch_together(i_epoch,save_path,minimum_time, total_results_train
     plt.legend()
     
     
-    plt.subplot2grid((2,5), (0,2))
+    plt.subplot2grid((2,6), (0,2))
     plt.title("Correct inactions")
     plt.plot(total_results_train[8],'b',label='train')
     plt.plot(total_results[8],'m',label='val')
 
 
     plt.legend()
-    plt.subplot2grid((2,5), (1,2))
+    plt.subplot2grid((2,6), (1,2))
     plt.title("Incorrect inactions")
     plt.plot(total_results_train[9],'b',label='train')
     plt.plot(total_results[9],'m',label='val')
     plt.xlabel("Epoch")
 
     plt.legend()
+    
+    
+    #123456 {
+    plt.subplot2grid((2,6), (0,5))
+    plt.title("Unn recipe-related")    
+    plt.plot(total_results_train[9], 'b', label='train')
+    plt.plot(total_results[9], 'm', label='val')
+    plt.legend()
+    
+    
+    plt.subplot2grid((2,6), (1,5))
+    plt.title("Unn recipe-unrelated")
+    plt.plot(total_results_train[10], 'b', label='train')
+    plt.plot(total_results[10], 'm', label='val')
+    plt.xlabel("Epoch")
+    
+    plt.legend()   
+    
+    
+    # }
+    
+    
+    
+    
     fig1.savefig(save_path+'/01_ACTIONS.jpg')
-    plt.close()
-        
+    plt.close(fig1)
     
-    
+   
     #------------------ INTERACTION TIME------------------------------------------
-    #total_time_video_epoch = [sum(total_time_video)]*len(total_time_execution_epoch_train)
     
     fig1 = plt.figure(figsize=(15, 6))
     plt.axhline(y=maximum_time,color='k', label='Video')
@@ -539,7 +566,8 @@ def plot_each_epoch_together(i_epoch,save_path,minimum_time, total_results_train
 
     plt.legend()
     fig1.savefig(save_path+'/02_INTERACTION_TIME.jpg')
-    plt.close()
+    plt.close(fig1)
+    
 
     
     
@@ -577,7 +605,9 @@ def plot_each_epoch_together(i_epoch,save_path,minimum_time, total_results_train
     
     
     fig1.savefig(save_path+'/03_REWARDS.jpg')
-    plt.close()
+    plt.close(fig1)
+    
+    plt.close('all')
     
     
 def plot_detailed_results (n, total_results, save_path, MODE): 
@@ -670,7 +700,9 @@ def plot_detailed_results (n, total_results, save_path, MODE):
     # plt.show()
 
     fig1.savefig(save_path+'/'+MODE+'_ACTIONS_average'+str(n)+'.jpg')
-    plt.close()
+    plt.close(fig1)
+    
+    plt.close('all')
  
 def get_estimations_action_time_human():
     

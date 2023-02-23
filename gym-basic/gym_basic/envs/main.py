@@ -50,6 +50,7 @@ total_videos = len(videos_realData)
 video_idx = 0 #Index of current video
 action_idx = 0 #Index of next_action
 frame = 0 #Current frame
+recipe = '' #Recipe identifier -------------------- 123456
 
 correct_action = -1 # esto para que es
 
@@ -112,8 +113,7 @@ class BasicEnv(gym.Env):
             total_videos = len(videos_realData)
             
             labels_pkl = 'labels_updated.pkl'
-            path_labels_pkl = os.path.join(videos_realData[video_idx], labels_pkl)
-            
+            path_labels_pkl = os.path.join(videos_realData[video_idx], labels_pkl)          
 
             
             annotations = np.load(path_labels_pkl, allow_pickle=True)
@@ -130,6 +130,10 @@ class BasicEnv(gym.Env):
         self.UAI_late = 0
         self.CI = 0
         self.II = 0
+        
+        #12345 ------------------------ Unnecessary actions that are related or not to the recipe
+        self.UA_related = 0
+        self.UA_unrelated = 0
         
         self.prediction_error = 0
         self.total_prediction = 0
@@ -561,7 +565,7 @@ class BasicEnv(gym.Env):
         return threshold, fr_execution, fr_end 
     
     def evaluation(self, action, fr_execution, fr_end, frame_post):
-        global frame, action_idx, inaction, new_energy, correct_action
+        global frame, action_idx, inaction, new_energy, correct_action, recipe #12345 Add recipe to globals
         
         optim = True
         simple_reward = self._take_action(action)
@@ -604,11 +608,35 @@ class BasicEnv(gym.Env):
                         inaction.append("action")
                         self.energy_robot_reward(action)
                         self.get_energy_robot_reward(action,frame)
-                        reward = self.reward_energy  
+                        reward = self.reward_energy                         
+                        
                         if reward == 0:
                             self.UAC_intime += 1
                         else:
                             self.UAI_intime += 1
+                            
+                        
+                        #123456 - Comprobar si la acción pertenece a la receta 
+                        # {                        
+                        if recipe == 'c':
+                        	if action == 2: #bring milk
+                        		self.UA_related += 1
+                        	else:
+                        		self.UA_unrelated += 1
+                        		
+                        elif recipe == 't': 	
+                        	if action == 0 or action == 1 or action == 3 or action==5: #bring jam, butter, nutella or tomato
+                        		self.UA_related += 1
+                        	else:
+                        		self.UA_unrelated += 1
+                        
+                        elif recipe == 'd': 
+                        	if action == 2: #bring milk
+                        		self.UA_related += 1
+                        	else:
+                        		self.UA_unrelated += 1						
+                        # }
+                            
                         self.update("action")
                 else: 
 
@@ -629,6 +657,27 @@ class BasicEnv(gym.Env):
                         else:
                             self.UAI_late += 1
                         self.update("action")
+                        
+                        #123456 - Comprobar si la acción pertenece a la receta 
+                        # {                        
+                        if recipe == 'c':
+                        	if action == 2: #bring milk
+                        		self.UA_related += 1
+                        	else:
+                        		self.UA_unrelated += 1
+                        		
+                        elif recipe == 't': 	
+                        	if action == 0 or action == 1 or action == 3 or action==5: #bring jam, butter, nutella or tomato
+                        		self.UA_related += 1
+                        	else:
+                        		self.UA_unrelated += 1
+                        
+                        elif recipe == 'd': 
+                        	if action == 2: #bring milk
+                        		self.UA_related += 1
+                        	else:
+                        		self.UA_unrelated += 1						
+                        # }
                         
                         self.flags['break'] = True
             
@@ -1075,7 +1124,8 @@ class BasicEnv(gym.Env):
 
                 # pdb.set_trace()
              
-        #if done: 
+        if done: 
+
             #total_minimum_time_execution = self.get_minimum_execution_times()
             """
             print(annotations)
@@ -1110,6 +1160,7 @@ class BasicEnv(gym.Env):
         self.total_reward += reward 
         
 
+
         return self.state, reward, done, optim,  self.flags['pdb'], self.reward_time, self.reward_energy, hri_time, action, self.flags['threshold'], self.prediction_error, self.total_prediction
         
         
@@ -1143,7 +1194,7 @@ class BasicEnv(gym.Env):
         """
         super().reset()
         
-        global video_idx, action_idx, annotations, frame, inaction, memory_objects_in_table, path_labels_pkl
+        global video_idx, action_idx, annotations, frame, inaction, memory_objects_in_table, path_labels_pkl, recipe #123456
         
         inaction = []
         memory_objects_in_table = []
@@ -1168,9 +1219,15 @@ class BasicEnv(gym.Env):
         
         # FOR REAL DATA --------------------------------------------------------------- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
+        
+        # 0) Identify the recipe 123456        
+        recipe = videos_realData[video_idx].split("/")[-1][0] #123456 La receta se identifica con el primer caracter del nombre del vídeo: 'c': cereals, 't': toast', 'd': drink
+        
         # 1) Read labels and store it in annotation_pkl
         labels_pkl = 'labels_updated.pkl'
         path_labels_pkl = os.path.join(videos_realData[video_idx], labels_pkl)
+        
+
         
         #print("\n\nPath to annotation pkl: ", path_labels_pkl)
         
@@ -1209,6 +1266,10 @@ class BasicEnv(gym.Env):
         self.UAI_late = 0
         self.CI = 0
         self.II = 0
+        
+        #12345 --- Unnecessary actions related or not to the recipe
+        self.UA_related = 0
+        self.UA_unrelated = 0
         
         self.prediction_error = 0
         self.total_prediction = 0

@@ -325,59 +325,68 @@ def plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_l
     fig1 = plt.figure(figsize=(25, 8))
 
     
-    plt.subplot2grid((2,5), (0,0))
+    plt.subplot2grid((2,6), (0,0))
     plt.title("Short-term correct actions (in time)")
-    plt.plot(total_results[0])
+    plt.plot(total_results[0], 'springgreen')
 
 
-    plt.subplot2grid((2,5), (1,0))
+    plt.subplot2grid((2,6), (1,0))
     plt.title("Short-term correct actions (late)")
-    plt.plot(total_results[1])
+    plt.plot(total_results[1], 'springgreen')
     plt.xlabel("Epoch")
 
        
-    plt.subplot2grid((2,5), (0,4))
+    plt.subplot2grid((2,6), (0,4))
     plt.title("Incorrect actions (in time)")
-    plt.plot(total_results[2])
+    plt.plot(total_results[2], 'red')
 
 
-    plt.subplot2grid((2,5), (1,4))
+    plt.subplot2grid((2,6), (1,4))
     plt.title("Incorrect actions (late)")
-    plt.plot(total_results[3])
+    plt.plot(total_results[3], 'red')
     plt.xlabel("Epoch")
 
       
-    plt.subplot2grid((2,5), (0,1))
+    plt.subplot2grid((2,6), (0,1))
     plt.title("Long-term correct actions(in time)")
-    plt.plot(total_results[4])
+    plt.plot(total_results[4], 'springgreen')
 
 
-    plt.subplot2grid((2,5), (1,1))
+    plt.subplot2grid((2,6), (1,1))
     plt.title("Long-term correct actions (late)")
-    plt.plot(total_results[5])
+    plt.plot(total_results[5], 'springgreen')
     plt.xlabel("Epoch")
 
     
     
-    plt.subplot2grid((2,5), (0,3))
+    plt.subplot2grid((2,6), (0,3))
     plt.title("Unnecessary actions (in time)")
-    plt.plot(total_results[6])
+    plt.plot(total_results[6], 'red')
 
 
-    plt.subplot2grid((2,5), (1,3))
+    plt.subplot2grid((2,6), (1,3))
     plt.title("Unnecessary actions (late)")
-    plt.plot(total_results[7])
+    plt.plot(total_results[7], 'red')
     plt.xlabel("Epoch")
 
     
-    plt.subplot2grid((2,5), (0,2))
+    plt.subplot2grid((2,6), (0,2))
     plt.title("Correct inactions")
-    plt.plot(total_results[8])
+    plt.plot(total_results[8], 'springgreen')
 
 
-    plt.subplot2grid((2,5), (1,2))
+    plt.subplot2grid((2,6), (1,2))
     plt.title("Incorrect inactions")
-    plt.plot(total_results[9])
+    plt.plot(total_results[9], 'red')
+    plt.xlabel("Epoch")
+    
+    plt.subplot2grid((2,6), (0,5))
+    plt.title("Unn recipe-related")
+    plt.plot(total_results[10], 'royalblue')
+    
+    plt.subplot2grid((2,6), (1,5))
+    plt.title("Unn recipe-unrelated")
+    plt.plot(total_results[11], 'crimson')
     plt.xlabel("Epoch")
 
 

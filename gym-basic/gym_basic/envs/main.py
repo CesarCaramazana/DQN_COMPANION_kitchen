@@ -50,6 +50,7 @@ total_videos = len(videos_realData)
 video_idx = 0 #Index of current video
 action_idx = 0 #Index of next_action
 frame = 0 #Current frame
+recipe = '' #12345
 
 correct_action = -1 # esto para que es
 
@@ -130,6 +131,10 @@ class BasicEnv(gym.Env):
         self.UAI_late = 0
         self.CI = 0
         self.II = 0
+        
+        #12345
+        self.UA_related = 0
+        self.UA_unrelated = 0
         
         self.prediction_error = 0
         self.total_prediction = 0
@@ -656,12 +661,12 @@ class BasicEnv(gym.Env):
                     # if "action" not in inaction:
                     #     print("Times no action selected: ", len(inaction))
                     
-        if self.flags['decision']:        
-            print(self.flags)
+        #if self.flags['decision']:        
+        #    print(self.flags)
         return threshold, fr_execution, fr_end 
     
     def evaluation(self, action, fr_execution, fr_end, frame_post):
-        global frame, action_idx, inaction, new_energy, correct_action
+        global frame, action_idx, inaction, new_energy, correct_action, recipe
         
         optim = True
         simple_reward = self._take_action(action)
@@ -708,6 +713,15 @@ class BasicEnv(gym.Env):
                                 self.UAC_intime += 1
                             else:
                                 self.UAI_intime += 1
+                                
+                                #12345
+                                if recipe == 'c' or recipe == 'd':
+                                	if action == 2: self.UA_related += 1
+                                	else: self.UA_unrelated += 1
+                                elif recipe == 't':
+                                	if action in [0, 1, 3, 4]: self.UA_related += 1
+                                	else: self.UA_unrelated += 1	
+                                
                             self.update("incorrect")
                     else: 
     
@@ -883,6 +897,16 @@ class BasicEnv(gym.Env):
                                             self.UAC_intime += 1
                                         else:
                                             self.UAI_intime += 1
+                                            
+                                            #12345
+                                            if recipe == 'c' or recipe == 'd':
+                                            	if action == 2: self.UA_related += 1
+                                            	else: self.UA_unrelated += 1
+                                            elif recipe == 't':
+                                            	if action in [0, 1, 3, 4]: self.UA_related += 1
+                                            	else: self.UA_unrelated += 1
+                                            
+                                            
                                         self.update("unnecesary")
                                         
                                 else: 
@@ -903,6 +927,16 @@ class BasicEnv(gym.Env):
                                             self.UAC_late += 1
                                         else:
                                             self.UAI_late += 1
+                                            
+                                            #12345
+                                            if recipe == 'c' or recipe == 'd':
+                                            	if action == 2: self.UA_related += 1
+                                            	else: self.UA_unrelated += 1
+                                            elif recipe == 't':
+                                            	if action in [0, 1, 3, 4]: self.UA_related += 1
+                                            	else: self.UA_unrelated += 1
+                                            
+                                            
                                         if  self.flags['threshold'] == 'next action init'   : 
                                             self.flags['threshold'] = 'next action'
                                         self.update("unnecesary")
@@ -931,7 +965,7 @@ class BasicEnv(gym.Env):
                                     self.energy_robot_reward(correct_action)
                                     reward = self.reward_energy
                                     self.flags['evaluation'] = 'Incorrect inaction'
-                                    pdb.set_trace()
+                                    #pdb.set_trace()
                                     # print("Action idx: ", action_idx)
                                     # print("*************** INCORRECT INACTION ***************")
                                 frame_post.append(frame)
@@ -1213,11 +1247,11 @@ class BasicEnv(gym.Env):
         if self.flags['decision'] == True:
             self.state[110:133] = memory_objects_in_table[len(memory_objects_in_table)-1]
     
-        if optim:
-            self.prints_terminal(action, frame_prev, frame_post, reward)
+        #if optim:
+            #self.prints_terminal(action, frame_prev, frame_post, reward)
             # self.prints_debug(action)
-            print(frame)
-            pdb.set_trace()
+            #print(frame)
+            #pdb.set_trace()
              
         #if done: 
             #total_minimum_time_execution = self.get_minimum_execution_times()
@@ -1287,7 +1321,7 @@ class BasicEnv(gym.Env):
         """
         super().reset()
         
-        global video_idx, action_idx, annotations, frame, inaction, memory_objects_in_table, path_labels_pkl
+        global video_idx, action_idx, annotations, frame, inaction, memory_objects_in_table, path_labels_pkl, recipe
         
         inaction = []
         memory_objects_in_table = []
@@ -1312,6 +1346,9 @@ class BasicEnv(gym.Env):
         frame = 0
         
         # FOR REAL DATA --------------------------------------------------------------- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        # 0) Recipe id
+        recipe = videos_realData[video_idx].split("/")[-1][0]
         
         # 1) Read labels and store it in annotation_pkl
         labels_pkl = 'labels_updated.pkl'
@@ -1354,6 +1391,10 @@ class BasicEnv(gym.Env):
         self.UAI_late = 0
         self.CI = 0
         self.II = 0
+        
+        #12345
+        self.UA_related = 0
+        self.UA_unrelated = 0
         
         self.prediction_error = 0
         self.total_prediction = 0

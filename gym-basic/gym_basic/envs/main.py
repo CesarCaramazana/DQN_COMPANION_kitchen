@@ -626,10 +626,7 @@ class BasicEnv(gym.Env):
 
                             # }	
                             
-     
-                            
-                        
-                        
+
                             
                         self.update("action")
                 else: 
@@ -661,8 +658,7 @@ class BasicEnv(gym.Env):
                             # }	
                             
                             
-                        self.update("action")
-                        
+                        self.update("action")                       
   
                         
                         self.flags['break'] = True
@@ -1288,7 +1284,7 @@ class BasicEnv(gym.Env):
         
         self.objects_in_table = OBJECTS_INIT_STATE.copy()
         memory_objects_in_table.append(list(self.objects_in_table.values()))
-
+        
         
         return self.state
 

@@ -6,7 +6,7 @@ REPLAY_MEMORY = 2048 #Size of replay memory (deque object)
 
 NUM_EPOCH = 2000
 NUM_EPISODES = 63 #"Number of training epochs"
-BATCH_SIZE = 512
+BATCH_SIZE = 256
 GAMMA = 0.0 #Discount rate for future rewards
 EPS_START = 0.99 #Initial exporation rate
 EPS_END = 0.01 #Final exploration rate
@@ -14,7 +14,7 @@ EPS_DECAY = NUM_EPOCH #Exploration rate decay factor
 TARGET_UPDATE = 10 #Episodes between target network update (policy net parameters -> target net)
 LR = 1e-3 #Learning rate
 POSITIVE_REWARD = 0
-NO_ACTION_PROBABILITY = 70
+NO_ACTION_PROBABILITY = 85
 
 ROOT = './Checkpoints/'
 EXPERIMENT_NAME = "DQN"
@@ -23,8 +23,9 @@ SAVE_EPISODE = 100
 LOAD_MODEL = False
 LOAD_EPISODE = 0
 
-DECISION_RATE = 180 
-Z_hidden_state = False
+DECISION_RATE = 30 
+Z_hidden_state = True
+
 #ENVIRONMENT PARAMETERS ------
 #---------------------------------------------------------------------------------
 
@@ -166,7 +167,7 @@ ROBOT_ACTIONS_MEANINGS = {
 	23: 'put milk fridge'
 }
 """
-
+"""
 #Reduced action repertoire
 ROBOT_ACTIONS_MEANINGS = {
 	0: 'bring butter',
@@ -183,22 +184,32 @@ ROBOT_ACTIONS_MEANINGS = {
 	11: 'put milk fridge'
 
 }
+"""
 
-# VERSION 1) AVERAGE OF HUMAN ACTION DURATIONS
-ROBOT_ACTION_DURATIONS = {
-	0: 174,  # bring butter
-	1: 198,  # bring jam
-	2: 186,  # bring milk
-	3: 234,  # bring nutella
-	4: 342,  # bring sliced bread
-	5: 270,  # bring tomato sauce
-	6: 0,    # do nothing
-	7: 90,   # put jam fridge
-	8: 114,  # put butter fridge
-	9: 120,  # put tomato sauce fridge
-	10: 168, # put nutella fridge
-	11: 150  # put milk fridge
+#Even more reduced action repertoire
+ROBOT_ACTIONS_MEANINGS = {
+	0: 'bring butter',
+	1: 'bring jam',
+	2: 'bring milk',
+	3: 'bring nutella',
+	4: 'bring sliced bread',
+	5: 'bring tomato sauce',
+	6: 'do nothing'
+
 }
+
+"""
+#Even more reduced action repertoire
+ROBOT_ACTION_DURATIONS = {
+	0: 184,  # bring butter
+	1: 199,  # bring jam
+	2: 189,  # bring milk
+	3: 267,  # bring nutella
+	4: 430,  # bring sliced bread
+	5: 271,  # bring tomato sauce
+	6: 0    # do nothing
+}
+"""
 
 """
 # VERSION 2) 0.5*HUMAN ---> FAST ROBOT
@@ -209,13 +220,11 @@ ROBOT_ACTION_DURATIONS = {
 	3: 117,  # bring nutella
 	4: 171,  # bring sliced bread
 	5: 135,  # bring tomato sauce
-	6: 0,    # do nothing
-	7: 45,   # put jam fridge
-	8: 57,  # put butter fridge
-	9: 60,  # put tomato sauce fridge
-	10: 84, # put nutella fridge
-	11: 75  # put milk fridge
+	6: 0    # do nothing
+
 }
+
+"""
 # VERSION 3) 2*HUMAN ---> SLOW (MORE REALISTIC) ROBOT
 ROBOT_ACTION_DURATIONS = {
 	0: 348,  # bring butter
@@ -224,14 +233,9 @@ ROBOT_ACTION_DURATIONS = {
 	3: 468,  # bring nutella
 	4: 684,  # bring sliced bread
 	5: 540,  # bring tomato sauce
-	6: 0,    # do nothing
-	7: 180,   # put jam fridge
-	8: 228,  # put butter fridge
-	9: 249,  # put tomato sauce fridge
-	10: 336, # put nutella fridge
-	11: 300  # put milk fridge
+	6: 0    # do nothing
 }
-"""
+
 
 
 ROBOT_POSSIBLE_INIT_ACTIONS = {
@@ -241,13 +245,7 @@ ROBOT_POSSIBLE_INIT_ACTIONS = {
 	3: 1,
 	4: 1,
 	5: 1,
-	6: 1,
-	7: 0,
-	8: 0,
-	9: 0,
-	10: 0,
-	11: 0
-	
+	6: 1	
 }
 
 

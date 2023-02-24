@@ -663,7 +663,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             
             if i_episode % TARGET_UPDATE == 0: #Copy the Policy Network parameters into Target Network
                 target_net.load_state_dict(policy_net.state_dict())
-                #scheduler.step()
+                scheduler.step() #123456
                 
 
                             
@@ -702,7 +702,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
         
             
         if phase == 'train':
-            if i_epoch % 5 == 0:
+            if i_epoch % 20 == 0:
                 # print(PRETRAINED)
                
                 if PRETRAINED == True:
@@ -801,7 +801,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
 
  
             #PLOT TRAIN
-            if i_epoch % 10 == 0: plot_each_epoch(i_epoch, phase,save_path,
+            if i_epoch % 15 == 0: plot_each_epoch(i_epoch, phase,save_path,
             minimum_time,
             total_results_train,
             total_loss_epoch_train,
@@ -910,7 +910,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             #PLOT VALIDATION
             
             
-            if i_epoch % 50 == 0: plot_each_epoch(i_epoch, phase,save_path,
+            if i_epoch % 15 == 0: plot_each_epoch(i_epoch, phase,save_path,
             minimum_time, 
             total_results,
             total_loss_epoch_val,

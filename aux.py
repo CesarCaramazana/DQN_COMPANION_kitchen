@@ -750,8 +750,8 @@ def get_estimations_action_time_human():
                 if 'bring' in value_AR:
                     if 'extract' in row['atomic_actions']: 
                         ROBOT_ACTION_DURATIONS[idx_AR] = row['avg_frame']
-                elif 'put' in (row['atomic_actions'] and value_AR):
-                    ROBOT_ACTION_DURATIONS[idx_AR] = row['avg_frame']
+                # elif 'put' in (row['atomic_actions'] and value_AR):
+                #     ROBOT_ACTION_DURATIONS[idx_AR] = row['avg_frame']
                 
     return ROBOT_ACTION_DURATIONS
        

@@ -116,7 +116,7 @@ def action_rate(decision_cont,state):
         action_selected = select_action(state)
         flag_decision = True 
     else:
-        action_selected = 6
+        action_selected = 5
         flag_decision = False
     
     return action_selected, flag_decision

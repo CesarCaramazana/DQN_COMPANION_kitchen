@@ -32,13 +32,13 @@ warnings.filterwarnings("ignore")
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--pretrained', action='store_true', default=True, help="(bool) Inizializate the model with a pretrained model.")
+parser.add_argument('--pretrained', action='store_true', default=False, help="(bool) Inizializate the model with a pretrained model.")
 parser.add_argument('--freeze', type=str, default='False', help="(bool) Inizializate the model with a pretrained moddel freezing the layers but the last one.")
 parser.add_argument('--experiment_name', type=str, default=cfg.EXPERIMENT_NAME, help="(str) Name of the experiment. Used to name the folder where the model is saved. For example: my_first_DQN.")
 
 parser.add_argument('--load_model', action='store_true', help="Load a checkpoint from the EXPERIMENT_NAME folder. If no episode is specified (LOAD_EPISODE), it loads the latest created file.")
 parser.add_argument('--load_episode', type=int, default=0, help="(int) Number of episode to load from the EXPERIMENT_NAME folder, as the sufix added to the checkpoints when the save files are created. For example: 500, which will load 'model_500.pt'.")
-parser.add_argument('--batch_size', type=int, default=cfg.BATCH_SIZE, help="(int) Batch size for the training of the network. For example: 64.")
+parser.add_argument('--batch_size', type=int, default=cfg.BATCH_SIZE, help="(int) Batch size for the training of the network. For example: 54.")
 
 parser.add_argument('--lr', type=float, default=cfg.LR, help="(float) Learning rate. For example: 1e-3.")
 parser.add_argument('--replay_memory', type=int, default=cfg.REPLAY_MEMORY, help="(int) Size of the Experience Replay memory. For example: 1000.")
@@ -219,6 +219,9 @@ def select_action(state, phase):
     eps_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY) #Get current exploration rate
     
     posible_actions = env.possible_actions_taken_robot()
+    
+    #print("Posibleu actiones: \n", posible_actions) 
+    
     index_posible_actions = [i for i, x in enumerate(posible_actions) if x == 1]
     
     if phase == 'val':
@@ -233,11 +236,12 @@ def select_action(state, phase):
                  out = policy_net(state)
                  action = post_processed_possible_actions(out,index_posible_actions)
                  # pdb.set_trace()
+                 #print("Action: ", action)
                  return action
          else:
              
              if NO_ACTION_PROBABILITY != 0:
-                 index_no_action = index_posible_actions.index(6)
+                 index_no_action = index_posible_actions.index(5)
                  
                  weights = [10]*len(index_posible_actions)
                  weights[index_no_action] = cfg.NO_ACTION_PROBABILITY
@@ -245,9 +249,12 @@ def select_action(state, phase):
                  # print(index_action)
                  # pdb.set_trace()
                  action = random.choices(index_posible_actions, weights, k=1)[0]
+                 
+                 #print("Action: ", action)
              else:
                  index_action = random.randrange(len(index_posible_actions))
                  action = index_posible_actions[index_action]
+                 #print("Action: ", action)
     
                 
                 # pdb.set_trace()
@@ -277,7 +284,7 @@ def action_rate(decision_cont,state,phase,prev_decision_rate):
         action_selected = select_action(state,phase)
         flag_decision = True 
     else:
-        action_selected = 6
+        action_selected = 5
         flag_decision = False
     # print("RANDOM NUMBER: ",decision_rate)
     # pdb.set_trace()
@@ -431,10 +438,6 @@ for video in videos:
 minimum_time = sum(video_min_times)
 maximum_time = sum(video_max_times)	
 
-
-
-#minimum_time = sum(total_minimum_time_execution_epoch)
-#maximum_time = sum(total_maximum_time_execution_epoch)
 
 
 
@@ -714,7 +717,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                 else: 
                     z_name = ''
 
-                path = os.path.join(ROOT, EXPERIMENT_NAME + '_' + dt_string  +'_CORRECT_FRAMES_'+z_name+batch_name+'_EPS_START_'+str(cfg.EPS_START) + decision_rate_name +weight_prob +'_LR_'+str(LR)+ pre + freeze + '_GAMMA_'+str(GAMMA))
+                path = os.path.join(ROOT, EXPERIMENT_NAME + '_' + dt_string  +'_PENALTY_ENERGY_FACTOR_'+str(cfg.FACTOR_ENERGY_PENALTY)+z_name+batch_name+'_EPS_START_'+str(cfg.EPS_START) + decision_rate_name +weight_prob +'_LR_'+str(LR)+ pre + freeze + '_GAMMA_'+str(GAMMA))
                                   
                 
                 # path = os.path.join(ROOT, EXPERIMENT_NAME)

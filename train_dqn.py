@@ -111,10 +111,10 @@ target_net = DQN(n_states, n_actions).to(device)
 if PRETRAINED:
     # path_model = './Pretrained/model_real_data.pt' #Path al modelo pre-entrenado
     if cfg.Z_hidden_state:
-        path_model = './Pretrained/model_real_data_with_z.pt'
+        path_model = './Pretrained/model_with_Z.pt'
         print("With Z variable")
     else:
-        path_model = './Pretrained/model_real_data_without_z.pt'
+        path_model = './Pretrained/model_without_Z.pt'
         print("Without Z variable")
   
     print("\nUSING PRETRAINED MODEL---------------")
@@ -407,13 +407,6 @@ total_UAI_late_epoch_val = []
 total_CI_epoch_val = []
 total_II_epoch_val = []
 
-
-#12345
-total_UA_related_epoch_train = []
-total_UA_unrelated_epoch_train = []
-total_UA_related_epoch_val = []
-total_UA_unrelated_epoch_val = []
-
 prev_decision_rate = 1
 steps_done = 0 
 
@@ -449,7 +442,7 @@ maximum_time = sum(video_max_times)
 
 
 
-
+# minimum_time = 0
 
 for i_epoch in range (args.load_episode,NUM_EPOCH):
 
@@ -491,10 +484,6 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
         total_UAI_late = []
         total_CI = []
         total_II = []
-        
-        #123456
-        total_UA_related = []
-        total_UA_unrelated = []
         
         #total_minimum_time_execution_epoch = []
         #total_maximum_time_execution_epoch = []
@@ -553,7 +542,9 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                 reward_time_ep += reward_time
                 error_pred_ep += error_pred
                 total_pred_ep += total_pred
-                 
+                
+                # if i_epoch == 0:
+                #     minimum_time += total_minimum_time_execution
                 if optim: #Only train if we have taken an action (f==30)                  
                     
                     reward = torch.tensor([reward], device=device)
@@ -647,10 +638,6 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                     #Baseline times
                     #total_minimum_time_execution_epoch.append(min_time) #Minimum possible time
                     #total_maximum_time_execution_epoch.append(max_time) #Human max time -> no HRI
-                    
-                    #123456
-                    total_UA_related.append(env.UA_related)
-                    total_UA_unrelated.append(env.UA_unrelated)
                                  
 
                     break #Finish episode
@@ -661,7 +648,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             
             if i_episode % TARGET_UPDATE == 0: #Copy the Policy Network parameters into Target Network
                 target_net.load_state_dict(policy_net.state_dict())
-                scheduler.step() #12345
+                #scheduler.step()
                 
 
                             
@@ -774,30 +761,13 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_UAI_late_epoch_train.append(sum(total_UAI_late))
             total_CI_epoch_train.append(sum(total_CI))
             total_II_epoch_train.append(sum(total_II))
+            total_results_train = [total_CA_intime_epoch_train,total_CA_late_epoch_train,total_IA_intime_epoch_train,total_IA_late_epoch_train,total_UAC_intime_epoch_train,total_UAC_late_epoch_train,total_UAI_intime_epoch_train,total_UAI_late_epoch_train,total_CI_epoch_train,total_II_epoch_train]
+           
             
-            
-            
-            #123456
-            total_UA_related_epoch_train.append(sum(total_UA_related))
-            total_UA_unrelated_epoch_train.append(sum(total_UA_unrelated))
-            #----------
-            
-            
-            
-            #123456 -> Add (un)related
-            total_results_train = [total_CA_intime_epoch_train,total_CA_late_epoch_train,total_IA_intime_epoch_train,
-            total_IA_late_epoch_train,
-            total_UAC_intime_epoch_train,
-            total_UAC_late_epoch_train,
-            total_UAI_intime_epoch_train,
-            total_UAI_late_epoch_train,
-            total_CI_epoch_train,
-            total_II_epoch_train,
-            total_UA_related_epoch_train, #123456
-            total_UA_unrelated_epoch_train] #123456
+
  
             #PLOT TRAIN
-            if i_epoch % 1 == 0: plot_each_epoch(i_epoch, phase,save_path,
+            if i_epoch % 50 == 0: plot_each_epoch(i_epoch, phase,save_path,
             minimum_time,
             total_results_train,
             total_loss_epoch_train,
@@ -884,30 +854,12 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_UAI_late_epoch_val.append(sum(total_UAI_late))
             total_CI_epoch_val.append(sum(total_CI))
             total_II_epoch_val.append(sum(total_II))
-            
-            
-            
-            #123456
-            total_UA_related_epoch_val.append(sum(total_UA_related))
-            total_UA_unrelated_epoch_val.append(sum(total_UA_unrelated))
-            # -----
-            
-            #123456 -> Add to validation total results
-            total_results = [total_CA_intime_epoch_val,total_CA_late_epoch_val,total_IA_intime_epoch_val,
-            total_IA_late_epoch_val,
-            total_UAC_intime_epoch_val,
-            total_UAC_late_epoch_val,
-            total_UAI_intime_epoch_val,
-            total_UAI_late_epoch_val,
-            total_CI_epoch_val,
-            total_II_epoch_val,
-            total_UA_related_epoch_val, #123456
-            total_UA_unrelated_epoch_val]
+            total_results = [total_CA_intime_epoch_val,total_CA_late_epoch_val,total_IA_intime_epoch_val,total_IA_late_epoch_val,total_UAC_intime_epoch_val,total_UAC_late_epoch_val,total_UAI_intime_epoch_val,total_UAI_late_epoch_val,total_CI_epoch_val,total_II_epoch_val]
             
             #PLOT VALIDATION
             
             
-            if i_epoch % 1 == 0: plot_each_epoch(i_epoch, phase,save_path,
+            if i_epoch % 50 == 0: plot_each_epoch(i_epoch, phase,save_path,
             minimum_time, 
             total_results,
             total_loss_epoch_val,

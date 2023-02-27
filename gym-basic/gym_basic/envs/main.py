@@ -37,7 +37,7 @@ INTERACTIVE_OBJECTS_ROBOT = cfg.INTERACTIVE_OBJECTS_ROBOT
 
 #ANNOTATION-RELATED VARIABLES
 
-root_realData = "./video_annotations/Real_data/train/fold1/*" #!
+root_realData = "./video_annotations/Real_data/train/*" #!
 
 #List of videos
 videos_realData = glob.glob(root_realData) #Folders
@@ -105,7 +105,7 @@ class BasicEnv(gym.Env):
         if self.test:
             print("==== TEST SET ====")
 
-            root_realData = "./video_annotations/Real_data/test/*" #!
+            root_realData = "./video_annotations/Real_data/fold1/test/*" #!
             videos_realData = glob.glob(root_realData)   
             
             #random.shuffle(videos_realData)

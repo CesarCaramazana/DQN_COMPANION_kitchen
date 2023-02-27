@@ -94,9 +94,9 @@ env = gym.make("gym_basic:basic-v0", display=args.display, disable_env_checker=T
 
 
 if env.test:
-    NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/test/*"))
+    NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/fold1/test/*"))
 else:
-    NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/train/fold1/*"))
+    NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/fold1/train/*"))
 
 env.reset() #Set initial state
 
@@ -426,7 +426,7 @@ video_max_times = []
 video_min_times = []
 
 
-root = "./video_annotations/Real_data/train/fold1/*" #!
+root = "./video_annotations/Real_data/fold1/train/*" #!
 videos = glob.glob(root)  
 
 
@@ -904,7 +904,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             #PLOT VALIDATION
             
             
-            if i_epoch % 20 == 0: plot_each_epoch(i_epoch, phase,save_path,
+            if i_epoch % 50 == 0: plot_each_epoch(i_epoch, phase,save_path,
             minimum_time, 
             total_results,
             total_loss_epoch_val,
@@ -919,7 +919,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             #---------------------------------------------------------------------------------------
             
             #PLOT TOGETHER
-            if i_epoch % 5 == 0: plot_each_epoch_together(i_epoch,save_path,
+            if i_epoch % 20 == 0: plot_each_epoch_together(i_epoch,save_path,
             minimum_time,
             total_results_train,
             total_loss_epoch_train,

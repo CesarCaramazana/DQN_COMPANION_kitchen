@@ -38,7 +38,8 @@ from generate_history import *
 import config as cfg
 import argparse
 
-
+import warnings
+warnings.filterwarnings("ignore")
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--experiment_name', type=str, default=cfg.EXPERIMENT_NAME, help="(str) Name of the experiment. Used to name the folder where the model was saved during training. For example: my_first_DQN.")
@@ -116,7 +117,7 @@ def action_rate(decision_cont,state):
         action_selected = select_action(state)
         flag_decision = True 
     else:
-        action_selected = 6
+        action_selected = 5
         flag_decision = False
     
     return action_selected, flag_decision
@@ -447,16 +448,16 @@ else: fig.savefig(save_path+'/00_TRAIN_ACTIONS.jpg')
 # ------------------- ACTIONS ------ PIE CHART
 # (ONLY IN THE LAST EPOCH)
 
-stci = np.sum(total_CA_intime)+0.1 #short term correct intime
-stcl = np.sum(total_CA_late)+0.1 #short term correct late
-ltci = np.sum(total_UAC_intime)+0.1 #long term correct intime
-ltcl = np.sum(total_UAC_late)+0.1 #long term correct late
-ci = np.sum(total_CI)+0.1 #correct inactions
-ii = np.sum(total_II)+0.1 #incorrect inactions
-ui = np.sum(total_UAI_intime)+0.1 #unnec intime
-ul = np.sum(total_UAI_late)+0.1 #unnec late
-iai = np.sum(total_IA_intime)+0.1 #incorrect intime
-ial = np.sum(total_IA_late)+0.1 #incorrect late
+stci = np.sum(total_CA_intime) #short term correct intime
+stcl = np.sum(total_CA_late) #short term correct late
+ltci = np.sum(total_UAC_intime) #long term correct intime
+ltcl = np.sum(total_UAC_late) #long term correct late
+ci = np.sum(total_CI) #correct inactions
+ii = np.sum(total_II) #incorrect inactions
+ui = np.sum(total_UAI_intime) #unnec intime
+ul = np.sum(total_UAI_late) #unnec late
+iai = np.sum(total_IA_intime) #incorrect intime
+ial = np.sum(total_IA_late) #incorrect late
 
 labels1 = 'Short-term in time', 'Short-term late', 'Long-term in time', 'Long-term late', 'Unnecessary in time', 'Unnecessary late', 'Incorrect in time', 'Incorrect late'
 sizes1 = [stci, stcl, ltci, ltcl, ui, ul, iai, ial]
@@ -511,7 +512,7 @@ fig2 = plt.figure(figsize=(20,6))
 
 plt.subplot2grid((1,3),(0,0))
 
-plt.plot(epoch_test,epoch_total_reward_energy_ep, 'c:')
+plt.plot(epoch_total_reward_energy_ep, 'c:')
 plt.title("Energy reward")
 plt.legend(["Energy reward"])
 plt.xlabel("Epoch")
@@ -519,7 +520,7 @@ plt.xlabel("Epoch")
 
 plt.subplot2grid((1,3),(0,1))
 
-plt.plot(epoch_test,epoch_total_reward_time_ep, 'c:')
+plt.plot(epoch_total_reward_time_ep, 'c:')
 plt.title("Time reward")
 plt.legend(["Time reward"])
 plt.xlabel("Epoch")
@@ -528,7 +529,7 @@ plt.xlabel("Epoch")
 plt.subplot2grid((1,3),(0,2))
 
 plt.title("Total reward")
-plt.plot(epoch_test,epoch_reward, 'c-.')
+plt.plot(epoch_reward, 'c-.')
 plt.legend(["Total reward"])
 plt.xlabel("Epoch")
 
@@ -544,7 +545,7 @@ else: fig2.savefig(save_path+'/00_TRAIN_REWARD.jpg')
 fig3 = plt.figure(figsize=(15,6))
 plt.title("Interaction time")
 #plt.plot(epoch_total_time_video, 'k',label='Video')
-plt.plot(epoch_test, epoch_total_time_interaction, 'c--',label='Interaction')
+plt.plot(epoch_total_time_interaction, 'c--',label='Interaction')
 plt.axhline(y=maximum_time, color='k', label='Video')
 plt.axhline(y=minimum_time, color='r', label='Minimum')
 plt.legend()

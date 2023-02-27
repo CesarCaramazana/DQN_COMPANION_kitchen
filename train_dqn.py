@@ -38,7 +38,7 @@ parser.add_argument('--experiment_name', type=str, default=cfg.EXPERIMENT_NAME, 
 
 parser.add_argument('--load_model', action='store_true', help="Load a checkpoint from the EXPERIMENT_NAME folder. If no episode is specified (LOAD_EPISODE), it loads the latest created file.")
 parser.add_argument('--load_episode', type=int, default=0, help="(int) Number of episode to load from the EXPERIMENT_NAME folder, as the sufix added to the checkpoints when the save files are created. For example: 500, which will load 'model_500.pt'.")
-parser.add_argument('--batch_size', type=int, default=cfg.BATCH_SIZE, help="(int) Batch size for the training of the network. For example: 64.")
+parser.add_argument('--batch_size', type=int, default=cfg.BATCH_SIZE, help="(int) Batch size for the training of the network. For example: 54.")
 
 parser.add_argument('--lr', type=float, default=cfg.LR, help="(float) Learning rate. For example: 1e-3.")
 parser.add_argument('--replay_memory', type=int, default=cfg.REPLAY_MEMORY, help="(int) Size of the Experience Replay memory. For example: 1000.")
@@ -111,10 +111,10 @@ target_net = DQN(n_states, n_actions).to(device)
 if PRETRAINED:
     # path_model = './Pretrained/model_real_data.pt' #Path al modelo pre-entrenado
     if cfg.Z_hidden_state:
-        path_model = './Pretrained/model_real_data_with_z.pt'
+        path_model = './Pretrained/model_with_Z.pt'
         print("With Z variable")
     else:
-        path_model = './Pretrained/model_real_data_without_z.pt'
+        path_model = './Pretrained/model_without_Z.pt'
         print("Without Z variable")
   
     print("\nUSING PRETRAINED MODEL---------------")
@@ -241,7 +241,7 @@ def select_action(state, phase):
          else:
              
              if NO_ACTION_PROBABILITY != 0:
-                 index_no_action = index_posible_actions.index(6)
+                 index_no_action = index_posible_actions.index(5)
                  
                  weights = [10]*len(index_posible_actions)
                  weights[index_no_action] = cfg.NO_ACTION_PROBABILITY
@@ -284,7 +284,7 @@ def action_rate(decision_cont,state,phase,prev_decision_rate):
         action_selected = select_action(state,phase)
         flag_decision = True 
     else:
-        action_selected = 6
+        action_selected = 5
         flag_decision = False
     # print("RANDOM NUMBER: ",decision_rate)
     # pdb.set_trace()
@@ -407,13 +407,11 @@ total_UAI_late_epoch_val = []
 total_CI_epoch_val = []
 total_II_epoch_val = []
 
-
-#123456
+#12345
 total_UA_related_epoch_train = []
 total_UA_unrelated_epoch_train = []
 total_UA_related_epoch_val = []
 total_UA_unrelated_epoch_val = []
-
 
 prev_decision_rate = 1
 steps_done = 0 
@@ -450,7 +448,7 @@ maximum_time = sum(video_max_times)
 
 
 
-
+# minimum_time = 0
 
 for i_epoch in range (args.load_episode,NUM_EPOCH):
 
@@ -496,6 +494,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
         #123456
         total_UA_related = []
         total_UA_unrelated = []
+        
         
         #total_minimum_time_execution_epoch = []
         #total_maximum_time_execution_epoch = []
@@ -554,7 +553,9 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                 reward_time_ep += reward_time
                 error_pred_ep += error_pred
                 total_pred_ep += total_pred
-                 
+                
+                # if i_epoch == 0:
+                #     minimum_time += total_minimum_time_execution
                 if optim: #Only train if we have taken an action (f==30)                  
                     
                     reward = torch.tensor([reward], device=device)
@@ -645,14 +646,13 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                     #Interaction
                     total_interaction_time_epoch.append(hri_time)
                     
-                    #Baseline times
-                    #total_minimum_time_execution_epoch.append(min_time) #Minimum possible time
-                    #total_maximum_time_execution_epoch.append(max_time) #Human max time -> no HRI
-                    
-                    
                     #123456
                     total_UA_related.append(env.UA_related)
                     total_UA_unrelated.append(env.UA_unrelated)
+                    
+                    #Baseline times
+                    #total_minimum_time_execution_epoch.append(min_time) #Minimum possible time
+                    #total_maximum_time_execution_epoch.append(max_time) #Human max time -> no HRI
                                  
 
                     break #Finish episode
@@ -663,7 +663,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             
             if i_episode % TARGET_UPDATE == 0: #Copy the Policy Network parameters into Target Network
                 target_net.load_state_dict(policy_net.state_dict())
-                scheduler.step() #123456
+                scheduler.step()
                 
 
                             
@@ -702,7 +702,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
         
             
         if phase == 'train':
-            if i_epoch % 20 == 0:
+            if i_epoch % 5 == 0:
                 # print(PRETRAINED)
                
                 if PRETRAINED == True:
@@ -734,7 +734,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                 else: 
                     z_name = ''
 
-                path = os.path.join(ROOT, EXPERIMENT_NAME + '_' + dt_string  +'_CORRECT_FRAMES_'+z_name+batch_name+'_EPS_START_'+str(cfg.EPS_START) + decision_rate_name +weight_prob +'_LR_'+str(LR)+ pre + freeze + '_GAMMA_'+str(GAMMA))
+                path = os.path.join(ROOT, EXPERIMENT_NAME + '_' + dt_string  +'_PENALTY_ENERGY_FACTOR_'+str(cfg.FACTOR_ENERGY_PENALTY)+z_name+batch_name+'_EPS_START_'+str(cfg.EPS_START) + decision_rate_name +weight_prob +'_LR_'+str(LR)+ pre + freeze + '_GAMMA_'+str(GAMMA))
                                   
                 
                 # path = os.path.join(ROOT, EXPERIMENT_NAME)
@@ -777,13 +777,9 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_CI_epoch_train.append(sum(total_CI))
             total_II_epoch_train.append(sum(total_II))
             
-            
             #123456
             total_UA_related_epoch_train.append(sum(total_UA_related))
             total_UA_unrelated_epoch_train.append(sum(total_UA_unrelated))
-            #----------
-            
-            
             
             #123456 -> Add (un)related
             total_results_train = [total_CA_intime_epoch_train,total_CA_late_epoch_train,total_IA_intime_epoch_train,
@@ -796,12 +792,11 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_II_epoch_train,
             total_UA_related_epoch_train, #123456
             total_UA_unrelated_epoch_train] #123456
-           
             
 
  
             #PLOT TRAIN
-            if i_epoch % 15 == 0: plot_each_epoch(i_epoch, phase,save_path,
+            if i_epoch % 50 == 0: plot_each_epoch(i_epoch, phase,save_path,
             minimum_time,
             total_results_train,
             total_loss_epoch_train,
@@ -906,11 +901,10 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_II_epoch_val,
             total_UA_related_epoch_val, #123456
             total_UA_unrelated_epoch_val]
-            
             #PLOT VALIDATION
             
             
-            if i_epoch % 15 == 0: plot_each_epoch(i_epoch, phase,save_path,
+            if i_epoch % 20 == 0: plot_each_epoch(i_epoch, phase,save_path,
             minimum_time, 
             total_results,
             total_loss_epoch_val,

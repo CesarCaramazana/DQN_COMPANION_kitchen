@@ -37,7 +37,7 @@ INTERACTIVE_OBJECTS_ROBOT = cfg.INTERACTIVE_OBJECTS_ROBOT
 
 #ANNOTATION-RELATED VARIABLES
 
-root_realData = "./video_annotations/Real_data/train/*" #!
+root_realData = "./video_annotations/Real_data/fold1/train/*" #!
 
 #List of videos
 videos_realData = glob.glob(root_realData) #Folders

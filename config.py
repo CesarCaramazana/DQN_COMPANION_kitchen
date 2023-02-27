@@ -4,7 +4,7 @@
 
 REPLAY_MEMORY = 2048 #Size of replay memory (deque object)
 
-NUM_EPOCH = 100
+NUM_EPOCH = 500
 NUM_EPISODES = 63 #"Number of training epochs"
 BATCH_SIZE = 256
 GAMMA = 0.0 #Discount rate for future rewards
@@ -12,10 +12,10 @@ EPS_START = 0.99 #Initial exporation rate
 EPS_END = 0.01 #Final exploration rate
 EPS_DECAY = NUM_EPOCH #Exploration rate decay factor
 TARGET_UPDATE = 10 #Episodes between target network update (policy net parameters -> target net)
-LR = 1e-3 #Learning rate
+LR = 1e-4 #Learning rate
 POSITIVE_REWARD = 0
 NO_ACTION_PROBABILITY = 80
-FACTOR_ENERGY_PENALTY = 1
+FACTOR_ENERGY_PENALTY = 0.1
 
 ROOT = './Checkpoints/'
 EXPERIMENT_NAME = "DQN"

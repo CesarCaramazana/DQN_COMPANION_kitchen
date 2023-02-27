@@ -6,7 +6,7 @@ REPLAY_MEMORY = 2048 #Size of replay memory (deque object)
 
 NUM_EPOCH = 100
 NUM_EPISODES = 63 #"Number of training epochs"
-BATCH_SIZE = 512
+BATCH_SIZE = 256
 GAMMA = 0.0 #Discount rate for future rewards
 EPS_START = 0.99 #Initial exporation rate
 EPS_END = 0.01 #Final exploration rate
@@ -14,7 +14,7 @@ EPS_DECAY = NUM_EPOCH #Exploration rate decay factor
 TARGET_UPDATE = 10 #Episodes between target network update (policy net parameters -> target net)
 LR = 1e-3 #Learning rate
 POSITIVE_REWARD = 0
-NO_ACTION_PROBABILITY = 70
+NO_ACTION_PROBABILITY = 80
 FACTOR_ENERGY_PENALTY = 1
 
 ROOT = './Checkpoints/'
@@ -24,7 +24,7 @@ SAVE_EPISODE = 100
 LOAD_MODEL = False
 LOAD_EPISODE = 0
 
-DECISION_RATE = 60 
+DECISION_RATE = 30 
 Z_hidden_state = True
 #ENVIRONMENT PARAMETERS ------
 #---------------------------------------------------------------------------------
@@ -241,8 +241,8 @@ ROBOT_POSSIBLE_INIT_ACTIONS = {
 	5: 1,
 }
 
-from aux import *
-ROBOT_ACTION_DURATIONS = get_estimations_action_time_human()
+#from aux import *
+#ROBOT_ACTION_DURATIONS = get_estimations_action_time_human()
 
 
 

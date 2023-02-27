@@ -96,7 +96,7 @@ env = gym.make("gym_basic:basic-v0", display=args.display, disable_env_checker=T
 if env.test:
     NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/test/*"))
 else:
-    NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/train/*"))
+    NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/train/fold1/*"))
 
 env.reset() #Set initial state
 
@@ -426,7 +426,7 @@ video_max_times = []
 video_min_times = []
 
 
-root = "./video_annotations/Real_data/train/*" #!
+root = "./video_annotations/Real_data/train/fold1/*" #!
 videos = glob.glob(root)  
 
 

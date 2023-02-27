@@ -148,11 +148,11 @@ env = gym.make("gym_basic:basic-v0", display=args.display, test=not args.train, 
 if env.test: 
 	NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/fold1/test/*")) #Run the test only once for every video in the testset
 	print("Test set")
-	root = './video_annotations/Real_data/test/*'
+	root = './video_annotations/Real_data/fold1/test/*'
 else:
 	NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/fold1/train/*"))
 	print("Train set")
-	root = './video_annotations/Real_data/train/*'
+	root = './video_annotations/Real_data/fold1/train/*'
 	
 video_max_times = []
 video_min_times = []
@@ -448,16 +448,16 @@ else: fig.savefig(save_path+'/00_TRAIN_ACTIONS.jpg')
 # ------------------- ACTIONS ------ PIE CHART
 # (ONLY IN THE LAST EPOCH)
 
-stci = np.sum(total_CA_intime) #short term correct intime
-stcl = np.sum(total_CA_late) #short term correct late
-ltci = np.sum(total_UAC_intime) #long term correct intime
-ltcl = np.sum(total_UAC_late) #long term correct late
-ci = np.sum(total_CI) #correct inactions
-ii = np.sum(total_II) #incorrect inactions
-ui = np.sum(total_UAI_intime) #unnec intime
-ul = np.sum(total_UAI_late) #unnec late
-iai = np.sum(total_IA_intime) #incorrect intime
-ial = np.sum(total_IA_late) #incorrect late
+stci = np.sum(total_CA_intime) +1 #short term correct intime
+stcl = np.sum(total_CA_late) +1 #short term correct late
+ltci = np.sum(total_UAC_intime) +1 #long term correct intime
+ltcl = np.sum(total_UAC_late) +1 #long term correct late
+ci = np.sum(total_CI) +1 #correct inactions
+ii = np.sum(total_II) +1 #incorrect inactions
+ui = np.sum(total_UAI_intime) +1 #unnec intime
+ul = np.sum(total_UAI_late) +1 #unnec late
+iai = np.sum(total_IA_intime) +1 #incorrect intime
+ial = np.sum(total_IA_late) +1 #incorrect late
 
 labels1 = 'Short-term in time', 'Short-term late', 'Long-term in time', 'Long-term late', 'Unnecessary in time', 'Unnecessary late', 'Incorrect in time', 'Incorrect late'
 sizes1 = [stci, stcl, ltci, ltcl, ui, ul, iai, ial]

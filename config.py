@@ -4,7 +4,7 @@
 
 REPLAY_MEMORY = 2048 #Size of replay memory (deque object)
 
-NUM_EPOCH = 500
+NUM_EPOCH = 150
 NUM_EPISODES = 63 #"Number of training epochs"
 BATCH_SIZE = 256
 GAMMA = 0.0 #Discount rate for future rewards
@@ -12,10 +12,13 @@ EPS_START = 0.99 #Initial exporation rate
 EPS_END = 0.01 #Final exploration rate
 EPS_DECAY = NUM_EPOCH #Exploration rate decay factor
 TARGET_UPDATE = 10 #Episodes between target network update (policy net parameters -> target net)
-LR = 1e-4 #Learning rate
+LR = 1e-3 #Learning rate
 POSITIVE_REWARD = 0
 NO_ACTION_PROBABILITY = 80
-FACTOR_ENERGY_PENALTY = 0.1
+FACTOR_ENERGY_PENALTY = 1
+
+#0000
+ERROR_PROB = 0.0
 
 ROOT = './Checkpoints/'
 EXPERIMENT_NAME = "DQN"
@@ -196,9 +199,17 @@ ROBOT_ACTIONS_MEANINGS = {
 }
 
 
+ROBOT_AVERAGE_DURATIONS = {
+ 	0: 174,  # bring butter
+ 	1: 198,  # bring jam
+ 	2: 186,  # bring milk
+ 	3: 234,  # bring nutella
+ 	4: 270,  # bring tomato sauce
+ 	5: 0,    # do nothing
 
+ }
 
-
+"""
 # VERSION 1) AVERAGE OF HUMAN ACTION DURATIONS
 ROBOT_ACTION_DURATIONS = {
  	0: 174,  # bring butter
@@ -209,8 +220,8 @@ ROBOT_ACTION_DURATIONS = {
  	5: 0,    # do nothing
 
  }
+"""
 
-"""  
 # VERSION 2) 0.5*HUMAN ---> FAST ROBOT
 ROBOT_ACTION_DURATIONS = {
 	0: 87,  # bring butter
@@ -221,6 +232,9 @@ ROBOT_ACTION_DURATIONS = {
 	5: 0    # do nothing
 
 }
+
+
+"""
 # VERSION 3) 2*HUMAN ---> SLOW (MORE REALISTIC) ROBOT
 ROBOT_ACTION_DURATIONS = {
 	0: 348,  # bring butter
@@ -231,7 +245,6 @@ ROBOT_ACTION_DURATIONS = {
 	5: 0   # do nothing
 }
 """
-
 ROBOT_POSSIBLE_INIT_ACTIONS = {
 	0: 1,
 	1: 1,

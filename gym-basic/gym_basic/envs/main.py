@@ -163,7 +163,7 @@ class BasicEnv(gym.Env):
    
     def energy_robot_reward (self, action):
          
-        self.reward_energy = -ROBOT_ACTION_DURATIONS[action]*cfg.FACTOR_ENERGY_PENALTY #ENERGY PENALTY
+        self.reward_energy = -cfg.ROBOT_AVERAGE_DURATIONS[action]*cfg.FACTOR_ENERGY_PENALTY #ENERGY PENALTY
     
     def get_possibility_objects_in_table (self):
         global annotations
@@ -502,6 +502,8 @@ class BasicEnv(gym.Env):
             if update_type == "action":
                  
                 frame = int(annotations['frame_end'][action_idx])
+                # print("FRame in update: ", frame)
+                # pdb.set_trace()
                 if action_idx + 1 <= length:
                     action_idx = action_idx + 1
                 inaction = []
@@ -528,8 +530,15 @@ class BasicEnv(gym.Env):
         # print('despues: ', frame)
     def time_course (self, action):
         global frame, action_idx, inaction
-               
-        fr_execution = cfg.ROBOT_ACTION_DURATIONS[int(action)] + frame
+        
+        sample = random.random() #0000
+        
+        if sample < cfg.ERROR_PROB:
+            fr_execution = cfg.ROBOT_ACTION_DURATIONS[int(action)] + frame + cfg.ROBOT_ACTION_DURATIONS[int(action)]/2
+        else:
+            fr_execution = cfg.ROBOT_ACTION_DURATIONS[int(action)] + frame
+        
+        
         fr_end = int(annotations['frame_end'][action_idx-1])
         fr_init_next = int(annotations['frame_init'][action_idx]) 
         
@@ -655,6 +664,7 @@ class BasicEnv(gym.Env):
                     threshold = fr_end 
                     self.flags['threshold'] = "first"
             else: 
+                
                 threshold = frame
                 # if len(inaction) > 0:
                     # if "action" not in inaction:
@@ -674,7 +684,17 @@ class BasicEnv(gym.Env):
 
         
         #print("IN EVALUATION\nFrame: ", frame)
-        if (self.flags['evaluation'] == 'Incorrect action' or self.flags['evaluation'] == "Incorrect inaction"):   
+        if self.flags['evaluation'] == 'Correct Inaction':
+            if frame == fr_execution: 
+                print("Frame: in ev: ", frame)
+                reward = 0
+                self.CI += 1
+                # pdb.set_trace()
+                self.update("action")    
+                self.flags['evaluation'] = 'Not evaluated'
+                self.flags['break'] = True
+                
+        elif (self.flags['evaluation'] == 'Incorrect action' or self.flags['evaluation'] == "Incorrect inaction"):   
             
             
             if frame == fr_execution: 
@@ -695,13 +715,25 @@ class BasicEnv(gym.Env):
 
                 if simple_reward == 5:
                     # print("EL OBJETO YA ESTA EN LA MESA")
-                    if frame == fr_end: 
-                        reward = 0
-                        self.update("action")
+                    # print("fr end (in evaluation): ", fr_end)
+                    # print("Self flags in evaluation: ", self.flags)
+                    self.flags['evaluation'] = 'Correct Inaction'
+                    if self.flags['threshold'] == '':
+                        new_threshold = fr_end
+                        
+                    print(self.flags)
+                    # pdb.set_trace()
+                    #pdb.set_trace()
+                    #if frame == fr_end: 
+                       # print("Frame: in ev: ", frame)
+                      #  reward = 0
+                     #   self.CI += 1
+                    #    self.update("action")
+                        
                 # se hace otra accion
                 elif simple_reward == -5:
                     
-                    # print("EL OBJETO YA ESTA EN LA MESA")
+                    # print("EL OBJETO YA ESTA EN LA MESA Y HACE OTRA COSA")
                     if fr_execution <= fr_end: 
                         
                         if frame == fr_execution:
@@ -720,11 +752,11 @@ class BasicEnv(gym.Env):
                                 
                                 #12345
                                 if recipe == 'c' or recipe == 'd':
-                                	if action == 2: self.UA_related += 1
-                                	else: self.UA_unrelated += 1
+                                    if action == 2: self.UA_related += 1
+                                    else: self.UA_unrelated += 1
                                 elif recipe == 't':
-                                	if action in [0, 1, 3, 4]: self.UA_related += 1
-                                	else: self.UA_unrelated += 1	
+                                    if action in [0, 1, 3, 4]: self.UA_related += 1
+                                    else: self.UA_unrelated += 1    
                                 
                             self.update("action")
                     else: 
@@ -884,11 +916,11 @@ class BasicEnv(gym.Env):
                                             
                                         #12345
                                             if recipe == 'c' or recipe == 'd':
-                                            	if action == 2: self.UA_related += 1
-                                            	else: self.UA_unrelated += 1
+                                                if action == 2: self.UA_related += 1
+                                                else: self.UA_unrelated += 1
                                             elif recipe == 't':
-                                            	if action in [0, 1, 3, 4]: self.UA_related += 1
-                                            	else: self.UA_unrelated += 1
+                                                if action in [0, 1, 3, 4]: self.UA_related += 1
+                                                else: self.UA_unrelated += 1
                                                 
                                             
                                             
@@ -917,11 +949,11 @@ class BasicEnv(gym.Env):
                                             
                                             #12345
                                             if recipe == 'c' or recipe == 'd':
-                                            	if action == 2: self.UA_related += 1
-                                            	else: self.UA_unrelated += 1
+                                                if action == 2: self.UA_related += 1
+                                                else: self.UA_unrelated += 1
                                             elif recipe == 't':
-                                            	if action in [0, 1, 3, 4]: self.UA_related += 1
-                                            	else: self.UA_unrelated += 1
+                                                if action in [0, 1, 3, 4]: self.UA_related += 1
+                                                else: self.UA_unrelated += 1
                                             
                                             
                                         if  self.flags['threshold'] == 'next action init'   : 
@@ -955,8 +987,9 @@ class BasicEnv(gym.Env):
                                     self.flags['evaluation'] = 'Incorrect inaction'
                                     # pdb.set_trace()
                                     # print("Action idx: ", action_idx)
+                                    # print(self.objects_in_table)
                                     # print("*************** INCORRECT INACTION ***************")
-                                    # print(self.flags)
+                                    # # print(self.flags)
                                     # print('reward: ',reward)
                                     # pdb.set_trace()
                                 frame_post.append(frame)
@@ -1021,8 +1054,8 @@ class BasicEnv(gym.Env):
             oit_prev = memory_objects_in_table[0]
             oit = memory_objects_in_table[0]
         else:
-            oit_prev = memory_objects_in_table[variations_in_table-2]
-            oit = memory_objects_in_table[variations_in_table-1]
+            oit_prev = memory_objects_in_table[variations_in_table-1]
+            oit = memory_objects_in_table[variations_in_table]
             
         objects_prev_print = []
         for key,value in OBJECTS_MEANINGS.items():
@@ -1111,7 +1144,7 @@ class BasicEnv(gym.Env):
         self.flags['evaluation'] = 'Not evaluated' 
         self.flags['threshold'] = " "
 
-        len_prev = 2
+        len_prev = 1
         
         min_time = 0 #Optimal time for recipe
         max_time = 0 #Human time withour HRI
@@ -1119,9 +1152,19 @@ class BasicEnv(gym.Env):
         
         threshold, fr_execution, fr_end = self.time_course(action)
         
+        
+        #print("\nFlag decision: ", self.flags['decision'])
+        """
+        if self.flags['decision']:
+            print("\nFrame. ", frame)
+            print("Threshold: ", threshold)
+            print("Fr execution: ", fr_execution)
+            print("Fr end: ", fr_end)
+        """
+        
         # if self.flags['decision'] == True:
-        #     print('\nFrame prev: ', frame)
-        #     print("Action: ", ROBOT_ACTIONS_MEANINGS[action])
+        # #     print('\nFrame prev: ', frame)
+        #      print("Action: ", ROBOT_ACTIONS_MEANINGS[action])
         frame_prev = frame 
        
        
@@ -1154,8 +1197,9 @@ class BasicEnv(gym.Env):
             # print("Time execution: ", self.time_execution)
             self.save_history()
   
-        else:
-                
+        else:               
+
+
             while frame <= threshold:
                 # print(frame)
                 # print(ATOMIC_ACTIONS_MEANINGS[undo_one_hot(self.state[0:33])] )
@@ -1183,10 +1227,12 @@ class BasicEnv(gym.Env):
                     if new_threshold != 0: 
                         threshold = new_threshold
                         fr_execution = new_threshold
-                        action = correct_action
-                        self.update_objects_in_table(action)
-                        memory_objects_in_table.append(list(self.objects_in_table.values()))
-                        len_prev = 3
+                        # pdb.set_trace()
+                        if self.flags['evaluation'] != 'Correct Inaction': 
+                            action = correct_action
+                            self.update_objects_in_table(action)
+                            memory_objects_in_table.append(list(self.objects_in_table.values()))
+                            len_prev = 2
                         
                     self.robot_state = ROBOT_ACTIONS_MEANINGS[action]  
                     
@@ -1248,14 +1294,16 @@ class BasicEnv(gym.Env):
         #     print(frame)
         #     pdb.set_trace()
              
-        # if optim:
-        #     self.prints_terminal(action, frame_prev, frame_post, reward)
-        #     print("Frame post: ",frame)
-        #     # self.prints_debug(action)
+        if optim:
+            self.prints_terminal(action, frame_prev, frame_post, reward)
+            print("Frame post: ",frame)
+            #self.prints_debug(action)
         #     print(frame)
-        #     pdb.set_trace()
+            #print(self.objects_in_table)
+            #pdb.set_trace()
             
-        # if done: 
+        if done: 
+            print("Frame post: ",frame)
         #     print('time executiom: ',self.time_execution)
         #     total_minimum_time_execution,_ = self.get_minimum_execution_times()
         #     print('minimun time: ',total_minimum_time_execution)
@@ -1438,7 +1486,7 @@ class BasicEnv(gym.Env):
         if state == []:
             state = undo_one_hot(self.state[0:33]) #Next action prediction
                             
-        object_before_action = memory_objects_in_table[len(memory_objects_in_table)-2]
+        object_before_action = memory_objects_in_table[len(memory_objects_in_table)-1]
         reward = 0
         positive_reward = POSITIVE_REWARD
         
@@ -1526,11 +1574,12 @@ class BasicEnv(gym.Env):
             else: reward = -1    
         
         elif state == 12: #'extract butter fridge'
+            # pdb.set_trace()
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'butter'][0]
             if action == 0: #'bring butter'
                 reward = positive_reward
-                
+                #pdb.set_trace()
             elif object_before_action[key] == 1:
                 # pdb.set_trace()
                 self.flags["action robot"] = False

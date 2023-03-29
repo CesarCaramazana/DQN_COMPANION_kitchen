@@ -90,7 +90,7 @@ class BasicEnv(gym.Env):
         self.flags = {'freeze state': False, 'decision': False, 'threshold': " ",'evaluation': "Not evaluated", 'action robot': False,'break':False,'pdb': False}
         
         self.person_state = "other manipulation"
-        self.robot_state = "Predicting..."
+        self.robot_state = "idle"
         
         self.reward_energy = 0
         self.reward_time = 0
@@ -108,6 +108,8 @@ class BasicEnv(gym.Env):
             root_realData = "./video_annotations/Real_data/fold1/test/*" #!
             videos_realData = glob.glob(root_realData)   
             
+            print("Videos test\n", videos_realData)
+            
             #random.shuffle(videos_realData)
             
             total_videos = len(videos_realData)
@@ -118,6 +120,8 @@ class BasicEnv(gym.Env):
 
             
             annotations = np.load(path_labels_pkl, allow_pickle=True)
+            
+            print(annotations)
 
         
         self.CA_intime = 0
@@ -144,6 +148,10 @@ class BasicEnv(gym.Env):
         self.rwd_history = []
         self.rwd_time_h = []
         self.rwd_energy_h = []
+        
+        #0000
+        self.anticipation = []
+        self.duration_action = 0
         
     def get_frame(self):
         global frame
@@ -534,9 +542,18 @@ class BasicEnv(gym.Env):
         sample = random.random() #0000
         
         if sample < cfg.ERROR_PROB:
-            fr_execution = cfg.ROBOT_ACTION_DURATIONS[int(action)] + frame + cfg.ROBOT_ACTION_DURATIONS[int(action)]/2
+            #fr_execution = cfg.ROBOT_ACTION_DURATIONS[int(action)] + frame + cfg.ROBOT_ACTION_DURATIONS[int(action)]/2
+            #self.duration_action = cfg.ROBOT_ACTION_DURATIONS[int(action)] + cfg.ROBOT_ACTION_DURATIONS[int(action)]/2
+            
+            self.duration_action = int(random.gauss(1.5*cfg.ROBOT_ACTION_DURATIONS[int(action)], 0.2*cfg.ROBOT_ACTION_DURATIONS[int(action)]))
+            fr_execution = self.duration_action + frame
+            
         else:
-            fr_execution = cfg.ROBOT_ACTION_DURATIONS[int(action)] + frame
+            #fr_execution = cfg.ROBOT_ACTION_DURATIONS[int(action)] + frame
+            
+            self.duration_action = int(random.gauss(cfg.ROBOT_ACTION_DURATIONS[int(action)], 0.2*cfg.ROBOT_ACTION_DURATIONS[int(action)]))
+            fr_execution = self.duration_action + frame
+            
         
         
         fr_end = int(annotations['frame_end'][action_idx-1])
@@ -686,7 +703,7 @@ class BasicEnv(gym.Env):
         #print("IN EVALUATION\nFrame: ", frame)
         if self.flags['evaluation'] == 'Correct Inaction':
             if frame == fr_execution: 
-                print("Frame: in ev: ", frame)
+                #print("Frame: in ev: ", frame)
                 reward = 0
                 self.CI += 1
                 # pdb.set_trace()
@@ -721,7 +738,7 @@ class BasicEnv(gym.Env):
                     if self.flags['threshold'] == '':
                         new_threshold = fr_end
                         
-                    print(self.flags)
+                    #print(self.flags)
                     # pdb.set_trace()
                     #pdb.set_trace()
                     #if frame == fr_end: 
@@ -1152,6 +1169,10 @@ class BasicEnv(gym.Env):
         
         threshold, fr_execution, fr_end = self.time_course(action)
         
+        #duration_action = cfg.ROBOT_ACTION_DURATIONS[action]
+        duration_action = self.duration_action
+        frames_waiting = 0
+
         
         #print("\nFlag decision: ", self.flags['decision'])
         """
@@ -1182,7 +1203,8 @@ class BasicEnv(gym.Env):
                
                 if annotations['frame_init'][action_idx] <= frame <= annotations['frame_end'][action_idx]:
                     self.person_state = ATOMIC_ACTIONS_MEANINGS[annotations['label'][action_idx]]
-                self.robot_state = "Predicting..."
+                #self.robot_state = "Predicting..."
+                self.robot_state = "idle"
                 
                 self.transition() 
                  
@@ -1208,7 +1230,8 @@ class BasicEnv(gym.Env):
                 if self.flags['decision'] == False:   
                     # se transiciona de estado pero no se hace ninguna acción 
                     self.flags['freeze state'] = False
-                    self.robot_state = "Predicting..."
+                    #self.robot_state = "Predicting..."
+                    self.robot_state = "idle"
                     
                     if annotations['frame_init'][action_idx-1] <= frame <= annotations['frame_end'][action_idx-1]:
                         self.person_state = ATOMIC_ACTIONS_MEANINGS[annotations['label'][action_idx-1]]
@@ -1234,7 +1257,10 @@ class BasicEnv(gym.Env):
                             memory_objects_in_table.append(list(self.objects_in_table.values()))
                             len_prev = 2
                         
-                    self.robot_state = ROBOT_ACTIONS_MEANINGS[action]  
+                    if action != 5:
+                        self.robot_state = ROBOT_ACTIONS_MEANINGS[action]  
+                    else: 
+                        self.robot_state = "idle"
                     
                     if fr_execution <= fr_end: 
                         if annotations['frame_init'][action_idx-1] <= frame <= annotations['frame_end'][action_idx-1]:
@@ -1243,6 +1269,8 @@ class BasicEnv(gym.Env):
                             self.person_state = "other manipulation"
                         if frame > fr_execution: 
                             self.robot_state = "Waiting for evaluation..."
+                            #self.robot_state = "idle"
+                            frames_waiting += 1
                     elif fr_execution > fr_end: 
                         if frame > fr_end: 
                             self.person_state = "Waiting for robot action..."
@@ -1260,7 +1288,8 @@ class BasicEnv(gym.Env):
                 self.rwd_time_h.append([self.reward_time])
                 self.rwd_energy_h.append([self.reward_energy])
                 
-                #print("In STEP\nFrame: ", frame, "\nHuman: ", self.person_state, " |  Robot: ", self.robot_state)
+                print("\nIn STEP\nFrame: ", frame, "\nHuman: ", self.person_state, " |  Robot: ", self.robot_state)
+                print("Frame_execution: ", fr_execution, " | Frame end: ", fr_end)
                 
 
                 #print("Frame: ", frame, "Human: ", self.person_state, " | Robot: ", self.robot_state)
@@ -1295,15 +1324,26 @@ class BasicEnv(gym.Env):
         #     pdb.set_trace()
              
         if optim:
-            self.prints_terminal(action, frame_prev, frame_post, reward)
-            print("Frame post: ",frame)
+            #print("\nTime rwd: ", -self.reward_time)
+            #print("duration: ", duration_action)
+            
+            if duration_action > 0:
+                #print("Duration: ", duration_action)
+                #print("Frames waiting: ", frames_waiting)
+                #print("Reward: ", self.reward_time)
+                #print("Flag: ", self.flags["action robot"])
+                
+                if self.flags["action robot"] and (abs(self.reward_time) < duration_action): self.anticipation.append(duration_action + frames_waiting + self.reward_time)
+                #print(self.anticipation)
+            #self.prints_terminal(action, frame_prev, frame_post, reward)
+            #print("Frame post: ",frame)
             #self.prints_debug(action)
         #     print(frame)
             #print(self.objects_in_table)
             #pdb.set_trace()
             
-        if done: 
-            print("Frame post: ",frame)
+        #if done: 
+            #print("Frame post: ",frame)
         #     print('time executiom: ',self.time_execution)
         #     total_minimum_time_execution,_ = self.get_minimum_execution_times()
         #     print('minimun time: ',total_minimum_time_execution)
@@ -1462,6 +1502,10 @@ class BasicEnv(gym.Env):
         self.rwd_history = []
         self.rwd_time_h = []
         self.rwd_energy_h = []
+        
+        #0000
+        self.anticipation = []
+        self.duration_action = 0
         
         self.objects_in_table = OBJECTS_INIT_STATE.copy()
         memory_objects_in_table.append(list(self.objects_in_table.values()))

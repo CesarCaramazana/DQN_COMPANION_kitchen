@@ -663,7 +663,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             
             if i_episode % TARGET_UPDATE == 0: #Copy the Policy Network parameters into Target Network
                 target_net.load_state_dict(policy_net.state_dict())
-                scheduler.step()
+                #scheduler.step()
                 
 
                             

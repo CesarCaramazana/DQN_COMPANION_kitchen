@@ -209,7 +209,7 @@ ROBOT_AVERAGE_DURATIONS = {
 
  }
 
-"""
+
 # VERSION 1) AVERAGE OF HUMAN ACTION DURATIONS
 ROBOT_ACTION_DURATIONS = {
  	0: 174,  # bring butter
@@ -220,8 +220,8 @@ ROBOT_ACTION_DURATIONS = {
  	5: 0,    # do nothing
 
  }
-"""
 
+"""
 # VERSION 2) 0.5*HUMAN ---> FAST ROBOT
 ROBOT_ACTION_DURATIONS = {
 	0: 87,  # bring butter
@@ -234,7 +234,7 @@ ROBOT_ACTION_DURATIONS = {
 }
 
 
-"""
+
 # VERSION 3) 2*HUMAN ---> SLOW (MORE REALISTIC) ROBOT
 ROBOT_ACTION_DURATIONS = {
 	0: 348,  # bring butter

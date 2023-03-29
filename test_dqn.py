@@ -104,6 +104,10 @@ def select_action(state):
     	out = policy_net(state)
     
     best_action = action = post_processed_possible_actions(out,index_posible_actions)
+    
+
+    
+    #best_action = torch.tensor([[5]], device=device, dtype=torch.long) #Para encontrar el tiempo de HRI de un robot pasivo
 
     return best_action
 
@@ -541,11 +545,12 @@ else: fig2.savefig(save_path+'/00_TRAIN_REWARD.jpg')
 
 
 
+
 #--------------- INTERACTION ---------------------
 fig3 = plt.figure(figsize=(15,6))
 plt.title("Interaction time")
 #plt.plot(epoch_total_time_video, 'k',label='Video')
-plt.plot(epoch_total_time_interaction, 'c--',label='Interaction')
+plt.plot(epoch_test, epoch_total_time_interaction, 'c--',label='Interaction')
 plt.axhline(y=maximum_time, color='k', label='Video')
 plt.axhline(y=minimum_time, color='r', label='Minimum')
 plt.legend()

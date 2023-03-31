@@ -71,6 +71,7 @@ TARGET_UPDATE = args.target_update
 LR = args.lr
 POSITIVE_REWARD = cfg.POSITIVE_REWARD
 NO_ACTION_PROBABILITY = cfg.NO_ACTION_PROBABILITY
+ROBOT_CONT_ACTIONS_MEANINGS = cfg.ROBOT_CONT_ACTIONS_MEANINGS
 
 ROOT = args.root
 
@@ -94,9 +95,9 @@ env = gym.make("gym_basic:basic-v0", display=args.display, disable_env_checker=T
 
 
 if env.test:
-    NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/test/*"))
+    NUM_EPISODES = len(glob.glob("./video_annotations/5folds/"+cfg.TEST_FOLD+"/test/*"))
 else:
-    NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/train/*"))
+    NUM_EPISODES = len(glob.glob("./video_annotations/5folds/"+cfg.TEST_FOLD+"/train/*"))
 
 env.reset() #Set initial state
 
@@ -407,6 +408,12 @@ total_UAI_late_epoch_val = []
 total_CI_epoch_val = []
 total_II_epoch_val = []
 
+#12345
+total_UA_related_epoch_train = []
+total_UA_unrelated_epoch_train = []
+total_UA_related_epoch_val = []
+total_UA_unrelated_epoch_val = []
+
 prev_decision_rate = 1
 steps_done = 0 
 
@@ -420,7 +427,7 @@ video_max_times = []
 video_min_times = []
 
 
-root = "./video_annotations/Real_data/train/*" #!
+root = "./video_annotations/5folds/"+cfg.TEST_FOLD+"/train/*" #!
 videos = glob.glob(root)  
 
 
@@ -440,8 +447,8 @@ maximum_time = sum(video_max_times)
 
 
 
-
-
+cont_actions_val = ROBOT_CONT_ACTIONS_MEANINGS.copy()
+cont_actions_train = ROBOT_CONT_ACTIONS_MEANINGS.copy()
 # minimum_time = 0
 
 for i_epoch in range (args.load_episode,NUM_EPOCH):
@@ -485,6 +492,11 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
         total_CI = []
         total_II = []
         
+        #123456
+        total_UA_related = []
+        total_UA_unrelated = []
+        
+        
         #total_minimum_time_execution_epoch = []
         #total_maximum_time_execution_epoch = []
         total_interaction_time_epoch = []
@@ -527,6 +539,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                     annotations = env.get_annotations()
                     decision_cont = 0
                     
+                    
                     if to_optim:
                         decision_state = state
                         to_optim = False
@@ -547,6 +560,11 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                 #     minimum_time += total_minimum_time_execution
                 if optim: #Only train if we have taken an action (f==30)                  
                     
+                    if phase == 'train':
+                        cont_actions_train[action] += 1
+                    else:
+                        cont_actions_val[action] += 1
+                        
                     reward = torch.tensor([reward], device=device)
 
                     to_optim = True                    
@@ -635,6 +653,10 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                     #Interaction
                     total_interaction_time_epoch.append(hri_time)
                     
+                    #123456
+                    total_UA_related.append(env.UA_related)
+                    total_UA_unrelated.append(env.UA_unrelated)
+                    
                     #Baseline times
                     #total_minimum_time_execution_epoch.append(min_time) #Minimum possible time
                     #total_maximum_time_execution_epoch.append(max_time) #Human max time -> no HRI
@@ -648,7 +670,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             
             if i_episode % TARGET_UPDATE == 0: #Copy the Policy Network parameters into Target Network
                 target_net.load_state_dict(policy_net.state_dict())
-                #scheduler.step()
+                scheduler.step()
                 
 
                             
@@ -687,7 +709,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
         
             
         if phase == 'train':
-            if i_epoch % 5 == 0:
+            if i_epoch % 1 == 0:
                 # print(PRETRAINED)
                
                 if PRETRAINED == True:
@@ -718,8 +740,10 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                     z_name = '_WITHOUT_Z_'
                 else: 
                     z_name = ''
+                    
+               
 
-                path = os.path.join(ROOT, EXPERIMENT_NAME + '_' + dt_string  +'_PENALTY_ENERGY_FACTOR_'+str(cfg.FACTOR_ENERGY_PENALTY)+z_name+batch_name+'_EPS_START_'+str(cfg.EPS_START) + decision_rate_name +weight_prob +'_LR_'+str(LR)+ pre + freeze + '_GAMMA_'+str(GAMMA))
+                path = os.path.join(ROOT, EXPERIMENT_NAME + '_' + dt_string  +'_'+cfg.TEST_FOLD+'_PENALTY_ENERGY_FACTOR_'+str(cfg.FACTOR_ENERGY_PENALTY)+z_name+batch_name+'_EPS_START_'+str(cfg.EPS_START) + decision_rate_name +weight_prob +'_LR_'+str(LR)+ pre + freeze + '_GAMMA_'+str(GAMMA))
                                   
                 
                 # path = os.path.join(ROOT, EXPERIMENT_NAME)
@@ -761,22 +785,37 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_UAI_late_epoch_train.append(sum(total_UAI_late))
             total_CI_epoch_train.append(sum(total_CI))
             total_II_epoch_train.append(sum(total_II))
-            total_results_train = [total_CA_intime_epoch_train,total_CA_late_epoch_train,total_IA_intime_epoch_train,total_IA_late_epoch_train,total_UAC_intime_epoch_train,total_UAC_late_epoch_train,total_UAI_intime_epoch_train,total_UAI_late_epoch_train,total_CI_epoch_train,total_II_epoch_train]
-           
+            
+            #123456
+            total_UA_related_epoch_train.append(sum(total_UA_related))
+            total_UA_unrelated_epoch_train.append(sum(total_UA_unrelated))
+            
+            #123456 -> Add (un)related
+            total_results_train = [total_CA_intime_epoch_train,total_CA_late_epoch_train,total_IA_intime_epoch_train,
+            total_IA_late_epoch_train,
+            total_UAC_intime_epoch_train,
+            total_UAC_late_epoch_train,
+            total_UAI_intime_epoch_train,
+            total_UAI_late_epoch_train,
+            total_CI_epoch_train,
+            total_II_epoch_train,
+            total_UA_related_epoch_train, #123456
+            total_UA_unrelated_epoch_train] #123456
             
 
  
             #PLOT TRAIN
-            if i_epoch % 50 == 0: plot_each_epoch(i_epoch, phase,save_path,
-            minimum_time,
-            total_results_train,
-            total_loss_epoch_train,
-            total_reward_epoch_train,
-            maximum_time,
-            total_time_execution_epoch_train,
-            total_reward_energy_epoch_train,
-            total_reward_time_epoch_train,
-            ex_rate)
+            # if i_epoch % 50 == 0: 
+            # plot_each_epoch(i_epoch, phase,save_path,
+            # minimum_time,
+            # total_results_train,
+            # total_loss_epoch_train,
+            # total_reward_epoch_train,
+            # maximum_time,
+            # total_time_execution_epoch_train,
+            # total_reward_energy_epoch_train,
+            # total_reward_time_epoch_train,
+            # ex_rate)
             
             
             
@@ -854,42 +893,60 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_UAI_late_epoch_val.append(sum(total_UAI_late))
             total_CI_epoch_val.append(sum(total_CI))
             total_II_epoch_val.append(sum(total_II))
-            total_results = [total_CA_intime_epoch_val,total_CA_late_epoch_val,total_IA_intime_epoch_val,total_IA_late_epoch_val,total_UAC_intime_epoch_val,total_UAC_late_epoch_val,total_UAI_intime_epoch_val,total_UAI_late_epoch_val,total_CI_epoch_val,total_II_epoch_val]
             
+            
+            #123456
+            total_UA_related_epoch_val.append(sum(total_UA_related))
+            total_UA_unrelated_epoch_val.append(sum(total_UA_unrelated))
+            # -----
+            
+            #123456 -> Add to validation total results
+            total_results = [total_CA_intime_epoch_val,total_CA_late_epoch_val,total_IA_intime_epoch_val,
+            total_IA_late_epoch_val,
+            total_UAC_intime_epoch_val,
+            total_UAC_late_epoch_val,
+            total_UAI_intime_epoch_val,
+            total_UAI_late_epoch_val,
+            total_CI_epoch_val,
+            total_II_epoch_val,
+            total_UA_related_epoch_val, #123456
+            total_UA_unrelated_epoch_val]
             #PLOT VALIDATION
             
             
-            if i_epoch % 50 == 0: plot_each_epoch(i_epoch, phase,save_path,
-            minimum_time, 
-            total_results,
-            total_loss_epoch_val,
-            total_reward_epoch_val,
-            maximum_time,
-            total_time_execution_epoch_val,
-            total_reward_energy_epoch_val,
-            total_reward_time_epoch_val)
+            # if i_epoch % 20 == 0: 
+            # plot_each_epoch(i_epoch, phase,save_path,
+            # minimum_time, 
+            # total_results,
+            # total_loss_epoch_val,
+            # total_reward_epoch_val,
+            # maximum_time,
+            # total_time_execution_epoch_val,
+            # total_reward_energy_epoch_val,
+            # total_reward_time_epoch_val)
             
             
             
             #---------------------------------------------------------------------------------------
             
             #PLOT TOGETHER
-            if i_epoch % 5 == 0: plot_each_epoch_together(i_epoch,save_path,
-            minimum_time,
-            total_results_train,
-            total_loss_epoch_train,
-            total_reward_epoch_train,
-            maximum_time,
-            total_time_execution_epoch_train,
-            total_reward_energy_epoch_train,
-            total_reward_time_epoch_train,
-            ex_rate,
-            total_results,
-            total_loss_epoch_val,
-            total_reward_epoch_val,
-            total_time_execution_epoch_val,
-            total_reward_energy_epoch_val,
-            total_reward_time_epoch_val)
+            # if i_epoch % 5 == 0: 
+            # plot_each_epoch_together(i_epoch,save_path,
+            # minimum_time,
+            # total_results_train,
+            # total_loss_epoch_train,
+            # total_reward_epoch_train,
+            # maximum_time,
+            # total_time_execution_epoch_train,
+            # total_reward_energy_epoch_train,
+            # total_reward_time_epoch_train,
+            # ex_rate,
+            # total_results,
+            # total_loss_epoch_val,
+            # total_reward_epoch_val,
+            # total_time_execution_epoch_val,
+            # total_reward_energy_epoch_val,
+            # total_reward_time_epoch_val)
             
             # if i_epoch == NUM_EPOCH-1:
             data_val = {

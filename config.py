@@ -2,6 +2,8 @@
 #---------------------------------------------------------------------------------
 
 
+TEST_FOLD = "fold1"
+
 REPLAY_MEMORY = 2048 #Size of replay memory (deque object)
 
 NUM_EPOCH = 150
@@ -27,8 +29,12 @@ SAVE_EPISODE = 100
 LOAD_MODEL = False
 LOAD_EPISODE = 0
 
-DECISION_RATE = 30 
+DECISION_RATE = 30
 Z_hidden_state = True
+
+
+
+
 #ENVIRONMENT PARAMETERS ------
 #---------------------------------------------------------------------------------
 

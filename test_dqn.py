@@ -150,13 +150,13 @@ env = gym.make("gym_basic:basic-v0", display=args.display, test=not args.train, 
 
 
 if env.test: 
-	NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/fold1/test/*")) #Run the test only once for every video in the testset
-	print("Test set")
-	root = './video_annotations/Real_data/fold1/test/*'
+    NUM_EPISODES = len(glob.glob("./video_annotations/5folds/"+cfg.TEST_FOLD+"/test/*")) #Run the test only once for every video in the testset
+    print("Test set")
+    root = './video_annotations/5folds/'+cfg.TEST_FOLD+'/test/*'
 else:
-	NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/fold1/train/*"))
-	print("Train set")
-	root = './video_annotations/Real_data/fold1/train/*'
+    NUM_EPISODES = len(glob.glob("./video_annotations/5folds/"+cfg.TEST_FOLD+"/train/*"))
+    print("Train set")
+    root = './video_annotations/5folds/'+cfg.TEST_FOLD+'/train/*'
 	
 video_max_times = []
 video_min_times = []

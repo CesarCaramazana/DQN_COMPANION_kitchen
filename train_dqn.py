@@ -94,9 +94,9 @@ env = gym.make("gym_basic:basic-v0", display=args.display, disable_env_checker=T
 
 
 if env.test:
-    NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/fold1/test/*"))
+    NUM_EPISODES = len(glob.glob("./video_annotations/5folds/"+cfg.TEST_FOLD+"/test/*"))
 else:
-    NUM_EPISODES = len(glob.glob("./video_annotations/Real_data/fold1/train/*"))
+    NUM_EPISODES = len(glob.glob("./video_annotations/5folds/"+cfg.TEST_FOLD+"/train/*"))
 
 env.reset() #Set initial state
 
@@ -426,8 +426,8 @@ video_max_times = []
 video_min_times = []
 
 
-root = "./video_annotations/Real_data/fold1/train/*" #!
-videos = glob.glob(root)  
+root = "./video_annotations/5folds/"+cfg.TEST_FOLD+"/train/*" #!
+videos = glob.glob(root)   
 
 
 #GET VIDEO TIME AND OPTIMAL TIME (MIN)
@@ -734,7 +734,8 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                 else: 
                     z_name = ''
 
-                path = os.path.join(ROOT, EXPERIMENT_NAME + '_' + dt_string  +'_PENALTY_ENERGY_FACTOR_'+str(cfg.FACTOR_ENERGY_PENALTY)+z_name+batch_name+'_EPS_START_'+str(cfg.EPS_START) + decision_rate_name +weight_prob +'_LR_'+str(LR)+ pre + freeze + '_GAMMA_'+str(GAMMA))
+                # path = os.path.join(ROOT, EXPERIMENT_NAME + '_' + dt_string  +'_PENALTY_ENERGY_FACTOR_'+str(cfg.FACTOR_ENERGY_PENALTY)+z_name+batch_name+'_EPS_START_'+str(cfg.EPS_START) + decision_rate_name +weight_prob +'_LR_'+str(LR)+ pre + freeze + '_GAMMA_'+str(GAMMA))
+                path = os.path.join(ROOT, EXPERIMENT_NAME + '_' + dt_string  +'_'+cfg.TEST_FOLD+'_PENALTY_ENERGY_FACTOR_'+str(cfg.FACTOR_ENERGY_PENALTY)+z_name+batch_name+'_EPS_START_'+str(cfg.EPS_START) + decision_rate_name +weight_prob +'_LR_'+str(LR)+ pre + freeze + '_GAMMA_'+str(GAMMA))
                                   
                 
                 # path = os.path.join(ROOT, EXPERIMENT_NAME)

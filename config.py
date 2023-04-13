@@ -6,10 +6,10 @@ TEST_FOLD = "fold1"
 
 REPLAY_MEMORY = 2048 #Size of replay memory (deque object)
 
-NUM_EPOCH = 150
+NUM_EPOCH = 250
 NUM_EPISODES = 63 #"Number of training epochs"
 BATCH_SIZE = 256
-GAMMA = 0.0 #Discount rate for future rewards
+GAMMA = 0.1 #Discount rate for future rewards
 EPS_START = 0.99 #Initial exporation rate
 EPS_END = 0.01 #Final exploration rate
 EPS_DECAY = NUM_EPOCH #Exploration rate decay factor
@@ -17,10 +17,7 @@ TARGET_UPDATE = 10 #Episodes between target network update (policy net parameter
 LR = 1e-3 #Learning rate
 POSITIVE_REWARD = 0
 NO_ACTION_PROBABILITY = 80
-FACTOR_ENERGY_PENALTY = 1
 
-#0000
-ERROR_PROB = 0.0
 
 ROOT = './Checkpoints/'
 EXPERIMENT_NAME = "DQN"
@@ -29,9 +26,21 @@ SAVE_EPISODE = 100
 LOAD_MODEL = False
 LOAD_EPISODE = 0
 
-DECISION_RATE = 30
 Z_hidden_state = True
 
+#--------------------------------------------
+
+#DECISION RATE [frames]
+DECISION_RATE = 30
+
+#ROBOT SPEED FACTOR
+BETA = 1
+
+#ENERGY PENALTY FACTOR
+FACTOR_ENERGY_PENALTY = 1
+
+#CLUMSINESS
+ERROR_PROB = 0.0
 
 
 
@@ -148,51 +157,7 @@ OBJECTS_INIT_STATE = {
 	'water': 1
     } 
 
-"""
-ROBOT_ACTIONS_MEANINGS = {	
-	0: 'bring bowl',
-	1: 'bring butter',
-	2: 'bring cereals',
-	3: 'bring coffee',
-	4: 'bring cup',
-	5: 'bring fork',
-	6: 'bring jam',
-	7: 'bring knife',
-	8: 'bring milk',
-	9: 'bring nesquik',
-	10: 'bring nutella',
-	11: 'bring olive oil',
-	12: 'bring plate',
-	13: 'bring sliced bread',
-	14: 'bring spoon',
-	15: 'bring sugar',
-	16: 'bring tomato sauce',
-	17: 'bring water',
-	18: 'do nothing',
-	19: 'put jam fridge',
-	20: 'put butter fridge',
-	21: 'put tomato sauce fridge',
-	22: 'put nutella fridge',
-	23: 'put milk fridge'
-}
-"""
 
-#Reduced action repertoire
-# ROBOT_ACTIONS_MEANINGS = {
-# 	0: 'bring butter',
-# 	1: 'bring jam',
-# 	2: 'bring milk',
-# 	3: 'bring nutella',
-# 	4: 'bring sliced bread',
-# 	5: 'bring tomato sauce',
-# 	6: 'do nothing',
-# 	7: 'put jam fridge',
-# 	8: 'put butter fridge',
-# 	9: 'put tomato sauce fridge',
-# 	10: 'put nutella fridge',
-# 	11: 'put milk fridge'
-
-# }
 
 ROBOT_ACTIONS_MEANINGS = {
 	0: 'bring butter',
@@ -216,41 +181,10 @@ ROBOT_AVERAGE_DURATIONS = {
  }
 
 
-# VERSION 1) AVERAGE OF HUMAN ACTION DURATIONS
-ROBOT_ACTION_DURATIONS = {
- 	0: 174,  # bring butter
- 	1: 198,  # bring jam
- 	2: 186,  # bring milk
- 	3: 234,  # bring nutella
- 	4: 270,  # bring tomato sauce
- 	5: 0,    # do nothing
-
- }
-
-"""
-# VERSION 2) 0.5*HUMAN ---> FAST ROBOT
-ROBOT_ACTION_DURATIONS = {
-	0: 87,  # bring butter
-	1: 99,  # bring jam
-	2: 93,  # bring milk
-	3: 117,  # bring nutella
-	4: 135,  # bring tomato sauce
-	5: 0    # do nothing
-
-}
+ROBOT_ACTION_DURATIONS = ROBOT_AVERAGE_DURATIONS
+ROBOT_ACTION_DURATIONS.update((x, y*BETA) for x, y in ROBOT_ACTION_DURATIONS.items())
 
 
-
-# VERSION 3) 2*HUMAN ---> SLOW (MORE REALISTIC) ROBOT
-ROBOT_ACTION_DURATIONS = {
-	0: 348,  # bring butter
-	1: 396,  # bring jam
-	2: 372,  # bring milk
-	3: 468,  # bring nutella
-	4: 540,  # bring tomato sauce
-	5: 0   # do nothing
-}
-"""
 ROBOT_POSSIBLE_INIT_ACTIONS = {
 	0: 1,
 	1: 1,

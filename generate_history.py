@@ -138,9 +138,12 @@ def create_graph(save_path, file_id):
     
     if not os.path.exists(full_path): os.mkdir(full_path)
     
-    savepath = full_path + str(file_id) +".png"
+    #savepath = full_path + str(file_id) +".png"
+    
     readpath = path + str(file_id) + ".npz" 
     history = np.load(readpath)
+    
+    savepath = full_path + str(history['video_title']) + "_NPZ" + str(file_id) +".png"
     
     copy_path = full_path + str(file_id) + ".npz"
     shutil.move(readpath, copy_path)

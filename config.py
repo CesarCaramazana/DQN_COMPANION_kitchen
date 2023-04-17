@@ -31,15 +31,15 @@ Z_hidden_state = True
 #--------------------------------------------
 
 #DECISION RATE [frames]
-DECISION_RATE = 30
+DECISION_RATE = 50
 
-#ROBOT SPEED FACTOR
+#ROBOT SPEED FACTOR: if BETA < 1, the robot becomes faster; if BETA > 1, the robot becomes slower. BETA = 1 is a robot that is as fast as the average person.
 BETA = 1
 
 #ENERGY PENALTY FACTOR
 FACTOR_ENERGY_PENALTY = 1
 
-#CLUMSINESS
+#CLUMSINESS: probability of extending the duration of an action by a 50%
 ERROR_PROB = 0.0
 
 
@@ -48,10 +48,6 @@ ERROR_PROB = 0.0
 #---------------------------------------------------------------------------------
 
 VERSION = 4 
-
-N_ATOMIC_ACTIONS = 33 #Number of total atomic actions. 33 = 31 actions + 1 'other manipulation' + 1 Terminal state
-N_OBJECTS = 23 #Number of objects. Input variables: "Active Object" and "VWM" (Visual Working Memory)
-ACTION_SPACE = 12 #Number of robot actions. Output variable
 
 INTERACTIVE_OBJECTS_ROBOT = ['butter','jam','milk','nutella','tomato sauce']
 
@@ -193,10 +189,6 @@ ROBOT_POSSIBLE_INIT_ACTIONS = {
 	4: 1,
 	5: 1,
 }
-
-#from aux import *
-#ROBOT_ACTION_DURATIONS = get_estimations_action_time_human()
-
 
 
 N_OBJECTS = len(OBJECTS_MEANINGS)

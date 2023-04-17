@@ -135,7 +135,7 @@ class BasicEnv(gym.Env):
 
         annotations = np.load(path_labels_pkl, allow_pickle=True)
         
-        # print(annotations)
+        print(annotations)
 
         
         self.CA_intime = 0
@@ -727,13 +727,16 @@ class BasicEnv(gym.Env):
                 # WE CAN INCREASE THE EVALUATION FRAME. How much?
                 # =============================================================================================
                 if increase_threshold:
+                    # pdb.set_trace()
+                    self.flags['freeze state'] = False #??? Do we freeze the state if the threshold is increased?
+                    
                     # 2) Until the beginning of the NEXT ACTION    - · - · - · - · - · - · - · - · - · - · - · - · - · -                 
                     if fr_execution <= fr_init_next: 
                         threshold = fr_init_next
                         fr_end = fr_init_next
-
                         #self.flags['threshold'] = 2 #"second"
                         self.flags['threshold'] = 'second'
+                        # self.flags['freeze state'] = False #????
                         
                     # 3) Until the end of the NEXT ACTION    - · - · - · - · - · - · - · - · - · - · - · - · - · - 
                     elif fr_init_next < fr_execution <= fr_end_next:
@@ -742,13 +745,15 @@ class BasicEnv(gym.Env):
                         
                         #self.flags['threshold'] = 3 #"next action"?
                         self.flags['threshold'] = 'next action'
-                        self.flags['freeze state'] = False #?
+                        # self.flags['freeze state'] = False #?
                     
                     # 4) Until the beginning of the FOLLOWING TO NEXT ACTION  - · - · - · - · - · - · - · - · - · - · - · - · - · - 
                     else:
                         threshold = fr_init_next_next
                         fr_end = fr_init_next_next #?                        
                         self.flags['threshold'] = 'next action init'
+                        # self.flags['freeze state'] = False #??????
+
                     
                     # elif fr_end_next < fr_execution <= fr_init_next_next:
                     #     threshold = fr_init_next_next
@@ -811,6 +816,8 @@ class BasicEnv(gym.Env):
         
         # print("\nAT THE END THE THRESHOLD IS SET AT: ", threshold)
         # print("Salgo de time course con threshold %5i y frame %5i " %(threshold, frame))
+        # print("salgo de time course con freeze state: ", self.flags['freeze state'])
+        
         # print("Which corresponds to case: ", self.flags['threshold'])
         # print("DECISION FLAG: ", self.flags['decision'])
         
@@ -972,7 +979,8 @@ class BasicEnv(gym.Env):
                         # =================== INCORRECT OR UNNECESSARY ACTIONS ==================================
                         # =======================================================================================
                         else: 
-                            self.flags['freeze state'] = True
+                            #pdb.set_trace()
+                            #self.flags['freeze state'] = True #??????????'
                             
                             # INCORRECT ACTION ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                             if self.flags["action robot"] == True: 
@@ -1360,7 +1368,7 @@ class BasicEnv(gym.Env):
                 if self.flags['decision'] == False:   
                     # se transiciona de estado pero no se hace ninguna acción 
                     self.flags['freeze state'] = False
-                    self.robot_state = "idle"                   
+                    self.robot_state = "idle"               
                     
                     if annotations['frame_init'][action_idx-1] <= frame < annotations['frame_end'][action_idx-1]:
                         self.person_state = ATOMIC_ACTIONS_MEANINGS[annotations['label'][action_idx-1]]
@@ -1429,7 +1437,6 @@ class BasicEnv(gym.Env):
                                 self.person_state = "other manipulation"
                                               
 
-                #print("Frame: ", frame, "Human: ", self.person_state, " | Robot: ", self.robot_state)
                 
                 if frame == threshold :
                     self.flags['freeze state']  = False

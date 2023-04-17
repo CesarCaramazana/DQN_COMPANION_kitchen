@@ -4,7 +4,7 @@ import math
 import os
 import shutil
 
-resolution = 20 #Subsampling factor
+resolution = 30 #Subsampling factor
 
 
 def generate_action_duration(history):
@@ -84,7 +84,7 @@ def generate_signal(history, rwd_format=False):
                 actions.append('other')
                 #actions.append("idle")
 
-            elif action[0] == 'Predicting...' or action[0] == 'do nothing' or action[0] == 'Waiting...':
+            elif action[0] == 'Predicting...' or action[0] == 'do nothing':
                 color_code = "6"
                 #actions.append('Predicting')
                 actions.append(action[0])
@@ -99,11 +99,11 @@ def generate_signal(history, rwd_format=False):
                 color_code = "9"
                 actions.append("Waiting")
             
-            # elif action[0] == 'Waiting for evaluation...':
-            #     color_code = "9"
-            #     #actions.append(action[0])
-            #     #actions.append('wait')
-            #     actions.append("idle")
+            elif action[0] == 'Waiting...':
+                color_code = "8"
+                actions.append(action[0])
+                #actions.append('wait')
+                #actions.append("idle")
 
             else: 
                 color_code = "3"

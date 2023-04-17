@@ -1,14 +1,13 @@
 #DQN PARAMETERS ------
 #---------------------------------------------------------------------------------
 
-
 TEST_FOLD = "fold1"
 
 REPLAY_MEMORY = 2048 #Size of replay memory (deque object)
 
 NUM_EPOCH = 250
 NUM_EPISODES = 63 #"Number of training epochs"
-BATCH_SIZE = 256
+BATCH_SIZE = 512
 GAMMA = 0.1 #Discount rate for future rewards
 EPS_START = 0.99 #Initial exporation rate
 EPS_END = 0.01 #Final exploration rate
@@ -40,7 +39,7 @@ BETA = 1
 FACTOR_ENERGY_PENALTY = 1
 
 #CLUMSINESS: probability of extending the duration of an action by a 50%
-ERROR_PROB = 0.0
+ERROR_PROB = 0.05
 
 
 
@@ -195,31 +194,4 @@ N_OBJECTS = len(OBJECTS_MEANINGS)
 ACTION_SPACE = len(ROBOT_ACTIONS_MEANINGS)
 N_ATOMIC_ACTIONS = len(ATOMIC_ACTIONS_MEANINGS)
 
-
-def print_setup(args):
-	"""
-	Prints a table with the arguments of the training script.
-	Input:
-		args: arguments during execution time. 
-	
-	"""
-	print("")
-	print(" Experiment ", args.experiment_name)
-	print("="*39)
-	print("  DQN parameters")
-	print("="*39)
-	print("| SIZE OF REPLAY MEMORY     | {0:<6g}".format(args.replay_memory), " |")
-	print("| INITIAL EXPLORATION RATE  | {0:<6g}".format(args.eps_start), " |")
-	print("| TERMINAL EXPLORATION RATE | {0:<6g}".format(args.eps_end), " |")
-	print("| GAMMA DISCOUNT FACTOR     | {0:<6g}".format(args.gamma), " |")
-	print("| FREQ. TARGET UPDATE       | {0:<6g}".format(args.target_update), " |")
-	print("="*39)
-	print("  Training parameters")
-	print("="*39)
-	print("| BATCH SIZE                | {0:<6g}".format(args.batch_size), " |")
-	print("| LEARNING RATE             | {0:<6g}".format(args.lr), " |")
-	print("| LOAD MODEL                | {0:<6g}".format(args.load_model), " |")
-	print("| LOAD EPISODE              | {0:<6g}".format(args.load_episode), " |")
-	
-	print("="*39)	
 

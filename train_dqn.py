@@ -19,7 +19,6 @@ import torch.nn as nn
 import torch.optim as optim
 
 from DQN import DQN, ReplayMemory, Transition, init_weights 
-from config import print_setup
 import config as cfg
 from aux import *
 import argparse
@@ -29,7 +28,6 @@ from datetime import datetime
 
 import warnings
 warnings.filterwarnings("ignore")
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--pretrained', action='store_true', default=False, help="(bool) Inizializate the model with a pretrained model.")
@@ -42,7 +40,7 @@ parser.add_argument('--batch_size', type=int, default=cfg.BATCH_SIZE, help="(int
 
 parser.add_argument('--lr', type=float, default=cfg.LR, help="(float) Learning rate. For example: 1e-3.")
 parser.add_argument('--replay_memory', type=int, default=cfg.REPLAY_MEMORY, help="(int) Size of the Experience Replay memory. For example: 1000.")
-parser.add_argument('--gamma', type=float, default=cfg.GAMMA, help="(float) Discount rate of future rewards. For example: 0.99.")
+parser.add_argument('--gamma', type=float, default=cfg.GAMMA, help="(float) Discount rate of future rewards. For example: 0.1.")
 parser.add_argument('--eps_start', type=float, default=cfg.EPS_START, help="(float) Initial exploration rate. For example: 0.99.")
 parser.add_argument('--eps_end', type=float, default=cfg.EPS_END, help="(float) Terminal exploration rate. For example: 0.05.")
 parser.add_argument('--eps_decay', type=int, default=cfg.EPS_DECAY, help="(int) Decay factor of the exploration rate. Episode where the epsilon has decay to 0.367 of the initial value. For example: num_episodes/2.")
@@ -87,8 +85,6 @@ total_reward = [] #List to save the total reward gathered each episode.
 ex_rate = [] #List to save the epsilon value after each episode.
 
 
-
-
 #Environment - Custom basic environment for kitchen recipes
 env = gym.make("gym_basic:basic-v0", display=args.display, disable_env_checker=True)
 
@@ -131,7 +127,6 @@ if PRETRAINED:
 
 target_net.eval()
 
-
 optimizer = optim.Adam(policy_net.parameters(), lr=LR) 
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size= 20, gamma= 0.99)
 
@@ -164,13 +159,19 @@ if LOAD_MODEL:
     target_net.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     LOAD_EPISODE = checkpoint['epoch']
-    # LOAD_EPISODE = checkpoint['episode']
     total_loss = checkpoint['loss']
     steps_done = checkpoint['steps']
     print("-"*30)
 
 
 target_net.load_state_dict(policy_net.state_dict())
+
+
+#To count the number of trainable parameters
+# def count_parameters(model):
+#     return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+# print("Number of trainable parameters: ", count_parameters(policy_net))
 
 def post_processed_possible_actions(out,index_posible_actions):
     """
@@ -219,9 +220,7 @@ def select_action(state, phase):
     eps_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY) #Get current exploration rate
     
     posible_actions = env.possible_actions_taken_robot()
-    
-    #print("Posibleu actiones: \n", posible_actions) 
-    
+        
     index_posible_actions = [i for i, x in enumerate(posible_actions) if x == 1]
     
     if phase == 'val':
@@ -265,8 +264,7 @@ def action_rate(decision_cont,state,phase,prev_decision_rate):
     """
     Function that sets the rate at which the robot makes decisions.
     """
-    if cfg.DECISION_RATE == "random":
-        
+    if cfg.DECISION_RATE == "random":        
         if phase == 'train':
             if decision_cont == 1:
                 decision_rate = random.randrange(10,150)
@@ -296,8 +294,18 @@ def action_rate(decision_cont,state,phase,prev_decision_rate):
 
 
 def optimize_model(phase):
+    """
+    Executes an iteration of the optimization algorithm.    
 
+    Parameters
+    ----------
+    phase: (str) phase of the training. If 'train', backpropagate gradients, else, just save the loss value.
 
+    Returns
+    -------
+    None.
+
+    """
     
     t_batch_size = min(len(memory),BATCH_SIZE)
     
@@ -306,20 +314,16 @@ def optimize_model(phase):
     
     if len(memory) < BATCH_SIZE:
     	return
-
-
 	       
     transitions = memory.sample(t_batch_size)    
     batch = Transition(*zip(*transitions))
     non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), device=device, dtype=torch.bool)
     
     non_final_next_states = torch.cat([s for s in batch.next_state if s is not None])
-
     
     state_batch = torch.cat(batch.state)
     action_batch = torch.cat(batch.action)
-    reward_batch = torch.cat(batch.reward)    
-    
+    reward_batch = torch.cat(batch.reward)        
    
     state_action_values = policy_net(state_batch).gather(1, action_batch) #Forward pass on the policy network -> Q values for every action -> Keep only Qvalue for the action that we took when exploring (action_batch), for which we have the reward (reward_batch) and the transition (non_final_next_states).
     
@@ -329,7 +333,7 @@ def optimize_model(phase):
     
     expected_state_action_values = (next_state_values * GAMMA) + reward_batch #Get Q value for current state as R + Q(s')
     
-    criterion = nn.SmoothL1Loss() #MSE
+    criterion = nn.SmoothL1Loss() #A mixture of MSE/L1
 
     loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
 
@@ -407,7 +411,6 @@ total_UAI_late_epoch_val = []
 total_CI_epoch_val = []
 total_II_epoch_val = []
 
-#12345
 total_UA_related_epoch_train = []
 total_UA_unrelated_epoch_train = []
 total_UA_related_epoch_val = []
@@ -415,9 +418,6 @@ total_UA_unrelated_epoch_val = []
 
 prev_decision_rate = 1
 steps_done = 0 
-
-
-
 
 
 # Get minimum and maximum time from dataset
@@ -447,11 +447,7 @@ maximum_time = sum(video_max_times)
 
 
 
-
-# minimum_time = 0
-
 for i_epoch in range (args.load_episode,NUM_EPOCH):
-
     
     steps_done += 1   
     decision_index_histogram_TRAIN = []
@@ -471,15 +467,12 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
     bad_reward_VAL = []
     # Each epoch has a training and validation phase
     print("| ----------- EPOCH " + str(i_epoch) + " ----------- ")
-    #for phase in ['train', 'val']:
     for phase in ['train', 'val']:
         total_loss = []
         total_reward = []
         total_reward_energy_ep = []
         total_reward_time_ep = []
-        total_reward_error_pred = []
-       
-        
+        total_reward_error_pred = []        
         total_CA_intime = []
         total_CA_late = []
         total_IA_intime = []
@@ -490,14 +483,8 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
         total_UAI_late = []
         total_CI = []
         total_II = []
-        
-        #123456
         total_UA_related = []
         total_UA_unrelated = []
-        
-        
-        #total_minimum_time_execution_epoch = []
-        #total_maximum_time_execution_epoch = []
         total_interaction_time_epoch = []
         
         videos_mejorables = []
@@ -640,31 +627,18 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                     total_UAI_late.append(env.UAI_late)
                     total_CI.append(env.CI)
                     total_II.append(env.II)
-                    
-                    #memory.show_batch(10)
-                    
-                    #Interaction
-                    total_interaction_time_epoch.append(hri_time)
-                    
-                    #123456
+                    total_interaction_time_epoch.append(hri_time)                    
                     total_UA_related.append(env.UA_related)
-                    total_UA_unrelated.append(env.UA_unrelated)
-                    
-                    #Baseline times
-                    #total_minimum_time_execution_epoch.append(min_time) #Minimum possible time
-                    #total_maximum_time_execution_epoch.append(max_time) #Human max time -> no HRI
-                                 
+                    total_UA_unrelated.append(env.UA_unrelated)                                 
 
                     break #Finish episode
         
-            #print(scheduler.optimizer.param_groups[0]['lr']) #Print LR (to check scheduler)
-            
+            #print(scheduler.optimizer.param_groups[0]['lr']) #Print LR (to check scheduler)           
             
             
             if i_episode % TARGET_UPDATE == 0: #Copy the Policy Network parameters into Target Network
                 target_net.load_state_dict(policy_net.state_dict())
-                #scheduler.step()
-                
+                #scheduler.step()                
 
                             
         #total_time_video = list(list(zip(*total_times_execution))[0])
@@ -673,8 +647,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
         #maximum_time = sum(total_maximum_time_execution_epoch)
         interaction_time = sum(total_interaction_time_epoch)
         
-        #print("\n\n\n\nIN TRAIN, minimum: ", minimum_time)
-     
+        #print("\n\n\n\nIN TRAIN, minimum: ", minimum_time)     
             
         data = {'video': maximum_time,
         'interaction': interaction_time,
@@ -682,7 +655,6 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
         'CA_late':total_CA_late,
         'IA_intime': total_IA_intime,
         'IA_late':total_IA_late,
-
         'UAC_intime': total_UAC_intime,
         'UAC_late': total_UAC_late,
         'UAI_intime': total_UAI_intime,
@@ -744,7 +716,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                 model_name = 'model_' + str(i_epoch) + '.pt'
                 if not os.path.exists(path): os.makedirs(path)
                 if not os.path.exists(save_path): os.makedirs(save_path)
-                if not os.path.exists(save_path_hist): os.makedirs(save_path_hist)
+                # if not os.path.exists(save_path_hist): os.makedirs(save_path_hist)
  
          
                 print("Saving model at ", os.path.join(path, model_name))
@@ -764,7 +736,6 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_reward_energy_epoch_train.append(sum(total_reward_energy_ep))
             total_reward_time_epoch_train.append(sum(total_reward_time_ep))
 
-            #total_time_execution_epoch_train.append(sum(total_time_interaction))
             total_time_execution_epoch_train.append(interaction_time)
 
             total_CA_intime_epoch_train.append(sum(total_CA_intime))
@@ -778,11 +749,9 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_CI_epoch_train.append(sum(total_CI))
             total_II_epoch_train.append(sum(total_II))
             
-            #123456
             total_UA_related_epoch_train.append(sum(total_UA_related))
             total_UA_unrelated_epoch_train.append(sum(total_UA_unrelated))
             
-            #123456 -> Add (un)related
             total_results_train = [total_CA_intime_epoch_train,total_CA_late_epoch_train,total_IA_intime_epoch_train,
             total_IA_late_epoch_train,
             total_UAC_intime_epoch_train,
@@ -791,8 +760,8 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_UAI_late_epoch_train,
             total_CI_epoch_train,
             total_II_epoch_train,
-            total_UA_related_epoch_train, #123456
-            total_UA_unrelated_epoch_train] #123456
+            total_UA_related_epoch_train, 
+            total_UA_unrelated_epoch_train] 
             
 
  
@@ -858,8 +827,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             plt.title("DECISION FRAME (ALL ACTIONS BUT NO ACTION(18))")
             fig1.savefig(save_path_hist+'/train_hist_action_epoch_'+str(i_epoch)+'.jpg')
             plt.close()
-            """
-            
+            """           
 
 
             #print("\n(train) PREDICTION ERROR: %.2f%%" %(np.mean(total_reward_error_pred)*100))
@@ -885,13 +853,9 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_CI_epoch_val.append(sum(total_CI))
             total_II_epoch_val.append(sum(total_II))
             
-            
-            #123456
             total_UA_related_epoch_val.append(sum(total_UA_related))
             total_UA_unrelated_epoch_val.append(sum(total_UA_unrelated))
-            # -----
             
-            #123456 -> Add to validation total results
             total_results = [total_CA_intime_epoch_val,total_CA_late_epoch_val,total_IA_intime_epoch_val,
             total_IA_late_epoch_val,
             total_UAC_intime_epoch_val,
@@ -900,10 +864,9 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_UAI_late_epoch_val,
             total_CI_epoch_val,
             total_II_epoch_val,
-            total_UA_related_epoch_val, #123456
+            total_UA_related_epoch_val, 
             total_UA_unrelated_epoch_val]
-            #PLOT VALIDATION
-            
+            #PLOT VALIDATION            
             
             if i_epoch % 50 == 0: plot_each_epoch(i_epoch, phase,save_path,
             minimum_time, 
@@ -913,8 +876,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             maximum_time,
             total_time_execution_epoch_val,
             total_reward_energy_epoch_val,
-            total_reward_time_epoch_val)
-            
+            total_reward_time_epoch_val)            
             
             
             #---------------------------------------------------------------------------------------

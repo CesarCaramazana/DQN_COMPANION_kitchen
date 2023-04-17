@@ -240,8 +240,7 @@ def reward_confirmation_perform(action):
     sg.Button('POSITIVE', key='Positive', size=button_size, button_color='blue')
     ]]
     
-    #Generate window with the button layout    
-    
+    #Generate window with the button layout        
     if action != 18:
         window = sg.Window('Interface', interface, background_color='black', return_keyboard_events=True).Finalize()    
         print("\nROBOT: I'm going to", cfg.ROBOT_ACTIONS_MEANINGS[action])
@@ -290,7 +289,32 @@ def reward_confirmation_perform(action):
     return reward
 
 
-
+def print_setup(args):
+	"""
+	Prints a table with the arguments of the training script.
+	Input:
+		args: arguments during execution time. 
+	
+	"""
+	print("")
+	print(" Experiment name:", args.experiment_name)
+	print("="*39)
+	print("  DQN parameters")
+	print("="*39)
+	print("| SIZE OF REPLAY MEMORY     | {0:<6g}".format(args.replay_memory), " |")
+	print("| INITIAL EXPLORATION RATE  | {0:<6g}".format(args.eps_start), " |")
+	print("| TERMINAL EXPLORATION RATE | {0:<6g}".format(args.eps_end), " |")
+	print("| GAMMA DISCOUNT FACTOR     | {0:<6g}".format(args.gamma), " |")
+	print("| FREQ. TARGET UPDATE       | {0:<6g}".format(args.target_update), " |")
+	print("="*39)
+	print("  Training parameters")
+	print("="*39)
+	print("| BATCH SIZE                | {0:<6g}".format(args.batch_size), " |")
+	print("| LEARNING RATE             | {0:<6g}".format(args.lr), " |")
+	print("| LOAD MODEL                | {0:<6g}".format(args.load_model), " |")
+	print("| LOAD EPISODE              | {0:<6g}".format(args.load_episode), " |")
+	
+	print("="*39)	
 
 def plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_loss_epoch,total_reward_epoch,maximum_time,total_time_execution_epoch,total_reward_energy_epoch,total_reward_time_epoch,ex_rate=0):
                 

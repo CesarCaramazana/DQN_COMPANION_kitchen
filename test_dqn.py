@@ -27,7 +27,6 @@ import torch
 import torch.nn as nn
 
 from DQN import DQN, ReplayMemory, Transition, init_weights 
-from config import print_setup
 import config as cfg
 from aux import *
 from natsort import natsorted, ns

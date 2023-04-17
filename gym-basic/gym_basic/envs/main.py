@@ -1330,14 +1330,20 @@ class BasicEnv(gym.Env):
         # ======END OF THE RECIPE ==========================================================================================================
         # ==================================================================================================================================
         if frame >= annotations['frame_init'].iloc[-1]:  
-            #...just let the person finish but do nothing ('idle')
+            #...just let the person finish but do nothing ('idle')            
             while frame <= annotations['frame_end'].iloc[-1]:   
                 if annotations['frame_init'][action_idx] <= frame <= annotations['frame_end'][action_idx]:
                     self.person_state = ATOMIC_ACTIONS_MEANINGS[annotations['label'][action_idx]]
                 self.robot_state = "idle"                
 
-                # 3) TRANSITION()              
+                # 3) TRANSITION()  
                 self.transition() 
+                
+                self.rwd_history.append([reward])
+                self.h_history.append([self.person_state])
+                self.r_history.append([self.robot_state])
+                self.rwd_time_h.append([self.reward_time])
+                self.rwd_energy_h.append([self.reward_energy])   
                  
             #execution_times.append(annotations['frame_end'].iloc[-1])
             hri_time = self.time_execution
@@ -1443,8 +1449,7 @@ class BasicEnv(gym.Env):
                     
                     
                 # 3) TRANSITION ========================================================
-                self.transition() #Transition to a new frame -> new action_idx
-                
+                self.transition() #Transition to a new frame -> new action_idx                
                 
                 # Save immediate states and rewards for visualization
                 self.rwd_history.append([reward])
@@ -1487,6 +1492,7 @@ class BasicEnv(gym.Env):
         #If we have finished the recipe, save the history of states-actions-rewards
         if done:
             self.save_history()
+
 
         self.total_reward += reward 
         

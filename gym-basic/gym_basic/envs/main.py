@@ -524,7 +524,7 @@ class BasicEnv(gym.Env):
             correct_action: (int) corrected action.
         
         """
-        
+                
         global frame, annotations
         
         length = len(annotations['label']) -1 
@@ -573,7 +573,7 @@ class BasicEnv(gym.Env):
         """
         global frame, action_idx, inaction, annotations
         
-        # print("?) Entro en update()")
+        # print("?) Entro en update() -> type: ", update_type)
         
         length = len(annotations['label']) - 1 
         fr_init_next = int(annotations['frame_init'][action_idx])
@@ -588,11 +588,22 @@ class BasicEnv(gym.Env):
 
             if update_type == "action":
                  
-                frame = int(annotations['frame_end'][action_idx])
+                # frame = int(annotations['frame_end'][action_idx])
                 # print("FRame in update: ", frame)
                 # pdb.set_trace()
                 if action_idx + 1 <= length:
                     action_idx = action_idx + 1
+                    
+                    # !! TO ACCOUNT FOR THE CASE IN WHICH TWO ACTIONS THAT REQUIRE AN OBJECT HAPPEN IN A ROW !! 12345
+                    new_task = annotations['label'][action_idx] #This is the action the person jumps to. Check if this action is one that requires an object: 
+                    # 8: 'extract milk', 12: 'extract jam', 13: 'extract butter', 14: 'extract tomato sauce', 15: 'extract nutella'                       
+                    if (new_task == 8 and self.objects_in_table['milk'] == 1) or (new_task == 12 and self.objects_in_table['jam'] == 1) or (new_task == 13 and self.objects_in_table['butter'] == 1) or (new_task == 14 and self.objects_in_table['tomato sauce'] == 1) or (new_task == 15 and self.objects_in_table['nutella'] == 1):
+                        action_idx = action_idx + 1
+                    
+                    # frame = int(annotations['frame_end'][action_idx-1]) #At the end of the previous?
+                    frame = int(annotations['frame_init'][action_idx]) #Or at the beginning of the new one?
+
+                    # pdb.set_trace()
                 inaction = []
                     
             if update_type == "unnecesary":
@@ -842,6 +853,7 @@ class BasicEnv(gym.Env):
         global frame, action_idx, inaction, new_energy, correct_action, recipe
         
         # print("3)Entro a evaluation()")
+        # print("Y los objetos en la mesa: ", self.objects_in_table)
         
         optim = True        
         #Obtain the simple_reward factor as the correspondence between state-action (regardless of time delays)
@@ -924,13 +936,14 @@ class BasicEnv(gym.Env):
                             # print("*************** UNNECESARY ACTION (late) ***************")
                             inaction.append("action")
                             frame_post.append(frame)
-                            #self.energy_robot_reward(action)
+                            # self.energy_robot_reward(action)
                             self.get_energy_robot_reward(action)
                             reward =  self.reward_energy + self.reward_time
                             if self.reward_energy == 0:
                                 self.UAC_late += 1
                             else:
-                                self.UAI_late += 1
+                                self.UAI_late += 1                                
+                                
                             self.update("action")
                             
                             self.flags['break'] = True
@@ -981,6 +994,7 @@ class BasicEnv(gym.Env):
                         else: 
                             #pdb.set_trace()
                             #self.flags['freeze state'] = True #??????????'
+                            # print("Entro en INCORRECT OR UNNEC with simple reward: ", simple_reward)
                             
                             # INCORRECT ACTION ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                             if self.flags["action robot"] == True: 
@@ -1009,8 +1023,10 @@ class BasicEnv(gym.Env):
                                         
                                 # 2) Late ----------------------------------------        
                                 else: 
+                                    # print("ENTRO EN INCORRECT LATE")
                                     if frame > fr_end:
                                         self.reward_time += -1
+                                        
                                     if frame == fr_execution: 
                                         # print("*************** INCORRECT ACTION (late) ***************")
                                         self.IA_late += 1                                        
@@ -1028,7 +1044,6 @@ class BasicEnv(gym.Env):
         
                             # UNNECESARY ACTION ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                             else: 
-        
                                 # 1) In time ----------------------------------------------------
                                 if fr_execution <= fr_end: 
                                     # if self.flags['threshold'] == 'last':
@@ -1049,7 +1064,6 @@ class BasicEnv(gym.Env):
                                         else:
                                             self.UAI_intime += 1
                                             
-                                        #12345
                                             if recipe == 'c' or recipe == 'd':
                                                 if action == 2: self.UA_related += 1
                                                 else: self.UA_unrelated += 1
@@ -1124,6 +1138,8 @@ class BasicEnv(gym.Env):
                         else: 
                             optim = False
 
+        # print("Salgo de evaluation con reward: ", reward)
+        # self.flags['freeze state'] = False
 
         return reward, new_threshold, optim, frame_post, correct_action
         
@@ -1308,7 +1324,7 @@ class BasicEnv(gym.Env):
         # print("Y la acción es: ", action)
         # print("Los objetos en la mes: ", self.objects_in_table)       
         
-        # if frame > 495:
+        # if frame > 705:
         #     pdb.set_trace()
         
         
@@ -1376,7 +1392,7 @@ class BasicEnv(gym.Env):
                     self.flags['freeze state'] = False
                     self.robot_state = "idle"               
                     
-                    if annotations['frame_init'][action_idx-1] <= frame < annotations['frame_end'][action_idx-1]:
+                    if annotations['frame_init'][action_idx-1] <= frame <= annotations['frame_end'][action_idx-1]:
                         self.person_state = ATOMIC_ACTIONS_MEANINGS[annotations['label'][action_idx-1]]
                     else:
                         self.person_state = "other manipulation"
@@ -1437,7 +1453,7 @@ class BasicEnv(gym.Env):
                         
                         # The person has yet to finish -> do current action
                         elif frame <= fr_end: 
-                            if annotations['frame_init'][action_idx-1] <= frame < annotations['frame_end'][action_idx-1]:
+                            if annotations['frame_init'][action_idx-1] <= frame <= annotations['frame_end'][action_idx-1]:
                                 self.person_state = ATOMIC_ACTIONS_MEANINGS[annotations['label'][action_idx-1]]
                             else:
                                 self.person_state = "other manipulation"
@@ -1644,6 +1660,7 @@ class BasicEnv(gym.Env):
             state = undo_one_hot(self.state[0:33]) #Next action prediction
                             
         object_before_action = memory_objects_in_table[len(memory_objects_in_table)-1]
+
         reward = 0
         positive_reward = cfg.POSITIVE_REWARD
         
@@ -1702,9 +1719,7 @@ class BasicEnv(gym.Env):
                 # print("ENTRA")
                 reward = positive_reward
            
-            elif object_before_action[key] == 1:
-           
-                # print("AQUI TB")
+            elif object_before_action[key] == 1:           
                 self.flags["action robot"] = False
                 if action ==5: 
                     # self.update("action")
@@ -1734,10 +1749,13 @@ class BasicEnv(gym.Env):
             # pdb.set_trace()
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'butter'][0]
+            key2 = [k for k, v in OBJECTS_MEANINGS.items() if v == 'jam'][0]
+            
             if action == 0: #'bring butter'
                 reward = positive_reward
                 #pdb.set_trace()
-            elif object_before_action[key] == 1:
+                
+            elif (object_before_action[key] == 1): # or (object_before_action[key2] == 1): #Bring jam & bring butter often appear together
                 # pdb.set_trace()
                 self.flags["action robot"] = False
                 if action ==5: 
@@ -1749,17 +1767,19 @@ class BasicEnv(gym.Env):
         elif state == 13: #'extract jam fridge'
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'jam'][0]
+            key2 = [k for k, v in OBJECTS_MEANINGS.items() if v == 'butter'][0]
+
             if action == 1: #'bring jam'
                 reward = positive_reward
                 
-            elif object_before_action[key] == 1:
-                # pdb.set_trace()
+            elif (object_before_action[key] == 1): # or (object_before_action[key2] == 1): #Bring jam & bring butter often appear together
                 self.flags["action robot"] = False
                 if action ==5: 
                     reward = 5
                 else:
                     reward = -5
-            else: reward = -1                    
+            else: reward = -1    
+                        
         
         elif state == 14: #'extract tomato sauce fridge'
             self.flags["action robot"] = True
@@ -1940,6 +1960,20 @@ class BasicEnv(gym.Env):
             if action ==5: #'do nothing'
                 reward = positive_reward
             else: reward = -1                    
+
+        
+        #Obtain object keys
+        objs = ['jam', 'butter', 'tomato sauce', 'nutella', 'milk']
+        keys = [k for k, v in OBJECTS_MEANINGS.items() if v in objs]
+        
+        for key in keys:
+            if object_before_action[key] == 1:
+                self.flags['action robot'] = False
+        
+        # print("KEYS: ", keys)
+        # print("Flag action robot: ", self.flags['action robot'])
+        
+        # pdb.set_trace()
 
         return reward
 

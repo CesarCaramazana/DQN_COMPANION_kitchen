@@ -65,20 +65,16 @@ def generate_signal(history, rwd_format=False):
     for i, action in enumerate(history):
         duration = math.floor(action[1]/resolution)        
         
+        #Format for the reward signal (int)
         if rwd_format:
             if action[0] == 0:
                 color_code = "z"
             else:
                 color_code = "2"
                 actions.append(math.floor(action[0]))    
-        
-        else:
-            # if action[0] == 'do nothing':
-            #     color_code = "x"
-            #     color_code = "8"
-            #     #actions.append(action[0])
-            #     actions.append("idle")
-            
+                
+        #Format for actions
+        else:           
             if action[0] == 'other manipulation':
                 color_code = "5"
                 actions.append('other')

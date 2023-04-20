@@ -30,7 +30,7 @@ Z_hidden_state = True
 #--------------------------------------------
 
 #DECISION RATE [frames]
-DECISION_RATE = 50
+DECISION_RATE = 30
 
 #ROBOT SPEED FACTOR: if BETA < 1, the robot becomes faster; if BETA > 1, the robot becomes slower. BETA = 1 is a robot that is as fast as the average person.
 BETA = 1

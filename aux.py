@@ -121,7 +121,34 @@ def undo_concat_state(state):
         oit = state[N_OBJECTS+N_ATOMIC_ACTIONS:]
         assert next_action.shape[0] == N_ATOMIC_ACTIONS, f"Next action vector has expected number of elements"
         return next_action, ao, oit
+
+
+def standarize(X):
+    """
+    Input:
+        X: (numpy array) vector.
     
+    Returns:
+        X: (numpy array) with mean=0, std=1.
+    """
+    
+    return (X - X.mean())/(X.std())
+
+ 
+def normalize_norm1(X):
+    """
+    Input:
+        X: (numpy array) vector.
+    
+    Returns:
+        X: (numpy array) vector with norm=1.
+    """
+    
+    return X / np.linalg.norm(X)
+
+def normalize(X):
+    
+    return (X - X.min())/(X.max() - X.min())
 
 """
 MOVING AVERAGE

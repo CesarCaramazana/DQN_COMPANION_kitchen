@@ -2048,6 +2048,10 @@ class BasicEnv(gym.Env):
             self.state = concat_3_vectors(data, oit, z)
         else:
             self.state = concat_vectors(data,oit)
+            
+        
+        # 3) NORMALIZE
+        self.state = normalize(self.state)
 
 
 

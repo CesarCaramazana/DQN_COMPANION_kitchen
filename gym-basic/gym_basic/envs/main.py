@@ -597,11 +597,11 @@ class BasicEnv(gym.Env):
                     # !! TO ACCOUNT FOR THE CASE IN WHICH TWO ACTIONS THAT REQUIRE AN OBJECT HAPPEN IN A ROW !! 12345
                     new_task = annotations['label'][action_idx] #This is the action the person jumps to. Check if this action is one that requires an object: 
                     # 8: 'extract milk', 12: 'extract jam', 13: 'extract butter', 14: 'extract tomato sauce', 15: 'extract nutella'                       
-                    if (new_task == 8 and self.objects_in_table['milk'] == 1) or (new_task == 12 and self.objects_in_table['jam'] == 1) or (new_task == 13 and self.objects_in_table['butter'] == 1) or (new_task == 14 and self.objects_in_table['tomato sauce'] == 1) or (new_task == 15 and self.objects_in_table['nutella'] == 1):
+                    if (new_task == 8 and self.objects_in_table['milk'] == 1) or (new_task == 13 and self.objects_in_table['jam'] == 1) or (new_task == 12 and self.objects_in_table['butter'] == 1) or (new_task == 14 and self.objects_in_table['tomato sauce'] == 1) or (new_task == 15 and self.objects_in_table['nutella'] == 1):
                         action_idx = action_idx + 1
                     
-                    # frame = int(annotations['frame_end'][action_idx-1]) #At the end of the previous?
-                    frame = int(annotations['frame_init'][action_idx]) #Or at the beginning of the new one?
+                    frame = int(annotations['frame_end'][action_idx-1]) #At the end of the previous?
+                    # frame = int(annotations['frame_init'][action_idx]) #Or at the beginning of the new one?
 
                     # pdb.set_trace()
                 inaction = []
@@ -1324,7 +1324,7 @@ class BasicEnv(gym.Env):
         # print("Y la acción es: ", action)
         # print("Los objetos en la mes: ", self.objects_in_table)       
         
-        # if frame > 705:
+        # if frame > 3005:
         #     pdb.set_trace()
         
         

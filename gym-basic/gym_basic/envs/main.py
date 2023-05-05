@@ -17,9 +17,12 @@ from natsort import natsorted, ns
 import pickle
 
 #CONFIGURATION GLOBAL ENVIRONMENT VARIABLES
+# 1) Dimensionality of input variables
 ACTION_SPACE = cfg.ACTION_SPACE
 N_ATOMIC_ACTIONS = cfg.N_ATOMIC_ACTIONS
 N_OBJECTS = cfg.N_OBJECTS
+VWM = (N_OBJECTS-1)*2
+TEMPORAL_CTX = ACTION_SPACE +1
 
 ATOMIC_ACTIONS_MEANINGS = cfg.ATOMIC_ACTIONS_MEANINGS
 OBJECTS_MEANINGS = cfg.OBJECTS_MEANINGS
@@ -32,6 +35,7 @@ VERSION = cfg.VERSION
 POSITIVE_REWARD = cfg.POSITIVE_REWARD
 
 Z_hidden_state = cfg.Z_hidden_state
+Z_HIDDEN = cfg.Z_HIDDEN
 
 INTERACTIVE_OBJECTS_ROBOT = cfg.INTERACTIVE_OBJECTS_ROBOT
 
@@ -81,11 +85,26 @@ class BasicEnv(gym.Env):
 
         """
         self.action_space = gym.spaces.Discrete(ACTION_SPACE) #[0, ACTION_SPACE-1]
+        
+        print("ACTION_SPACE: ", ACTION_SPACE)
+        print("N_OBJECTS: ", N_OBJECTS)
+        print("N_ATOMIC_ACTIONS: ", N_ATOMIC_ACTIONS)
+        print("Z HIDDEN: ", Z_HIDDEN)
+        
+        print("\n", N_ATOMIC_ACTIONS*2 + (N_OBJECTS-1)*2 + N_OBJECTS + Z_HIDDEN)
+        
+        if cfg.TEMPORAL_CONTEXT:
+            if Z_hidden_state:
+                self.observation_space = gym.spaces.Discrete(N_ATOMIC_ACTIONS*2 + VWM + N_OBJECTS + TEMPORAL_CTX + Z_HIDDEN) #[Ac pred + Ac reg + VWM + OiT + Ac duration + Z]
+            else:
+                self.observation_space = gym.spaces.Discrete(N_ATOMIC_ACTIONS*2 + VWM + N_OBJECTS + TEMPORAL_CTX) #[Ac pred + Ac reg + VWM + OiT + Ac duration]
+        else:
+            if Z_hidden_state:
+                self.observation_space = gym.spaces.Discrete(N_ATOMIC_ACTIONS*2 + VWM + N_OBJECTS + Z_HIDDEN) #[Ac pred + Ac reg + VWM + OiT + Z]
+            else:
+                self.observation_space = gym.spaces.Discrete(N_ATOMIC_ACTIONS*2 + VWM + N_OBJECTS) #[Ac pred + Ac reg + VWM + OiT]
 
-        if Z_hidden_state:
-            self.observation_space = gym.spaces.Discrete(1157) # Next Action + Action Recog + VWM + Obj in table + Z 
-        else:   
-            self.observation_space = gym.spaces.Discrete(N_ATOMIC_ACTIONS*2+(N_OBJECTS-1)*2+ACTION_SPACE)
+
             
         self.state = [] #One hot encoded state        
         self.total_reward = 0
@@ -136,7 +155,6 @@ class BasicEnv(gym.Env):
         annotations = np.load(path_labels_pkl, allow_pickle=True)
         
         print(annotations)
-
         
         self.CA_intime = 0
         self.CA_late = 0
@@ -164,6 +182,10 @@ class BasicEnv(gym.Env):
         
         self.anticipation = []
         self.duration_action = 0
+        
+        #RRRRRRRRRRRRRR
+        self.action_repertoire_durations = [[] for x in range(cfg.ACTION_SPACE)] #Empty list of lists
+
         
     def get_frame(self):
         global frame
@@ -654,7 +676,12 @@ class BasicEnv(gym.Env):
             
         else:            
             self.duration_action = int(random.gauss(cfg.ROBOT_ACTION_DURATIONS[int(action)], 0.2*cfg.ROBOT_ACTION_DURATIONS[int(action)]))
-            fr_execution = self.duration_action + frame            
+            fr_execution = self.duration_action + frame       
+            
+        #RRRRRRRRRRRRRRRRRRRRRRRRRRR    
+        # 1.2 Save sampled duration in the list of lists
+        if action != 5: self.action_repertoire_durations[action].append(self.duration_action)    
+        
         # =========================================================================================================================
     
 
@@ -2027,7 +2054,7 @@ class BasicEnv(gym.Env):
             
         
         # 2.2 ) Generate state
-        data = read_state['data']
+        data = read_state['data'] #[Ac pred + Ac reg + VWM]
         z = read_state['z']
         pre_softmax = read_state['pre_softmax'] 
             
@@ -2038,17 +2065,39 @@ class BasicEnv(gym.Env):
         # OBJECTS IN TABLE            
         variations_in_table = len(memory_objects_in_table)
         if variations_in_table < 2:
-
             oit = memory_objects_in_table[0]
         else:
             oit = memory_objects_in_table[variations_in_table-1]
                 
 
-        if Z_hidden_state:
-            self.state = concat_3_vectors(data, oit, z)
-        else:
-            self.state = concat_vectors(data,oit)
+        if cfg.TEMPORAL_CONTEXT:
+            # print("WITH TEMPORAL CTX")
+            action_durations_ML = [np.array(ad).mean() if ad else 0 for ad in self.action_repertoire_durations]
+            human_action_estimate = [0.1] #This will be output by the ACTION PREDICTION MODULE
             
+            temp_ctx = concat_vectors(action_durations_ML, human_action_estimate)
+            
+            # W/O Z-hidden state of LSTM
+            if Z_hidden_state:
+                # print("WITH Z")
+                self.state = concat_vectors(concat_3_vectors(data, oit, temp_ctx), z)
+                # print(len(self.state))
+            else:
+                # print("WITHOUT Z")
+                self.state = concat_3_vectors(data,oit, temp_ctx)
+                # print(len(self.state))
+        
+        else:
+            # print("WITHOUT TEMPORAL CTX")
+            # W/O Z-hidden state of LSTM
+            if Z_hidden_state:
+                # print("WITH Z")
+                self.state = concat_3_vectors(data, oit, z)
+                # print(len(self.state))
+            else:
+                # print("WIHOUT Z")
+                self.state = concat_vectors(data,oit)
+                # print(len(self.state))
         
         # 3) NORMALIZE
         self.state = normalize(self.state)

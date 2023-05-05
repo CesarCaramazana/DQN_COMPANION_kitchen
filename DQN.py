@@ -10,12 +10,14 @@ class DQN(nn.Module):
     def __init__(self, input_size, output_size):
         super(DQN, self).__init__()
         
-        self.feature_dim = 133 #First features and Z variable separated
-        
-        self.input_layer1 = nn.Linear(self.feature_dim, 256)
+        self.feature_dim = input_size - cfg.Z_HIDDEN #First features and Z variable separated
+                
+        #self.input_layer1 = nn.Linear(self.feature_dim, 256)
+        self.input_layer1 = nn.Linear(input_size - cfg.Z_HIDDEN, 256)
         
         if cfg.Z_hidden_state:
-              self.input_layer2 = nn.Linear(input_size-self.feature_dim, 256)
+              #self.input_layer2 = nn.Linear(input_size-self.feature_dim, 256)
+              self.input_layer2 = nn.Linear(cfg.Z_HIDDEN, 256)
                   
               self.hidden_layer = nn.Linear(512, 256)
                     
@@ -32,10 +34,13 @@ class DQN(nn.Module):
         
         # Separate input tensor
         input1 = x[:, 0:self.feature_dim]
+        
         if cfg.Z_hidden_state:
             input2 = x[:, self.feature_dim:]
 
         x1 = self.relu(self.input_layer1(input1))
+        
+        
         if cfg.Z_hidden_state:
             x2 = self.relu(self.input_layer2(input2))
     

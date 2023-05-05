@@ -11,6 +11,9 @@ class DQN(nn.Module):
         super(DQN, self).__init__()
         
         self.feature_dim = input_size - cfg.Z_HIDDEN #First features and Z variable separated
+        
+        # print("DQN input size: ", input_size)
+        # print("DQN feature: ", self.feature_dim)
                 
         #self.input_layer1 = nn.Linear(self.feature_dim, 256)
         self.input_layer1 = nn.Linear(input_size - cfg.Z_HIDDEN, 256)
@@ -28,15 +31,18 @@ class DQN(nn.Module):
         
             
     def forward(self, x):
-        #print("INPUT SHAPE IN THE DQN ", x.shape)
+        # print("INPUT SHAPE IN THE DQN ", x.shape)
         #print("\nInput states\n", x)
         #print("")
         
         # Separate input tensor
         input1 = x[:, 0:self.feature_dim]
         
+        # print("INPUT 1: ", input1.shape)
+        
         if cfg.Z_hidden_state:
             input2 = x[:, self.feature_dim:]
+            # print("INPUT 2: ", input2.shape)
 
         x1 = self.relu(self.input_layer1(input1))
         

@@ -666,9 +666,10 @@ class BasicEnv(gym.Env):
         global frame, action_idx, inaction
         
         # print("2) Entro a time_course (con frame %5i)" %frame)
+        # print("Entro a time_course con accion: ", action)
 
         # ===== 1 GET ACTION DURATION ==========================================================================================
-        # Get the frame at which the robot will finish the action (fr_execution)
+        # 1.1 Get the frame at which the robot will finish the action (fr_execution)
         sample = random.random()
         if sample < cfg.ERROR_PROB:            
             self.duration_action = int(random.gauss(1.5*cfg.ROBOT_ACTION_DURATIONS[int(action)], 0.2*cfg.ROBOT_ACTION_DURATIONS[int(action)]))
@@ -1539,8 +1540,9 @@ class BasicEnv(gym.Env):
 
         self.total_reward += reward 
         
-        # print("=============================================FIN DE STEP()")       
-             
+        # print("=============================================FIN DE STEP()")    
+        
+            
 
         return self.state, reward, done, optim,  self.flags['pdb'], self.reward_time, self.reward_energy, self.time_execution, action, self.flags['threshold'], self.prediction_error, self.total_prediction 
         
@@ -1590,6 +1592,8 @@ class BasicEnv(gym.Env):
         self.time_execution = 0
         self.reward_energy = 0
         self.reward_time = 0
+        self.total_reward = 0   
+
         
 
         if video_idx+1 < total_videos:
@@ -1628,13 +1632,44 @@ class BasicEnv(gym.Env):
         pre_softmax = read_state['pre_softmax']
         
         data[0:33] = pre_softmax
+        oit = list(OBJECTS_INIT_STATE.values())
         
-        self.total_reward = 0   
+
+        if cfg.TEMPORAL_CONTEXT:
+            # print("WITH TEMPORAL CTX")
+            action_durations_ML = [np.array(ad).mean() if ad else 0 for ad in self.action_repertoire_durations]
+            human_action_estimate = [0.1] #This will be output by the ACTION PREDICTION MODULE
             
-        if Z_hidden_state:
-            self.state = concat_3_vectors(data, list(OBJECTS_INIT_STATE.values()), z)
+            temp_ctx = concat_vectors(action_durations_ML, human_action_estimate)
+            
+            
+            # W/O Z-hidden state of LSTM
+            if Z_hidden_state:
+                # print("WITH Z")
+                self.state = concat_vectors(concat_3_vectors(data, oit, temp_ctx), z)
+                # print(len(self.state))
+            else:
+                # print("WITHOUT Z")
+                self.state = concat_3_vectors(data,oit, temp_ctx)
+                # print(len(self.state))
+        
         else:
-            self.state = concat_vectors(data, list(OBJECTS_INIT_STATE.values()))
+            # print("WITHOUT TEMPORAL CTX")
+            # W/O Z-hidden state of LSTM
+            if Z_hidden_state:
+                # print("WITH Z")
+                self.state = concat_3_vectors(data, oit, z)
+                # print(len(self.state))
+            else:
+                # print("WIHOUT Z")
+                self.state = concat_vectors(data,oit)
+                # print(len(self.state))
+
+            
+        # if Z_hidden_state:
+        #     self.state = concat_3_vectors(data, list(OBJECTS_INIT_STATE.values()), z)
+        # else:
+        #     self.state = concat_vectors(data, list(OBJECTS_INIT_STATE.values()))
         
         self.CA_intime = 0
         self.CA_late = 0
@@ -2077,6 +2112,7 @@ class BasicEnv(gym.Env):
             
             temp_ctx = concat_vectors(action_durations_ML, human_action_estimate)
             
+            
             # W/O Z-hidden state of LSTM
             if Z_hidden_state:
                 # print("WITH Z")
@@ -2101,7 +2137,7 @@ class BasicEnv(gym.Env):
         
         # 3) NORMALIZE
         self.state = normalize(self.state)
-
+        
 
 
 

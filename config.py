@@ -6,7 +6,7 @@ TEST_FOLD = "fold1"
 REPLAY_MEMORY = 2048 #Size of replay memory (deque object)
 
 NUM_EPOCH = 250
-NUM_EPISODES = 63 #"Number of training epochs"
+NUM_EPISODES = 63 #"Number of training episodes per epoch"
 BATCH_SIZE = 512
 GAMMA = 0.1 #Discount rate for future rewards
 EPS_START = 0.99 #Initial exporation rate
@@ -44,7 +44,8 @@ FACTOR_ENERGY_PENALTY = 1
 #CLUMSINESS: probability of extending the duration of an action by a 50%
 ERROR_PROB = 0.05
 
-
+# REACTIVENESS (for setting a baseline)
+REACTIVE = False
 
 #ENVIRONMENT PARAMETERS ------
 #---------------------------------------------------------------------------------
@@ -190,9 +191,6 @@ ROBOT_POSSIBLE_INIT_ACTIONS = {
 
 ROBOT_ACTION_DURATIONS = ROBOT_AVERAGE_DURATIONS
 ROBOT_ACTION_DURATIONS.update((x, y*BETA) for x, y in ROBOT_ACTION_DURATIONS.items())
-
-
-
 
 
 N_OBJECTS = len(OBJECTS_MEANINGS)

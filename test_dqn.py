@@ -49,6 +49,7 @@ parser.add_argument('--eps_test', type=float, default=0.0, help="(float) Explora
 parser.add_argument('--display', action='store_true', default=False, help="Display environment info as [Current state, action taken, transitioned state, immediate reward, total reward].")
 parser.add_argument('--cuda', action='store_true', default=True, help="Use GPU if available.")
 parser.add_argument('--train', action='store_true', default=False, help="Run test over the training set.")
+parser.add_argument('--debug', action='store_true', default=False, help="Use debug test set")
 args = parser.parse_args()
 
 
@@ -145,13 +146,19 @@ device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cp
 #TEST 
 #----------------
 #Environment - Custom basic environment for kitchen recipes
-env = gym.make("gym_basic:basic-v0", display=args.display, test=not args.train, disable_env_checker=True)
+env = gym.make("gym_basic:basic-v0", display=args.display, test=not args.train, debug=args.debug, disable_env_checker=True)
 
 
 if env.test: 
-    NUM_EPISODES = len(glob.glob("./video_annotations/5folds/"+cfg.TEST_FOLD+"/test/*")) #Run the test only once for every video in the testset
-    print("Test set")
-    root = './video_annotations/5folds/'+cfg.TEST_FOLD+'/test/*'
+    if args.debug:
+        NUM_EPISODES = len(glob.glob("./video_annotations/5folds/"+cfg.TEST_FOLD+"/test_debug/*")) #Run the test only once for every video in the testset
+        print("Debug set")
+        root = './video_annotations/5folds/'+cfg.TEST_FOLD+'/test_debug/*'
+    else:
+        NUM_EPISODES = len(glob.glob("./video_annotations/5folds/"+cfg.TEST_FOLD+"/test/*")) #Run the test only once for every video in the testset
+        print("Test set")
+        root = './video_annotations/5folds/'+cfg.TEST_FOLD+'/test/*'
+        
 else:
     NUM_EPISODES = len(glob.glob("./video_annotations/5folds/"+cfg.TEST_FOLD+"/train/*"))
     print("Train set")

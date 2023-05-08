@@ -223,12 +223,14 @@ def select_action(state, phase):
         
     index_posible_actions = [i for i, x in enumerate(posible_actions) if x == 1]
     
+    # print("train_dqn.py | Select action, state dim: ", state.shape, " | Phase: ", phase)
+    
     if phase == 'val':
         with torch.no_grad():
             out = policy_net(state)
             action = post_processed_possible_actions(out,index_posible_actions)
             # pdb.set_trace()
-            return action
+            # return action
     else:
          if sample > eps_threshold: #If the random number is higher than the current exploration rate, the policy network determines the best action.
              with torch.no_grad():
@@ -236,7 +238,7 @@ def select_action(state, phase):
                  action = post_processed_possible_actions(out,index_posible_actions)
                  # pdb.set_trace()
                  #print("Action: ", action)
-                 return action
+                 # return action
          else:
              
              if NO_ACTION_PROBABILITY != 0:
@@ -257,7 +259,10 @@ def select_action(state, phase):
     
                 
                 # pdb.set_trace()
-             return torch.tensor([[action]], device=device, dtype=torch.long)
+                
+    if cfg.REACTIVE: action = 5 #Forcefully set reactive robot     
+       
+    return torch.tensor([[action]], device=device, dtype=torch.long)
 
 
 def action_rate(decision_cont,state,phase,prev_decision_rate):
@@ -284,6 +289,7 @@ def action_rate(decision_cont,state,phase,prev_decision_rate):
     else:
         action_selected = 5
         flag_decision = False
+        
     # print("RANDOM NUMBER: ",decision_rate)
     # pdb.set_trace()
     return action_selected, flag_decision, prev_decision_rate

@@ -100,13 +100,11 @@ def select_action(state):
     posible_actions = env.possible_actions_taken_robot()
     index_posible_actions = [i for i, x in enumerate(posible_actions) if x==1]
     
+    policy_net.eval()
     with torch.no_grad():
     	out = policy_net(state)
     
-    best_action = action = post_processed_possible_actions(out,index_posible_actions)
-    
-
-    
+    best_action = action = post_processed_possible_actions(out,index_posible_actions)    
     #best_action = torch.tensor([[5]], device=device, dtype=torch.long) #Para encontrar el tiempo de HRI de un robot pasivo
 
     return best_action

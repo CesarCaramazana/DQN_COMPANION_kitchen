@@ -225,7 +225,10 @@ def select_action(state, phase):
     
     # print("train_dqn.py | Select action, state dim: ", state.shape, " | Phase: ", phase)
     
+    policy_net.eval()
+    
     if phase == 'val':
+        
         with torch.no_grad():
             out = policy_net(state)
             action = post_processed_possible_actions(out,index_posible_actions)
@@ -260,7 +263,7 @@ def select_action(state, phase):
                 
                 # pdb.set_trace()
                 
-    if cfg.REACTIVE: action = 5 #Forcefully set reactive robot     
+    if cfg.REACTIVE == True: action = 5 #Forcefully set reactive robot     
        
     return torch.tensor([[action]], device=device, dtype=torch.long)
 
@@ -319,8 +322,8 @@ def optimize_model(phase):
     #print("batch: ", BATCH_SIZE)
     
     if len(memory) < BATCH_SIZE:
-    	return
-	       
+        return
+           
     transitions = memory.sample(t_batch_size)    
     batch = Transition(*zip(*transitions))
     non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), device=device, dtype=torch.bool)
@@ -343,7 +346,7 @@ def optimize_model(phase):
 
     loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
 
-    #print("LOSS: ", loss)
+    # print("LOSS: ", loss)
     episode_loss.append(loss.detach().item())
     
     if phase == 'train':
@@ -438,17 +441,17 @@ videos = glob.glob(root)
 
 #GET VIDEO TIME AND OPTIMAL TIME (MIN)
 for video in videos:
-	path = video + '/human_times'
-	human_times = np.load(path, allow_pickle=True)  
-	
-	min_time = human_times['min']
-	max_time = human_times['max']
-	
-	video_max_times.append(max_time)
-	video_min_times.append(min_time)
-	
+    path = video + '/human_times'
+    human_times = np.load(path, allow_pickle=True)  
+    
+    min_time = human_times['min']
+    max_time = human_times['max']
+    
+    video_max_times.append(max_time)
+    video_min_times.append(min_time)
+    
 minimum_time = sum(video_min_times)
-maximum_time = sum(video_max_times)	
+maximum_time = sum(video_max_times)    
 
 
 
@@ -497,8 +500,10 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
         total_times_execution = []
         if phase == 'train':
             policy_net.train()  # Set model to training mode
+            target_net.eval()
         else:
             policy_net.eval()   # Set model to evaluate mode
+            target_net.eval()
 
         for i_episode in range(0, NUM_EPISODES):
             if(args.display): print("| EPISODE #", i_episode , end='\n')
@@ -616,9 +621,9 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                 if done: 
                     
                     if episode_loss: 
-                    	total_loss.append(mean(episode_loss))
-                    	
-                    	
+                        total_loss.append(mean(episode_loss))
+                       
+                        
                     total_reward.append(env.get_total_reward())
                     total_reward_energy_ep.append(reward_energy_ep)
                     total_reward_time_ep.append(reward_time_ep)
@@ -737,7 +742,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
 
             ex_rate.append(EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY))
 
-            total_loss_epoch_train.append(sum(total_loss))
+            if total_loss: total_loss_epoch_train.append(sum(total_loss))
             total_reward_epoch_train.append(sum(total_reward))
             total_reward_energy_epoch_train.append(sum(total_reward_energy_ep))
             total_reward_time_epoch_train.append(sum(total_reward_time_ep))
@@ -772,7 +777,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
 
  
             #PLOT TRAIN
-            if i_epoch % 50 == 0: plot_each_epoch(i_epoch, phase,save_path,
+            if i_epoch % 1 == 0: plot_each_epoch(i_epoch, phase,save_path,
             minimum_time,
             total_results_train,
             total_loss_epoch_train,
@@ -874,7 +879,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_UA_unrelated_epoch_val]
             #PLOT VALIDATION            
             
-            if i_epoch % 50 == 0: plot_each_epoch(i_epoch, phase,save_path,
+            if i_epoch % 10 == 0: plot_each_epoch(i_epoch, phase,save_path,
             minimum_time, 
             total_results,
             total_loss_epoch_val,
@@ -888,7 +893,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             #---------------------------------------------------------------------------------------
             
             #PLOT TOGETHER
-            if i_epoch % 20 == 0: plot_each_epoch_together(i_epoch,save_path,
+            if i_epoch % 5 == 0: plot_each_epoch_together(i_epoch,save_path,
             minimum_time,
             total_results_train,
             total_loss_epoch_train,

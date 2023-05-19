@@ -18,7 +18,7 @@ import torchvision
 import torch.nn as nn
 import torch.optim as optim
 
-from DQN import DQN, ReplayMemory, Transition, init_weights 
+from DQN import *
 import config as cfg
 from aux import *
 import argparse
@@ -100,9 +100,16 @@ n_states = env.observation_space.n #Dimensionality of the input of the DQN
 n_actions = env.action_space.n #Dimensionality of the output of the DQN 
 
 #Networks and optimizer
-policy_net = DQN(n_states, n_actions).to(device)
-target_net = DQN(n_states, n_actions).to(device)
-
+if cfg.Z_hidden_state:
+    if cfg.LATE_FUSION:
+        policy_net = DQN_LateFusion(n_states, n_actions).to(device)
+        target_net = DQN_LateFusion(n_states, n_actions).to(device)
+    else:
+        policy_net = DQN_Z(n_states, n_actions).to(device)
+        target_net = DQN_Z(n_states, n_actions).to(device)
+else:
+    policy_net = DQN(n_states, n_actions).to(device)
+    target_net = DQN(n_states, n_actions).to(device)
 
 if PRETRAINED:
     # path_model = './Pretrained/model_real_data.pt' #Path al modelo pre-entrenado
@@ -120,15 +127,15 @@ if PRETRAINED:
     
     EPS_START = 0.5
    
+else:
+    #Weight initialization
+    policy_net.apply(init_weights) # si no hay pretained
 
-#else:
-#    policy_net.apply(init_weights) # si no hay pretained
+#Regularization
+L2 = 1e-4   
+optimizer = optim.Adam(policy_net.parameters(), lr=LR, weight_decay=L2) 
 
-
-target_net.eval()
-
-optimizer = optim.Adam(policy_net.parameters(), lr=LR) 
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size= 20, gamma= 0.99)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size= 100, gamma= 0.5)
 
 memory = ReplayMemory(REPLAY_MEMORY)
 
@@ -165,6 +172,7 @@ if LOAD_MODEL:
 
 
 target_net.load_state_dict(policy_net.state_dict())
+target_net.eval()
 
 
 #To count the number of trainable parameters
@@ -263,6 +271,7 @@ def select_action(state, phase):
                 
                 # pdb.set_trace()
                 
+    # policy_net.train()
     if cfg.REACTIVE == True: action = 5 #Forcefully set reactive robot     
        
     return torch.tensor([[action]], device=device, dtype=torch.long)
@@ -321,9 +330,12 @@ def optimize_model(phase):
     #print("len memory: ", len(memory))
     #print("batch: ", BATCH_SIZE)
     
+    policy_net.train()
+    
+    
     if len(memory) < BATCH_SIZE:
-        return
-           
+        return           
+        
     transitions = memory.sample(t_batch_size)    
     batch = Transition(*zip(*transitions))
     non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), device=device, dtype=torch.bool)
@@ -347,7 +359,6 @@ def optimize_model(phase):
     loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
 
     # print("LOSS: ", loss)
-    episode_loss.append(loss.detach().item())
     
     if phase == 'train':
         optimizer.zero_grad()
@@ -357,6 +368,8 @@ def optimize_model(phase):
             param.grad.data.clamp_(-1,1)
 
         optimizer.step()
+    
+    episode_loss.append(loss.detach().item())
     # scheduler.step()    
 
 
@@ -425,6 +438,11 @@ total_UA_unrelated_epoch_train = []
 total_UA_related_epoch_val = []
 total_UA_unrelated_epoch_val = []
 
+
+#RRRRRRR
+total_idle_epoch_train = []
+total_idle_epoch_val = []
+
 prev_decision_rate = 1
 steps_done = 0 
 
@@ -451,7 +469,7 @@ for video in videos:
     video_min_times.append(min_time)
     
 minimum_time = sum(video_min_times)
-maximum_time = sum(video_max_times)    
+maximum_time = sum(video_max_times) #* cfg.BETA 
 
 
 
@@ -474,6 +492,11 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
     good_reward_action_VAL = []
     good_reward_noaction_VAL = []
     bad_reward_VAL = []
+    
+    #Call the LR scheduler 1 time per epoch
+    scheduler.step()
+    NO_ACTION_PROBABILITY = NO_ACTION_PROBABILITY * 0.99
+    
     # Each epoch has a training and validation phase
     print("| ----------- EPOCH " + str(i_epoch) + " ----------- ")
     for phase in ['train', 'val']:
@@ -495,6 +518,9 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
         total_UA_related = []
         total_UA_unrelated = []
         total_interaction_time_epoch = []
+        
+        #RRRRRRRRRRr
+        total_idle = []
         
         videos_mejorables = []
         total_times_execution = []
@@ -552,9 +578,8 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                 error_pred_ep += error_pred
                 total_pred_ep += total_pred
                 
-                # if i_epoch == 0:
-                #     minimum_time += total_minimum_time_execution
-                if optim: #Only train if we have taken an action (f==30)                  
+
+                if optim:                 
                     
                     reward = torch.tensor([reward], device=device)
 
@@ -564,53 +589,6 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                     
                     optimize_model(phase)
                     num_optim += 1
-                    
-                    # DECISION FRAME HISTOGRAM
-                    """
-                    if type_threshold != "second":
-                        fr_init_prev = annotations['frame_end'][action_idx-1]
-                        if action_idx > len(annotations):
-                            action_idx = len(annotations)-1
-                            
-                        if action_idx < 2:
-                            fr_init_prev = 0
-                        else:
-                            fr_init_prev = annotations['frame_end'][action_idx-2]
-                       
-    
-                        fr_init = annotations['frame_init'][action_idx]
-                        if type_threshold == "first":
-                            fr_init = annotations['frame_end'][action_idx-1]
-                        
-                        index_frame_decision = 1 - ((fr_init-frame_decision)/(fr_init-fr_init_prev))
-                    if phase=='train':
-                        decision_index_histogram_TRAIN.append(index_frame_decision)
-                        if action != 18:
-                            decision_action_index_histogram_TRAIN.append(index_frame_decision)
-                        
-                        if reward < 0:
-                            bad_reward_TRAIN.append(index_frame_decision)
-                        else:
-                            if action != 18:
-                                good_reward_action_TRAIN.append(index_frame_decision)
-                            else:
-                                good_reward_noaction_TRAIN.append(index_frame_decision)
-                    else:
-                        decision_index_histogram_VAL.append(index_frame_decision)
-                        if action != 18:
-                            decision_action_index_histogram_VAL.append(index_frame_decision)
-                        
-                        if reward < 0:
-                            bad_reward_VAL.append(index_frame_decision)
-                        else:
-                            if action != 18:
-                                good_reward_action_VAL.append(index_frame_decision)
-                            else:
-                                good_reward_noaction_VAL.append(index_frame_decision)
-                    """
-                    # # Semi -supervised case where the correction is also taken into account to train the DQN
-                    # if (action != correct_action):
-                    #     memory.push(decision_state, torch.tensor([[correct_action]], device=device), next_state, torch.tensor([0], device=device))
 
                 if not done: 
                     state = next_state
@@ -640,7 +618,9 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                     total_II.append(env.II)
                     total_interaction_time_epoch.append(hri_time)                    
                     total_UA_related.append(env.UA_related)
-                    total_UA_unrelated.append(env.UA_unrelated)                                 
+                    total_UA_unrelated.append(env.UA_unrelated)      
+
+                    total_idle.append(env.anticipation)                           
 
                     break #Finish episode
         
@@ -651,14 +631,9 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
                 target_net.load_state_dict(policy_net.state_dict())
                 #scheduler.step()                
 
-                            
-        #total_time_video = list(list(zip(*total_times_execution))[0])
-        #total_time_interaction = list(list(zip(*total_times_execution))[1])
-        #minimum_time = sum(total_minimum_time_execution_epoch)
-        #maximum_time = sum(total_maximum_time_execution_epoch)
+
         interaction_time = sum(total_interaction_time_epoch)
         
-        #print("\n\n\n\nIN TRAIN, minimum: ", minimum_time)     
             
         data = {'video': maximum_time,
         'interaction': interaction_time,
@@ -763,6 +738,10 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_UA_related_epoch_train.append(sum(total_UA_related))
             total_UA_unrelated_epoch_train.append(sum(total_UA_unrelated))
             
+            
+            # total_idle_epoch_train.append(sum(total_idle)) #RRRRRRRR
+            total_idle_epoch_train.append(np.mean(total_idle))
+            
             total_results_train = [total_CA_intime_epoch_train,total_CA_late_epoch_train,total_IA_intime_epoch_train,
             total_IA_late_epoch_train,
             total_UAC_intime_epoch_train,
@@ -777,7 +756,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
 
  
             #PLOT TRAIN
-            if i_epoch % 1 == 0: plot_each_epoch(i_epoch, phase,save_path,
+            if i_epoch % 15 == 0: plot_each_epoch(i_epoch, phase,save_path,
             minimum_time,
             total_results_train,
             total_loss_epoch_train,
@@ -786,7 +765,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_time_execution_epoch_train,
             total_reward_energy_epoch_train,
             total_reward_time_epoch_train,
-            ex_rate)
+            ex_rate, idle_frames=total_idle_epoch_train)
             
             
             
@@ -806,42 +785,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             'prediction error': np.mean(total_reward_error_pred)
             }
 
-            #df_train = pd.DataFrame(data_train)
-            #df_train.to_csv(save_path+'/data_train.csv')
-            
-            
-            """
-            #HISTOGRAM TRAIN
-            fig1 = plt.figure(figsize=(12, 7))
-            plt.hist(decision_index_histogram_TRAIN, bins = 100, edgecolor="black")
-            plt.title("DECISION FRAME (ALL ACTIONS)")
-            fig1.savefig(save_path_hist+'/train_hist_epoch_'+str(i_epoch)+'.jpg')
-            # plt.show()
-            plt.close()
 
-            fig1 = plt.figure(figsize=(12, 7))
-            plt.hist(good_reward_action_TRAIN, bins = 100, edgecolor="black")
-            plt.title("DECISION FRAME (ONLY ACTIONS, GOOD REWARD)")
-            fig1.savefig(save_path_hist+'/train_GOOD_action_hist_epoch_'+str(i_epoch)+'.jpg')
-            plt.close()
-
-
-            fig1 = plt.figure(figsize=(12, 7))
-            plt.hist(bad_reward_TRAIN, bins = 100, edgecolor="black")
-            plt.title("DECISION FRAME (BAD REWARD)")
-            fig1.savefig(save_path_hist+'/train_BAD_hist_epoch_'+str(i_epoch)+'.jpg')
-            plt.close()
-
-            # pdb.set_trace()
-            fig1 = plt.figure(figsize=(12, 7))
-            plt.hist(decision_action_index_histogram_TRAIN, bins = 100, edgecolor="black")
-            plt.title("DECISION FRAME (ALL ACTIONS BUT NO ACTION(18))")
-            fig1.savefig(save_path_hist+'/train_hist_action_epoch_'+str(i_epoch)+'.jpg')
-            plt.close()
-            """           
-
-
-            #print("\n(train) PREDICTION ERROR: %.2f%%" %(np.mean(total_reward_error_pred)*100))
         elif phase=='val':
             # print(len(total_loss))
             # pdb.set_trace()
@@ -867,6 +811,9 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_UA_related_epoch_val.append(sum(total_UA_related))
             total_UA_unrelated_epoch_val.append(sum(total_UA_unrelated))
             
+            # total_idle_epoch_val.append(sum(total_idle)) #RRRRRRR
+            total_idle_epoch_val.append(np.mean(total_idle))
+            
             total_results = [total_CA_intime_epoch_val,total_CA_late_epoch_val,total_IA_intime_epoch_val,
             total_IA_late_epoch_val,
             total_UAC_intime_epoch_val,
@@ -879,7 +826,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_UA_unrelated_epoch_val]
             #PLOT VALIDATION            
             
-            if i_epoch % 10 == 0: plot_each_epoch(i_epoch, phase,save_path,
+            if i_epoch % 10== 0: plot_each_epoch(i_epoch, phase,save_path,
             minimum_time, 
             total_results,
             total_loss_epoch_val,
@@ -887,13 +834,13 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             maximum_time,
             total_time_execution_epoch_val,
             total_reward_energy_epoch_val,
-            total_reward_time_epoch_val)            
+            total_reward_time_epoch_val, idle_frames=total_idle_epoch_val)            
             
             
             #---------------------------------------------------------------------------------------
             
             #PLOT TOGETHER
-            if i_epoch % 5 == 0: plot_each_epoch_together(i_epoch,save_path,
+            if i_epoch % 25 == 0: plot_each_epoch_together(i_epoch,save_path,
             minimum_time,
             total_results_train,
             total_loss_epoch_train,
@@ -925,40 +872,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             'prediction error': np.mean(total_reward_error_pred)
             }
             
-    
-            #df_val = pd.DataFrame(data_val)
-            #df_val.to_csv(save_path+'/data_val.csv')
-            
-            
-            #HISTOGRAM VALIDATION
-            """
-            fig1 = plt.figure(figsize=(12, 7))
-            plt.hist(decision_index_histogram_VAL, bins = 100, edgecolor="black")
-            plt.title("DECISION FRAME (ALL ACTIONS)")
-            fig1.savefig(save_path_hist+'/val_hist_epoch_'+str(i_epoch)+'.jpg')
-            # plt.show()
-            plt.close()
 
-            fig1 = plt.figure(figsize=(12, 7))
-            plt.hist(decision_action_index_histogram_VAL, bins = 100, edgecolor="black")
-            plt.title("DECISION FRAME (ALL ACTIONS BUT NO ACTION(18))")
-            fig1.savefig(save_path_hist+'/val_hist_action_epoch_'+str(i_epoch)+'.jpg')
-            plt.close()
-
-            fig1 = plt.figure(figsize=(12, 7))
-            plt.hist(good_reward_action_VAL, bins = 100, edgecolor="black")
-            plt.title("DECISION FRAME (ONLY ACTIONS, GOOD REWARD)")
-            fig1.savefig(save_path_hist+'/val_GOOD_action_hist_epoch_'+str(i_epoch)+'.jpg')
-            plt.close()
-
-
-            fig1 = plt.figure(figsize=(12, 7))
-            plt.hist(bad_reward_VAL, bins = 100, edgecolor="black")
-            plt.title("DECISION FRAME (BAD REWARD)")
-            fig1.savefig(save_path_hist+'/val_BAD_hist_epoch_'+str(i_epoch)+'.jpg')
-            plt.close()
-            #print("(val) PREDICTION ERROR: %.2f%%\n" %(np.mean(total_reward_error_pred)*100))
-            """
             
             
 

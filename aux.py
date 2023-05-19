@@ -343,7 +343,7 @@ def print_setup(args):
 	
 	print("="*39)	
 
-def plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_loss_epoch,total_reward_epoch,maximum_time,total_time_execution_epoch,total_reward_energy_epoch,total_reward_time_epoch,ex_rate=0):
+def plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_loss_epoch,total_reward_epoch,maximum_time,total_time_execution_epoch,total_reward_energy_epoch,total_reward_time_epoch,ex_rate=0, idle_frames=None):
                 
     n = int(cfg.NUM_EPOCH*0.05)
     if i_epoch >= 2*n: 
@@ -360,7 +360,7 @@ def plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_l
     	plt.subplot(121)
     	plt.title(phase+" Loss")
     	plt.xlabel("Epoch")
-    	plt.ylabel("MSE")
+    	plt.ylabel("Smooth L1 loss")
     	plt.plot(total_loss_epoch, 'r')
     	plt.subplot(122)
     	plt.title(phase+" Exploration rate")
@@ -448,15 +448,15 @@ def plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_l
     # ---------- INTERACTION TIME ------------------------------
     #total_time_video_epoch = [sum(total_time_video)]*len(total_time_execution_epoch)
     
-    
     fig1 = plt.figure(figsize=(15, 6))
     plt.axhline(y=maximum_time, color='k')
     plt.plot(total_time_execution_epoch, 'b--')
     plt.axhline(y=minimum_time, color='r')
-    plt.legend(["Video","Interaction", "Minimum"])
+    plt.legend(["Reactive","Interaction", "Minimum"])
     plt.xlabel("Epoch")
     plt.ylabel("Frames")
     plt.title(phase+" | Interaction time")
+    plt.grid()
 
     fig1.savefig(save_path+'/'+phase+'_INTERACTION_TIME.jpg')
     plt.close(fig1)
@@ -488,6 +488,19 @@ def plot_each_epoch(i_epoch, phase,save_path,minimum_time, total_results,total_l
     plt.title("Total reward")
 
     fig1.savefig(save_path+'/'+phase+'_REWARD.jpg')
+    plt.close(fig1)
+    
+    
+    #--------------- ANTICIPATION -------------------
+    fig1 = plt.figure(figsize=(10,6))
+    plt.plot(idle_frames, 'o-')
+    plt.title("Idle decisions")
+    plt.xlabel("Epoch")
+    plt.ylabel("Seconds")
+    plt.legend(["Idle decisions"])
+    plt.grid()    
+    
+    fig1.savefig(save_path+'/'+phase+'_IDLE.jpg')
     plt.close(fig1)
     
     plt.close('all')
@@ -614,15 +627,16 @@ def plot_each_epoch_together(i_epoch,save_path,minimum_time, total_results_train
     #------------------ INTERACTION TIME------------------------------------------
     
     fig1 = plt.figure(figsize=(15, 6))
-    plt.axhline(y=maximum_time,color='k', label='Video')
+    plt.axhline(y=maximum_time,color='k', label='Reactive')
     plt.plot(total_time_execution_epoch_train,'b--',label='Train')
     plt.plot(total_time_execution_epoch_val,'m--',label='Validation')
     plt.axhline(y=minimum_time, color='r', label='Minimum')
     
-    plt.legend(["Video","Train Interaction","Val Interaction"])
+    plt.legend(["Reactive","Train Interaction","Val Interaction"])
     plt.xlabel("Epoch")
     plt.ylabel("Frames")
     plt.title("Interaction time")
+    plt.grid()
 
     plt.legend()
     fig1.savefig(save_path+'/02_INTERACTION_TIME.jpg')

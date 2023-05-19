@@ -16,6 +16,9 @@ import copy
 from natsort import natsorted, ns
 import pickle
 
+
+#random.seed(42)
+
 #CONFIGURATION GLOBAL ENVIRONMENT VARIABLES
 # 1) Dimensionality of input variables
 ACTION_SPACE = cfg.ACTION_SPACE
@@ -55,7 +58,7 @@ total_videos = len(videos_realData)
 video_idx = 0 #Index of current video
 action_idx = 0 #Index of next_action
 frame = 0 #Current frame
-recipe = '' #12345
+recipe = ''
 
 correct_action = -1 # esto para que es
 
@@ -71,7 +74,7 @@ class BasicEnv(gym.Env):
     message = "Custom environment for recipe preparation scenario."      
 
     
-    def __init__(self, display=False, test=False):
+    def __init__(self, display=False, test=False, debug=False):
         """        
         Initializes the environment.
             - Sets the dimensionality of the input and output space.
@@ -104,11 +107,8 @@ class BasicEnv(gym.Env):
             else:
                 self.observation_space = gym.spaces.Discrete(N_ATOMIC_ACTIONS*2 + VWM + N_OBJECTS) #[Ac pred + Ac reg + VWM + OiT]
 
-
             
-        self.state = [] #One hot encoded state        
-        self.total_reward = 0
-        #self.prev_state = []
+        self.state = []               
         
         self.action_repertoire = ROBOT_ACTIONS_MEANINGS
         self.next_atomic_action_repertoire = ATOMIC_ACTIONS_MEANINGS
@@ -122,6 +122,7 @@ class BasicEnv(gym.Env):
         self.person_state = "other manipulation"
         self.robot_state = "idle"
         
+        self.total_reward = 0
         self.reward_energy = 0
         self.reward_time = 0
         
@@ -133,8 +134,14 @@ class BasicEnv(gym.Env):
         global root, videos_realData, total_videos, annotations
         
         if self.test:
+            random.seed(42)
             print("==== TEST SET ====")
-            root_realData = "./video_annotations/5folds/"+cfg.TEST_FOLD+"/test/*" 
+            if debug:
+                print("== Debug version!")
+                root_realData = "./video_annotations/5folds/" + cfg.TEST_FOLD + "/test_debug/*"
+            else:
+                root_realData = "./video_annotations/5folds/"+cfg.TEST_FOLD+"/test/*" 
+                
             videos_realData = glob.glob(root_realData) 
         
         else:
@@ -154,13 +161,15 @@ class BasicEnv(gym.Env):
 
         annotations = np.load(path_labels_pkl, allow_pickle=True)
         
+        remaining_frames_pkl = os.path.join(videos_realData[video_idx], 'remaining_frames')
+        self.remaining_frames = np.load(remaining_frames_pkl, allow_pickle=True).numpy().squeeze()
+        
         print(annotations)
         
         self.CA_intime = 0
         self.CA_late = 0
         self.IA_intime = 0
-        self.IA_late = 0    
-
+        self.IA_late = 0 
         self.UAC_intime = 0
         self.UAC_late = 0
         self.UAI_intime = 0
@@ -180,11 +189,14 @@ class BasicEnv(gym.Env):
         self.rwd_time_h = []
         self.rwd_energy_h = []
         
-        self.anticipation = []
+        
         self.duration_action = 0
         
         #RRRRRRRRRRRRRR
         self.action_repertoire_durations = [[] for x in range(cfg.ACTION_SPACE)] #Empty list of lists
+        self.idles = 0
+        self.idles_list = []
+        self.anticipation = 0
 
         
     def get_frame(self):
@@ -546,7 +558,7 @@ class BasicEnv(gym.Env):
             correct_action: (int) corrected action.
         
         """
-                
+                        
         global frame, annotations
         
         length = len(annotations['label']) -1 
@@ -622,7 +634,7 @@ class BasicEnv(gym.Env):
                     if (new_task == 8 and self.objects_in_table['milk'] == 1) or (new_task == 13 and self.objects_in_table['jam'] == 1) or (new_task == 12 and self.objects_in_table['butter'] == 1) or (new_task == 14 and self.objects_in_table['tomato sauce'] == 1) or (new_task == 15 and self.objects_in_table['nutella'] == 1):
                         action_idx = action_idx + 1
                     
-                    frame = int(annotations['frame_end'][action_idx-1]) #At the end of the previous?
+                    frame = int(annotations['frame_end'][action_idx-1])+1 #At the end of the previous?
                     # frame = int(annotations['frame_init'][action_idx]) #Or at the beginning of the new one?
 
                     # pdb.set_trace()
@@ -633,7 +645,7 @@ class BasicEnv(gym.Env):
 
                 if self.flags['threshold'] == ('second' or 'next action init'): #?!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 #if self.flags['threshold'] == 2 or self.flags['threshold'] == 4:    
-                    frame = fr_init_next 
+                    frame = fr_init_next #+1
                     
                     if action_idx + 1 <= length:
                         action_idx = action_idx + 1
@@ -645,11 +657,11 @@ class BasicEnv(gym.Env):
                     # print(frame)
                     # pdb.set_trace()
                     if frame > fr_end:
-                        frame = fr_end 
+                        frame = fr_end #+1
                  
                 inaction = []
-        
-    def time_course (self, action):
+
+    def time_course(self, action):
         """
         Determines the execution time of the action and its evaluation frame based on the human behavior.
         
@@ -666,10 +678,26 @@ class BasicEnv(gym.Env):
         global frame, action_idx, inaction
         
         # print("2) Entro a time_course (con frame %5i)" %frame)
-        # print("Entro a time_course con accion: ", action)
+        # print("Entro a time_course con accion: ", action, " | Y el flag de decision: ", self.flags['decision'])
+        
+        
+        
+        # ==== 0 Check how many decisions are idle before an action is taken === 
+        
+        if (action==5) and (self.flags['decision']):
+            self.idles += 1
+        elif (action != 5) and (self.flags['decision']):
+            # print("Idles before action: ", self.idles)
+            self.idles_list.append(self.idles)
+            self.idles = 0
+                    
+        #=======================================================================
+        
+        
 
         # ===== 1 GET ACTION DURATION ==========================================================================================
         # 1.1 Get the frame at which the robot will finish the action (fr_execution)
+        if self.test: random.seed(42)
         sample = random.random()
         if sample < cfg.ERROR_PROB:            
             self.duration_action = int(random.gauss(1.5*cfg.ROBOT_ACTION_DURATIONS[int(action)], 0.2*cfg.ROBOT_ACTION_DURATIONS[int(action)]))
@@ -679,6 +707,7 @@ class BasicEnv(gym.Env):
             self.duration_action = int(random.gauss(cfg.ROBOT_ACTION_DURATIONS[int(action)], 0.2*cfg.ROBOT_ACTION_DURATIONS[int(action)]))
             fr_execution = self.duration_action + frame       
             
+        
         #RRRRRRRRRRRRRRRRRRRRRRRRRRR    
         # 1.2 Save sampled duration in the list of lists
         if action != 5: self.action_repertoire_durations[action].append(self.duration_action)    
@@ -855,8 +884,7 @@ class BasicEnv(gym.Env):
         
         # print("\nAT THE END THE THRESHOLD IS SET AT: ", threshold)
         # print("Salgo de time course con threshold %5i y frame %5i " %(threshold, frame))
-        # print("salgo de time course con freeze state: ", self.flags['freeze state'])
-        
+        # print("salgo de time course con freeze state: ", self.flags['freeze state'])        
         # print("Which corresponds to case: ", self.flags['threshold'])
         # print("DECISION FLAG: ", self.flags['decision'])
         
@@ -1020,12 +1048,13 @@ class BasicEnv(gym.Env):
                         # =================== INCORRECT OR UNNECESSARY ACTIONS ==================================
                         # =======================================================================================
                         else: 
-                            #pdb.set_trace()
                             #self.flags['freeze state'] = True #??????????'
                             # print("Entro en INCORRECT OR UNNEC with simple reward: ", simple_reward)
+                            # print("Y self flags action robot: ", self.flags["action robot"])
                             
                             # INCORRECT ACTION ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                             if self.flags["action robot"] == True: 
+                                # pdb.set_trace()
 
                                 # 1) In time ----------------------------------------------------
                                 if fr_execution <= fr_end: 
@@ -1389,7 +1418,7 @@ class BasicEnv(gym.Env):
                 self.rwd_time_h.append([self.reward_time])
                 self.rwd_energy_h.append([self.reward_energy])   
                  
-            #execution_times.append(annotations['frame_end'].iloc[-1])
+            # execution_times.append(annotations['frame_end'].iloc[-1])
             hri_time = self.time_execution
             self.flags['pdb'] = True
             # pdb.set_trace()
@@ -1455,7 +1484,7 @@ class BasicEnv(gym.Env):
                     # *. If the robot has finished before the person...
                     if fr_execution <= fr_end:                         
                         # Check what the person was doing
-                        if annotations['frame_init'][action_idx-1] <= frame <= annotations['frame_end'][action_idx-1]:
+                        if annotations['frame_init'][action_idx-1] < frame <= annotations['frame_end'][action_idx-1]:
                             self.person_state = ATOMIC_ACTIONS_MEANINGS[annotations['label'][action_idx-1]]
                         else:
                             self.person_state = "other manipulation"
@@ -1481,7 +1510,7 @@ class BasicEnv(gym.Env):
                         
                         # The person has yet to finish -> do current action
                         elif frame <= fr_end: 
-                            if annotations['frame_init'][action_idx-1] <= frame <= annotations['frame_end'][action_idx-1]:
+                            if annotations['frame_init'][action_idx-1] < frame <= annotations['frame_end'][action_idx-1]:
                                 self.person_state = ATOMIC_ACTIONS_MEANINGS[annotations['label'][action_idx-1]]
                             else:
                                 self.person_state = "other manipulation"
@@ -1536,6 +1565,35 @@ class BasicEnv(gym.Env):
         #If we have finished the recipe, save the history of states-actions-rewards
         if done:
             self.save_history()
+            
+            #SAVE MIN and MAX times of HRI (oracle and reactive)
+            # total_minimum_time_execution, _ = self.get_minimum_execution_times()
+            # path_to_save = videos_realData[video_idx] + '/human_times'            
+            # print("Path: ", path_to_save)            
+            # human_times = {'min': total_minimum_time_execution, 'max': self.time_execution}            
+            # with open(path_to_save, 'wb') as handle:
+            #     pickle.dump(human_times, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            
+            # Esto es para comprobar
+            # path = videos_realData[video_idx] + '/human_times'
+            # human_times = np.load(path, allow_pickle=True)
+            # min_time = human_times['min']
+            # max_time = human_times['max']
+            # print("\nMin time on loop: ", total_minimum_time_execution)
+            # print("Max time on loop (self.time execution): ", self.time_execution)
+            # print("\nMIN TIME according to annotation: ", min_time)
+            # print("MAX TIME according to annotation: ", max_time)
+            
+            # print(self.action_repertoire_durations)
+            
+            
+            # print("How many idles before taking action\n", self.idles_list)
+            #self.anticipation = np.sum(self.idles_list)# * cfg.DECISION_RATE
+            if self.idles_list:
+                self.anticipation = np.mean(self.idles_list) * cfg.DECISION_RATE / 30 #In seconds
+            else:
+                self.anticipation = 0.0
+            # print("ANTICIPATION IN MAIN: ", self.anticipation)
 
 
         self.total_reward += reward 
@@ -1614,6 +1672,8 @@ class BasicEnv(gym.Env):
         # 1) Read labels and store it in annotation_pkl
         labels_pkl = 'labels_updated.pkl'
         path_labels_pkl = os.path.join(videos_realData[video_idx], labels_pkl)
+        
+        # print(path_labels_pkl)
 
         # Save the file name        
         self.video_ID = str(path_labels_pkl.split("/")[-2])        
@@ -1627,30 +1687,51 @@ class BasicEnv(gym.Env):
         
         read_state = np.load(path_frame_pkl, allow_pickle=True)
         
-        data = read_state['data']
-        z = read_state['z']
-        pre_softmax = read_state['pre_softmax']
+        ac_pred = (read_state['data'][0:33] - cfg.MEAN_ACTION_PREDICTION) / cfg.STD_ACTION_PREDICTION
+        ac_rec = (read_state['data'][33:66] - cfg.MEAN_ACTION_RECOGNITION) / cfg.STD_ACTION_RECOGNITION
+        vwm = (read_state['data'][66:110] - cfg.MEAN_VWM) / cfg.STD_VWM
         
-        data[0:33] = pre_softmax
+        z = (read_state['z'] - cfg.MEAN_Z) / cfg.STD_Z
+
         oit = list(OBJECTS_INIT_STATE.values())
+        oit = (oit - np.mean(oit)) / np.std(oit)
         
+        #RRRRRR temporal ctx
+        remaining_frames_pkl = os.path.join(videos_realData[video_idx], 'remaining_frames')
+        self.remaining_frames = np.load(remaining_frames_pkl, allow_pickle=True).numpy().squeeze()        
+                
 
         if cfg.TEMPORAL_CONTEXT:
             # print("WITH TEMPORAL CTX")
-            action_durations_ML = [np.array(ad).mean() if ad else 0 for ad in self.action_repertoire_durations]
-            human_action_estimate = [0.1] #This will be output by the ACTION PREDICTION MODULE
+            # if self.test:
+            #     action_durations_ML = list(cfg.ROBOT_ACTION_DURATIONS.values())
+            # else:
+            #     action_durations_ML = [np.array(ad).mean() if ad else 0 for ad in self.action_repertoire_durations]
+                
+            #FROM CONFIG
+            action_durations_ML = list(cfg.ROBOT_ACTION_DURATIONS.values())
             
-            temp_ctx = concat_vectors(action_durations_ML, human_action_estimate)
+            #print("Remainigng frames en transition: ", self.remaining_frames[frame_to_read])
+            # human_action_estimate = [self.remaining_frames[frame_to_read]] #This will be output by the ACTION PREDICTION MODULE
+            
+            #Using ANNOTATIONS
+            human_action_estimate = np.zeros(1)
+            human_action_estimate[0] = ((annotations['frame_end'][action_idx] - frame) / 3000) - 0.5
+            
+            
+            # temp_ctx = concat_vectors(action_durations_ML, human_action_estimate)
             
             
             # W/O Z-hidden state of LSTM
             if Z_hidden_state:
-                # print("WITH Z")
-                self.state = concat_vectors(concat_3_vectors(data, oit, temp_ctx), z)
-                # print(len(self.state))
+                # print("WITH Z")                
+                self.state = np.concatenate((ac_pred, ac_rec, vwm, oit, human_action_estimate, action_durations_ML, z))                    
+                
             else:
                 # print("WITHOUT Z")
-                self.state = concat_3_vectors(data,oit, temp_ctx)
+                # self.state = concat_3_vectors(data,oit, temp_ctx)
+                
+                self.state = np.concatenate((ac_pred, ac_rec, vwm, oit, human_action_estimate, action_durations_ML))
                 # print(len(self.state))
         
         else:
@@ -1658,12 +1739,17 @@ class BasicEnv(gym.Env):
             # W/O Z-hidden state of LSTM
             if Z_hidden_state:
                 # print("WITH Z")
-                self.state = concat_3_vectors(data, oit, z)
+                # self.state = concat_3_vectors(data, oit, z)
+                
+                self.state = np.concatenate((ac_pred, ac_rec, vwm, oit, z))
+                
+                
                 # print(len(self.state))
             else:
                 # print("WIHOUT Z")
-                self.state = concat_vectors(data,oit)
+                # self.state = concat_vectors(data,oit)
                 # print(len(self.state))
+                self.state = np.concatenate((ac_pred, ac_rec, vwm, oit))
 
             
         # if Z_hidden_state:
@@ -1694,12 +1780,16 @@ class BasicEnv(gym.Env):
         self.rwd_time_h = []
         self.rwd_energy_h = []
         
-        self.anticipation = []
+        self.anticipation = 0
         self.duration_action = 0
         
         self.objects_in_table = OBJECTS_INIT_STATE.copy()
         memory_objects_in_table.append(list(self.objects_in_table.values()))
-
+        
+        #RRRRRRRRRRRRRRRRRRRR
+        self.idles = 0
+        self.idles_list = []
+        
         
         return self.state
 
@@ -1719,9 +1809,12 @@ class BasicEnv(gym.Env):
 
         global memory_objects_in_table
         if state == []:
-            state = undo_one_hot(self.state[0:33]) #Next action prediction
+            # state = undo_one_hot(self.state[0:33]) #Next action prediction
+            state = annotations['label'][action_idx] #RRRRRRRRRRRRRRR
                             
         object_before_action = memory_objects_in_table[len(memory_objects_in_table)-1]
+        
+        # print("In simple_reward() object before action: ", object_before_action)
 
         reward = 0
         positive_reward = cfg.POSITIVE_REWARD
@@ -1811,7 +1904,7 @@ class BasicEnv(gym.Env):
             # pdb.set_trace()
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'butter'][0]
-            key2 = [k for k, v in OBJECTS_MEANINGS.items() if v == 'jam'][0]
+            # key2 = [k for k, v in OBJECTS_MEANINGS.items() if v == 'jam'][0]
             
             if action == 0: #'bring butter'
                 reward = positive_reward
@@ -1829,7 +1922,7 @@ class BasicEnv(gym.Env):
         elif state == 13: #'extract jam fridge'
             self.flags["action robot"] = True
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'jam'][0]
-            key2 = [k for k, v in OBJECTS_MEANINGS.items() if v == 'butter'][0]
+            # key2 = [k for k, v in OBJECTS_MEANINGS.items() if v == 'butter'][0]
 
             if action == 1: #'bring jam'
                 reward = positive_reward
@@ -1860,12 +1953,13 @@ class BasicEnv(gym.Env):
         
         elif state == 15: #'extract nutella fridge'
             self.flags["action robot"] = True
+            # print("State 15 extract nutella")
+            # pdb.set_trace()
             key = [k for k, v in OBJECTS_MEANINGS.items() if v == 'nutella'][0]
             if action == 3: #'bring nutella'
                 reward = positive_reward
                 
             elif object_before_action[key] == 1:
-                # pdb.set_trace()
                 self.flags["action robot"] = False
                 if action == 5: 
                     reward = 5
@@ -2028,9 +2122,11 @@ class BasicEnv(gym.Env):
         objs = ['jam', 'butter', 'tomato sauce', 'nutella', 'milk']
         keys = [k for k, v in OBJECTS_MEANINGS.items() if v in objs]
         
-        for key in keys:
-            if object_before_action[key] == 1:
-                self.flags['action robot'] = False
+        # for key in keys:
+        #     if object_before_action[key] == 1:
+        #         print("????????AKSDJKLASJDLKASJDLKJSLD")
+        #         pdb.set_trace()
+        #         self.flags['action robot'] = False
         
         # print("KEYS: ", keys)
         # print("Flag action robot: ", self.flags['action robot'])
@@ -2089,12 +2185,15 @@ class BasicEnv(gym.Env):
             
         
         # 2.2 ) Generate state
-        data = read_state['data'] #[Ac pred + Ac reg + VWM]
-        z = read_state['z']
-        pre_softmax = read_state['pre_softmax'] 
-            
-        data[0:33] = pre_softmax    
-            
+        data = read_state['data'][:110] #[Ac pred + Ac reg + VWM]
+        
+        ac_pred = (read_state['data'][0:33] - cfg.MEAN_ACTION_PREDICTION) / cfg.STD_ACTION_PREDICTION
+        ac_rec = (read_state['data'][33:66] - cfg.MEAN_ACTION_RECOGNITION) / cfg.STD_ACTION_RECOGNITION
+        vwm = (read_state['data'][66:110] - cfg.MEAN_VWM) / cfg.STD_VWM
+        
+        z = (read_state['z'] - cfg.MEAN_Z) / cfg.STD_Z
+        # pre_softmax = read_state['pre_softmax']             
+        # data[0:33] = pre_softmax              
         
             
         # OBJECTS IN TABLE            
@@ -2103,24 +2202,45 @@ class BasicEnv(gym.Env):
             oit = memory_objects_in_table[0]
         else:
             oit = memory_objects_in_table[variations_in_table-1]
-                
+        
+        oit = (oit - np.mean(oit)) / np.std(oit)
+        
+        # print("\nAct pred: ", ac_pred.shape)
+        # print("\nAct recon: ", ac_rec.shape)
+        # print("\nVwm: ", vwm.shape)
+        # print("\nOIT: ", oit.shape)    
 
         if cfg.TEMPORAL_CONTEXT:
             # print("WITH TEMPORAL CTX")
-            action_durations_ML = [np.array(ad).mean() if ad else 0 for ad in self.action_repertoire_durations]
-            human_action_estimate = [0.1] #This will be output by the ACTION PREDICTION MODULE
+            # if self.test:
+            #     action_durations_ML = list(cfg.ROBOT_ACTION_DURATIONS.values())
+            # else:
+            #     action_durations_ML = [np.array(ad).mean() if ad else 0 for ad in self.action_repertoire_durations]
+                
+            #FROM CONFIG
+            action_durations_ML = list(cfg.ROBOT_ACTION_DURATIONS.values())
             
-            temp_ctx = concat_vectors(action_durations_ML, human_action_estimate)
+            #print("Remainigng frames en transition: ", self.remaining_frames[frame_to_read])
+            # human_action_estimate = [self.remaining_frames[frame_to_read]] #This will be output by the ACTION PREDICTION MODULE
+            
+            #Using ANNOTATIONS
+            human_action_estimate = np.zeros(1)
+            human_action_estimate[0] = ((annotations['frame_end'][action_idx] - frame) / 3000) - 0.5
+            
+            
+            # temp_ctx = concat_vectors(action_durations_ML, human_action_estimate)
             
             
             # W/O Z-hidden state of LSTM
             if Z_hidden_state:
-                # print("WITH Z")
-                self.state = concat_vectors(concat_3_vectors(data, oit, temp_ctx), z)
-                # print(len(self.state))
+                # print("WITH Z")                
+                self.state = np.concatenate((ac_pred, ac_rec, vwm, oit, human_action_estimate, action_durations_ML, z))                    
+                
             else:
                 # print("WITHOUT Z")
-                self.state = concat_3_vectors(data,oit, temp_ctx)
+                # self.state = concat_3_vectors(data,oit, temp_ctx)
+                
+                self.state = np.concatenate((ac_pred, ac_rec, vwm, oit, human_action_estimate, action_durations_ML))
                 # print(len(self.state))
         
         else:
@@ -2128,17 +2248,24 @@ class BasicEnv(gym.Env):
             # W/O Z-hidden state of LSTM
             if Z_hidden_state:
                 # print("WITH Z")
-                self.state = concat_3_vectors(data, oit, z)
+                # self.state = concat_3_vectors(data, oit, z)
+                
+                self.state = np.concatenate((ac_pred, ac_rec, vwm, oit, z))
+                
+                
                 # print(len(self.state))
             else:
                 # print("WIHOUT Z")
-                self.state = concat_vectors(data,oit)
+                # self.state = concat_vectors(data,oit)
                 # print(len(self.state))
+                self.state = np.concatenate((ac_pred, ac_rec, vwm, oit))
+                
+        # print("STATE\n", self.state[0:33])
+        # print(self.state[33:66])
+        # print(self.state[66:110])
+        # print(self.state[110:144])
         
-        # 3) NORMALIZE
-        self.state = normalize(self.state)
         
-
 
 
     def CreationDataset(self):

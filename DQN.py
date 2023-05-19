@@ -10,34 +10,89 @@ class DQN(nn.Module):
     def __init__(self, input_size, output_size):
         super(DQN, self).__init__()
         
-        self.feature_dim = input_size - cfg.Z_HIDDEN #First features and Z variable separated
+        print("DQN without Z variable")
+        
+                        
+        self.input_layer1 = nn.Sequential(
+            nn.Linear(input_size, 512),
+            nn.BatchNorm1d(512),
+            nn.ReLU()
+        )
+        
+        self.hidden1 = nn.Sequential(
+            nn.Linear(512, 512),
+            nn.BatchNorm1d(512),
+            nn.ReLU()
+        )
+        
+        self.output_layer = nn.Sequential(
+            nn.Linear(512, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Linear(256, output_size)            
+        )       
+        
+            
+    def forward(self, x):
+        # print("INPUT SHAPE IN THE DQN ", x.shape)
+        #print("\nInput states\n", x)
+        #print("")
+
+
+        x = self.input_layer1(x)  
+        x = self.hidden1(x)
+        x = self.output_layer(x)
+        
+        return x
+
+
+
+
+
+
+class DQN_Z(nn.Module):
+    
+    def __init__(self, input_size, output_size):
+        super(DQN_Z, self).__init__()
+               
+        print("DQN with Z variable")
+        
+        self.feature_dim = input_size - cfg.Z_HIDDEN
         
         # print("DQN input size: ", input_size)
         # print("DQN feature: ", self.feature_dim)
-                
-        #self.input_layer1 = nn.Linear(self.feature_dim, 256)
-        self.input_layer1 = nn.Linear(input_size - cfg.Z_HIDDEN, 256)
-        self.bn1 = nn.BatchNorm1d(256)
-        self.hidden1 = nn.Linear(256,512)
-        self.bn5 = nn.BatchNorm1d(512)
+        # print("DQN Zhidden: ", cfg.Z_HIDDEN)
         
-        if cfg.Z_hidden_state:
-              #self.input_layer2 = nn.Linear(input_size-self.feature_dim, 256)
-              self.input_layer2 = nn.Linear(cfg.Z_HIDDEN, 256)
-              self.bn2 = nn.BatchNorm1d(256)
-              
-              #Here we concat (x1,x2)
-                  
-              self.hidden_layer = nn.Linear(512, 512)
-              self.bn3 = nn.BatchNorm1d(512)
-              
-        self.hidden2 = nn.Linear(512,256) 
-        self.bn4 = nn.BatchNorm1d(256)
+                        
+        self.input_layer1 = nn.Sequential(
+            nn.Linear(input_size - cfg.Z_HIDDEN, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU()
+        )
+        
+        self.input_layer2 = nn.Sequential(
+            nn.Linear(cfg.Z_HIDDEN, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU()            
+        )
            
-        self.output_layer = nn.Linear(256, output_size)
+        self.hidden1 = nn.Sequential(
+            nn.Linear(512, 512),
+            nn.BatchNorm1d(512),
+            nn.ReLU()
+        )
+        self.hidden2 = nn.Sequential(
+            nn.Linear(512, 512),
+            nn.BatchNorm1d(512),
+            nn.ReLU()
+        )
         
-        self.relu = nn.ReLU()
-        
+        self.output_layer = nn.Sequential(
+            nn.Linear(512, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Linear(256, output_size)            
+        )       
         
             
     def forward(self, x):
@@ -45,34 +100,118 @@ class DQN(nn.Module):
         #print("\nInput states\n", x)
         #print("")
         
-        # Separate input tensor
         input1 = x[:, 0:self.feature_dim]
         input2 = x[:, self.feature_dim:]
+                
+        x1 = self.input_layer1(input1)
+        x2 = self.input_layer2(input2)
         
-        #1) Forward first set of features
-        x1 = self.relu(self.bn1(self.input_layer1(input1)))        
-        # print("INPUT 1: ", input1.shape)
+        x = torch.cat((x1, x2), 1)         
         
-        #2.1) Forward Z hidden state
-        if cfg.Z_hidden_state:
-            x2 = self.relu(self.bn2(self.input_layer2(input2)))
-            
-            # 2.1.2) Concatenate features    
-            x = torch.cat((x1, x2), 1) #Concat after 1st layer pass
-        
-            # 3) Forward concat feats in hidden
-            x = self.relu(self.bn3(self.hidden_layer(x)))
-        
-        #2.2) Ignore Z hidden state
-        else:
-            x = x1
-            x = self.relu(self.bn5(self.hidden1(x)))
-
-        #3) Second hidden layer and output layer
-        x = self.relu(self.bn4(self.hidden2(x)))
+        x = self.hidden1(x)
+        x = self.hidden2(x)
         x = self.output_layer(x)
+
         
         return x
+
+
+
+class DQN_LateFusion(nn.Module):
+    
+    def __init__(self, input_size, output_size):
+        super(DQN_LateFusion, self).__init__()
+               
+        print("DQN Late fusion")
+                
+        self.embedding_size = 32
+        
+                        
+        self.input_AcPred = nn.Sequential(
+            nn.Linear(33, self.embedding_size),
+            nn.BatchNorm1d(self.embedding_size),
+            nn.ReLU()
+        )
+        
+        self.input_AcRec = nn.Sequential(
+            nn.Linear(33, self.embedding_size),
+            nn.BatchNorm1d(self.embedding_size),
+            nn.ReLU()            
+        )
+        
+        self.input_VWM = nn.Sequential(
+            nn.Linear(44, self.embedding_size),
+            nn.BatchNorm1d(self.embedding_size),
+            nn.ReLU()            
+        )
+        
+        self.input_OiT = nn.Sequential(
+            nn.Linear(23, self.embedding_size),
+            nn.BatchNorm1d(self.embedding_size),
+            nn.ReLU()            
+        )
+        
+        self.input_TempCtx = nn.Sequential(
+            nn.Linear(7, self.embedding_size),
+            nn.BatchNorm1d(self.embedding_size),
+            nn.ReLU()            
+        )
+        
+        self.input_Z = nn.Sequential(
+            nn.Linear(1024, self.embedding_size),
+            nn.BatchNorm1d(self.embedding_size),
+            nn.ReLU()            
+        )
+           
+        self.hidden1 = nn.Sequential(
+            nn.Linear(self.embedding_size*6, 512),
+            nn.BatchNorm1d(512),
+            nn.ReLU()
+        )
+        self.hidden2 = nn.Sequential(
+            nn.Linear(512, 512),
+            nn.BatchNorm1d(512),
+            nn.ReLU()
+        )
+        
+        self.output_layer = nn.Sequential(
+            nn.Linear(512, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Linear(256, output_size)            
+        )       
+        
+            
+    def forward(self, x):
+        # print("INPUT SHAPE IN THE DQN ", x.shape)
+        #print("\nInput states\n", x)
+        #print("")
+        
+        ac_pred = x[:, 0:33]
+        ac_rec = x[:, 33:66]
+        vwm = x[:, 66:110]
+        oit = x[:, 110:133]
+        temp_ctx = x[:, 133:140]
+        z = x[:, 140:]
+        
+        x1 = self.input_AcPred(ac_pred)
+        x2 = self.input_AcRec(ac_rec)
+        x3 = self.input_VWM(vwm)
+        x4 = self.input_OiT(oit)
+        x5 = self.input_TempCtx(temp_ctx)
+        x6 = self.input_Z(z)
+              
+        x = torch.cat((x1, x2, x3, x4, x5, x6), 1)         
+        
+        x = self.hidden1(x)
+        x = self.hidden2(x)
+        x = self.output_layer(x)
+
+        
+        return x
+
+
+
 
 
 def init_weights(m):

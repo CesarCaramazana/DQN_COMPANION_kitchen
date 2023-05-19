@@ -26,7 +26,7 @@ import glob
 import torch
 import torch.nn as nn
 
-from DQN import DQN, ReplayMemory, Transition, init_weights 
+from DQN import *
 import config as cfg
 from aux import *
 from natsort import natsorted, ns
@@ -57,6 +57,8 @@ state_dic = cfg.ATOMIC_ACTIONS_MEANINGS
 action_dic = cfg.ROBOT_ACTIONS_MEANINGS 
 
 
+random.seed(42)
+torch.manual_seed(42)
 
 def post_processed_possible_actions(out,index_posible_actions):
     """
@@ -102,10 +104,12 @@ def select_action(state):
     
     policy_net.eval()
     with torch.no_grad():
-    	out = policy_net(state)
+        out = policy_net(state)
     
-    best_action = action = post_processed_possible_actions(out,index_posible_actions)    
-    #best_action = torch.tensor([[5]], device=device, dtype=torch.long) #Para encontrar el tiempo de HRI de un robot pasivo
+    best_action = action = post_processed_possible_actions(out,index_posible_actions)   
+    
+    if cfg.REACTIVE:
+        best_action = torch.tensor([[5]], device=device, dtype=torch.long) #Para encontrar el tiempo de HRI de un robot pasivo
 
     return best_action
 
@@ -123,9 +127,6 @@ def action_rate(decision_cont,state):
         flag_decision = False
     
     return action_selected, flag_decision
-
-
-
 
 
 
@@ -161,7 +162,7 @@ else:
     NUM_EPISODES = len(glob.glob("./video_annotations/5folds/"+cfg.TEST_FOLD+"/train/*"))
     print("Train set")
     root = './video_annotations/5folds/'+cfg.TEST_FOLD+'/train/*'
-	
+    
 video_max_times = []
 video_min_times = []
 
@@ -170,23 +171,32 @@ videos = glob.glob(root)
 
 #GET VIDEO TIME AND OPTIMAL TIME (MIN)
 for video in videos:
-	path = video + '/human_times'
-	human_times = np.load(path, allow_pickle=True)  
-	
-	min_time = human_times['min']
-	max_time = human_times['max']
-	
-	video_max_times.append(max_time)
-	video_min_times.append(min_time)
-	
+    path = video + '/human_times'
+    human_times = np.load(path, allow_pickle=True)  
+    
+    min_time = human_times['min']
+    max_time = human_times['max']
+    
+    video_max_times.append(max_time)
+    video_min_times.append(min_time)
+    
 minimum_time = sum(video_min_times)
 maximum_time = sum(video_max_times)
 
-	
+    
 n_actions = env.action_space.n
 n_states = env.observation_space.n
 
-policy_net = DQN(n_states, n_actions).to(device)
+if cfg.Z_hidden_state:
+    if cfg.LATE_FUSION:
+        policy_net = DQN_LateFusion(n_states, n_actions).to(device)
+        target_net = DQN_LateFusion(n_states, n_actions).to(device)
+    else:
+        policy_net = DQN_Z(n_states, n_actions).to(device)
+        target_net = DQN_Z(n_states, n_actions).to(device)
+else:
+    policy_net = DQN(n_states, n_actions).to(device)
+    target_net = DQN(n_states, n_actions).to(device)
 
 #LOAD MODEL from 'EXPERIMENT_NAME' folder
 path = os.path.join(ROOT, EXPERIMENT_NAME)
@@ -226,147 +236,155 @@ epoch_total_reward_time_ep = []
 epoch_total_time_video = []
 epoch_total_time_interaction = []
 
+epoch_idle = []
+
 for f in pt_files:
-	print(f)
-	epoch = int(f.replace(path + "/model_", '').replace('.pt', ''))
-	#print(epoch)
-	
-	epoch_test.append(epoch)
-	
-	checkpoint = torch.load(f)
-	policy_net.load_state_dict(checkpoint['model_state_dict'])
-	policy_net.eval()		
-	
-	steps_done = 0
-	
-	total_reward = []
-	total_reward_energy = []
-	total_reward_time = []
-	total_reward_energy_ep = []
-	total_reward_time_ep = []
-	total_times_execution = []
-	
-	total_CA_intime = []
-	total_CA_late = []
-	total_IA_intime = []
-	total_IA_late = []
-	total_UAC_intime = []
-	total_UAC_late = []
-	total_UAI_intime = []
-	total_UAI_late = []
-	total_CI = []
-	total_II = []
-	
-	total_interaction_time_epoch = []
-	#total_maximum_time_execution_epoch = []
-	#total_minimum_time_execution_epoch = []
-	
-	
-	
-	decision_cont = 0
+    print(f)
+    epoch = int(f.replace(path + "/model_", '').replace('.pt', ''))
+    #print(epoch)
+    
+    epoch_test.append(epoch)
+    
+    checkpoint = torch.load(f)
+    policy_net.load_state_dict(checkpoint['model_state_dict'])
+    policy_net.eval()        
+    
+    steps_done = 0
+    
+    total_reward = []
+    total_reward_energy = []
+    total_reward_time = []
+    total_reward_energy_ep = []
+    total_reward_time_ep = []
+    total_times_execution = []
+    
+    total_CA_intime = []
+    total_CA_late = []
+    total_IA_intime = []
+    total_IA_late = []
+    total_UAC_intime = []
+    total_UAC_late = []
+    total_UAI_intime = []
+    total_UAI_late = []
+    total_CI = []
+    total_II = []
+    
+    total_interaction_time_epoch = []
+    #total_maximum_time_execution_epoch = []
+    #total_minimum_time_execution_epoch = []
+    
+    total_idle = []   
+    
+    decision_cont = 0
 
-	flag_do_action = True 
+    flag_do_action = True 
 
 
 
-	for i_episode in range(NUM_EPISODES):
+    for i_episode in range(NUM_EPISODES):
 
-	    print("| EPISODE #", i_episode , end='\r')
+        print("| EPISODE #", i_episode , end='\r')
 
-	    state = torch.tensor(env.reset(), dtype=torch.float, device=device).unsqueeze(0)
+        state = torch.tensor(env.reset(), dtype=torch.float, device=device).unsqueeze(0)
 
-	    done = False
-	    
-	    steps_done += 1
-	    num_optim = 0
-	    
-	    action = select_action(state) #1
-	    
-	    reward_energy_ep = 0
-	    reward_time_ep = 0
-	    
-	    for t in count(): 
-	    	decision_cont += 1
-	    	action, flag_decision = action_rate(decision_cont, state)
-	    	
-	    	if flag_decision: 
-	    		action_ = action
-	    		action = action.item()
-	    	
-	    	array_action = [action,flag_decision, 'val']
-	    	#next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times, correct_action, _ = env.step(array_action)
-	    	next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, hri_time, correct_action, type_threshold, error_pred, total_pred = env.step(array_action)
-	    	
-	    	
-	    	reward = torch.tensor([reward], device=device)
-	    	reward_energy_ep += reward_energy
-	    	reward_time_ep += reward_time
+        done = False
+        
+        steps_done += 1
+        num_optim = 0
+        
+        action = select_action(state) #1
+        
+        reward_energy_ep = 0
+        reward_time_ep = 0
+        
+        for t in count(): 
+            decision_cont += 1
+            action, flag_decision = action_rate(decision_cont, state)
+            
+            if flag_decision: 
+                action_ = action
+                action = action.item()
+            
+            array_action = [action,flag_decision, 'val']
+            #next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, execution_times, correct_action, _ = env.step(array_action)
+            next_state_, reward, done, optim, flag_pdb, reward_time, reward_energy, hri_time, correct_action, type_threshold, error_pred, total_pred = env.step(array_action)
+            
+            
+            reward = torch.tensor([reward], device=device)
+            reward_energy_ep += reward_energy
+            reward_time_ep += reward_time
 
-	    	next_state = torch.tensor([next_state_], dtype=torch.float,device=device)
-	    	
-	    	if not done: 
-	    		state = next_state
-	    	else:
-	    		next_state = None
-	    	
-	    	if done:
-	    		#total_times_execution.append(execution_times)
-	    		total_reward_energy_ep.append(reward_energy_ep)
-	    		total_reward_time_ep.append(reward_time_ep)
-	    		total_reward.append(env.get_total_reward())
-	    		
-	    		total_CA_intime.append(env.CA_intime)
-	    		total_CA_late.append(env.CA_late)
-	    		total_IA_intime.append(env.IA_intime)
-	    		total_IA_late.append(env.IA_late)
-	    		total_UAC_intime.append(env.UAC_intime)
-	    		total_UAC_late.append(env.UAC_late)
-	    		total_UAI_intime.append(env.UAI_intime)
-	    		total_UAI_late.append(env.UAI_late)
-	    		total_CI.append(env.CI)
-	    		total_II.append(env.II)
-	    		
-	    		#total_time_video = list(list(zip(*total_times_execution))[0])
-	    		#total_time_interaction = list(list(zip(*total_times_execution))[1])
-	    		
-	    		#HRI
-	    		total_interaction_time_epoch.append(hri_time)
-	    		
-	    		#Human baseline
-	    		#total_minimum_time_execution_epoch.append(min_time)
-	    		#total_maximum_time_execution_epoch.append(max_time)	    		
+            next_state = torch.tensor([next_state_], dtype=torch.float,device=device)
+            
+            if not done: 
+                state = next_state
+            else:
+                next_state = None
+            
+            if done:
+                #total_times_execution.append(execution_times)
+                total_reward_energy_ep.append(reward_energy_ep)
+                total_reward_time_ep.append(reward_time_ep)
+                total_reward.append(env.get_total_reward())
+                
+                total_CA_intime.append(env.CA_intime)
+                total_CA_late.append(env.CA_late)
+                total_IA_intime.append(env.IA_intime)
+                total_IA_late.append(env.IA_late)
+                total_UAC_intime.append(env.UAC_intime)
+                total_UAC_late.append(env.UAC_late)
+                total_UAI_intime.append(env.UAI_intime)
+                total_UAI_late.append(env.UAI_late)
+                total_CI.append(env.CI)
+                total_II.append(env.II)
+                
+                #total_time_video = list(list(zip(*total_times_execution))[0])
+                #total_time_interaction = list(list(zip(*total_times_execution))[1])
+                
+                #HRI
+                total_interaction_time_epoch.append(hri_time)
+                
+                #Human baseline
+                #total_minimum_time_execution_epoch.append(min_time)
+                #total_maximum_time_execution_epoch.append(max_time)      
+                
+                
+                #print(total_time_video)
+                #print(total_time_iteraction)
+                
+                #RRRRRRRRRr
+                total_idle.append(env.anticipation)
+                
+                break #Finish episode
 
-	    		
-	    		#print(total_time_video)
-	    		#print(total_time_iteraction)
-	    		
-	    		break #Finish episode
+    #epoch_total_times_execution.append(np.sum(total_times_execution))
+    epoch_total_reward_energy_ep.append(np.sum(total_reward_energy_ep))
+    epoch_total_reward_time_ep.append(np.sum(total_reward_time_ep))
 
-	#epoch_total_times_execution.append(np.sum(total_times_execution))
-	epoch_total_reward_energy_ep.append(np.sum(total_reward_energy_ep))
-	epoch_total_reward_time_ep.append(np.sum(total_reward_time_ep))
+    #epoch_total_time_video.append(np.sum(total_time_video))
+    epoch_total_time_interaction.append(np.sum(total_interaction_time_epoch)) #HRI time
 
-	#epoch_total_time_video.append(np.sum(total_time_video))
-	epoch_total_time_interaction.append(np.sum(total_interaction_time_epoch)) #HRI time
-
-	epoch_CA_intime.append(np.sum(total_CA_intime))
-	epoch_CA_late.append(np.sum(total_CA_late))
-	epoch_IA_intime.append(np.sum(total_IA_intime))
-	epoch_IA_late.append(np.sum(total_IA_late))
-	epoch_UAC_intime.append(np.sum(total_UAC_intime))
-	epoch_UAC_late.append(np.sum(total_UAC_late))
-	epoch_UAI_intime.append(np.sum(total_UAI_intime))
-	epoch_UAI_late.append(np.sum(total_UAI_late))
-	epoch_CI.append(np.sum(total_CI))
-	epoch_II.append(np.sum(total_II))
-	
-	epoch_reward.append(np.sum(total_reward))
-	
-	
-	#maximum_time = sum(total_maximum_time_execution_epoch) #Human times
-	#minimum_time = sum(total_minimum_time_execution_epoch)
-	
-	
+    epoch_CA_intime.append(np.sum(total_CA_intime))
+    epoch_CA_late.append(np.sum(total_CA_late))
+    epoch_IA_intime.append(np.sum(total_IA_intime))
+    epoch_IA_late.append(np.sum(total_IA_late))
+    epoch_UAC_intime.append(np.sum(total_UAC_intime))
+    epoch_UAC_late.append(np.sum(total_UAC_late))
+    epoch_UAI_intime.append(np.sum(total_UAI_intime))
+    epoch_UAI_late.append(np.sum(total_UAI_late))
+    epoch_CI.append(np.sum(total_CI))
+    epoch_II.append(np.sum(total_II))
+    
+    epoch_reward.append(np.sum(total_reward))
+    
+    # epoch_idle.append(np.sum(total_idle))
+    epoch_idle.append(np.mean(total_idle))
+    
+    
+    #maximum_time = sum(total_maximum_time_execution_epoch) #Human times
+    #minimum_time = sum(total_minimum_time_execution_epoch)
+    
+    
 
 
  
@@ -472,16 +490,16 @@ sizes1 = [stci, stcl, ltci, ltcl, ui, ul, iai, ial]
 
 labels2 = 'Short-term', 'Long-term'
 sizes2 = [stci + stcl, 
-	ltci + ltcl]
+    ltci + ltcl]
 
 
 labels3 = 'In time', 'Late'
 sizes3 = [stci + ltci + ui + iai,
-	stcl + ltcl + ul + ial]
+    stcl + ltcl + ul + ial]
 
 labels4 = 'Useful actions', 'Useless actions' #Kinda like correct vs Incorrect+Unnecs
 sizes4 = [stci + stcl + ltci + ltcl,
-	ui + ul + iai + ial]	
+    ui + ul + iai + ial]    
 
 fig1 = plt.figure(figsize=(20,10))
 
@@ -512,7 +530,8 @@ else: fig1.savefig(save_path+'/00_TRAIN_ACTIONS_PIE.jpg')
 
 
 
-
+print("Energy reward: ", epoch_total_reward_energy_ep)
+print("Time reward: ", epoch_total_reward_time_ep)
 
 # -------------__REWARDS -------------------------
 fig2 = plt.figure(figsize=(20,6))
@@ -551,13 +570,23 @@ else: fig2.savefig(save_path+'/00_TRAIN_REWARD.jpg')
 
 
 #--------------- INTERACTION ---------------------
+
+print("Reactive time: ", maximum_time)
+print("Min time: ", minimum_time)
+print("HRI time: ", epoch_total_time_interaction)
+
+best_epoch = np.argmin(epoch_total_time_interaction)
+be = "Best epoch = " + str(epoch_test[best_epoch])
+
 fig3 = plt.figure(figsize=(15,6))
 plt.title("Interaction time")
 #plt.plot(epoch_total_time_video, 'k',label='Video')
 plt.plot(epoch_test, epoch_total_time_interaction, 'c--',label='Interaction')
-plt.axhline(y=maximum_time, color='k', label='Video')
+plt.plot(epoch_test[best_epoch], epoch_total_time_interaction[best_epoch], 'x', label=be)
+plt.axhline(y=maximum_time, color='k', label='Reactive')
 plt.axhline(y=minimum_time, color='r', label='Minimum')
 plt.legend()
+plt.grid()
 plt.ylabel("Frames")
 
 # plt.show()
@@ -568,7 +597,20 @@ else: fig3.savefig(save_path+'/00_TRAIN_INTERACTION_TIME.jpg')
 plt.close()
 
 
+print("Idle time: ", epoch_idle)
+# ----------- IDLES -------------
+fig4 = plt.figure(figsize=(10,6))
+plt.title("Idle decisions")
+plt.plot(epoch_test, epoch_idle, 'o-')
+plt.grid()
+
+if env.test: fig4.savefig(save_path+'/00_TEST_IDLE_DECISIONS.jpg')
+else: fig4.savefig(save_path+'/00_TRAIN_IDLE_DECISIONS.jpg')
+
+plt.close()
+
+
 if env.test: 
-	for i in range(NUM_EPISODES):
-		create_graph(save_path, i)
+    for i in range(NUM_EPISODES):
+        create_graph(save_path, i)
 

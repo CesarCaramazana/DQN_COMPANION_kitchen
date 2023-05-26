@@ -1,7 +1,7 @@
 #DQN PARAMETERS ------
 #---------------------------------------------------------------------------------
 
-TEST_FOLD = "fold1"
+TEST_FOLD = "fold5"
 
 REPLAY_MEMORY = 2048 #Size of replay memory (deque object)
 
@@ -29,7 +29,7 @@ Z_hidden_state = True
 TEMPORAL_CONTEXT = True
 
  
-LATE_FUSION = True
+LATE_FUSION = True #Only supported for Z_hidden_state = True
 
 #--------------------------------------------
 
@@ -37,7 +37,7 @@ LATE_FUSION = True
 DECISION_RATE = 30
 
 #ROBOT SPEED FACTOR: if BETA < 1, the robot becomes faster; if BETA > 1, the robot becomes slower. BETA = 1 is a robot that is as fast as the average person.
-BETA = 1.5
+BETA = 2
 
 #ENERGY PENALTY FACTOR
 FACTOR_ENERGY_PENALTY = 1

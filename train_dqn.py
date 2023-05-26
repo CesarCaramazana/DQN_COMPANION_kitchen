@@ -99,11 +99,17 @@ env.reset() #Set initial state
 n_states = env.observation_space.n #Dimensionality of the input of the DQN
 n_actions = env.action_space.n #Dimensionality of the output of the DQN 
 
+print("Dimensionality of observation space: ", n_states)
+
 #Networks and optimizer
 if cfg.Z_hidden_state:
     if cfg.LATE_FUSION:
-        policy_net = DQN_LateFusion(n_states, n_actions).to(device)
-        target_net = DQN_LateFusion(n_states, n_actions).to(device)
+        if cfg.TEMPORAL_CONTEXT:
+            policy_net = DQN_LateFusion(n_states, n_actions).to(device)
+            target_net = DQN_LateFusion(n_states, n_actions).to(device)
+        else:
+            policy_net = DQN_LateFusion_noTCtx(n_states, n_actions).to(device)
+            target_net = DQN_LateFusion_noTCtx(n_states, n_actions).to(device)
     else:
         policy_net = DQN_Z(n_states, n_actions).to(device)
         target_net = DQN_Z(n_states, n_actions).to(device)
@@ -540,6 +546,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             episode_loss = []
             done = False
             to_optim = True
+            decision_cont = 0
             
             decision_state = state
             

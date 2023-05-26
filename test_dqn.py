@@ -189,8 +189,12 @@ n_states = env.observation_space.n
 
 if cfg.Z_hidden_state:
     if cfg.LATE_FUSION:
-        policy_net = DQN_LateFusion(n_states, n_actions).to(device)
-        target_net = DQN_LateFusion(n_states, n_actions).to(device)
+        if cfg.TEMPORAL_CONTEXT:
+            policy_net = DQN_LateFusion(n_states, n_actions).to(device)
+            target_net = DQN_LateFusion(n_states, n_actions).to(device)
+        else:
+            policy_net = DQN_LateFusion_noTCtx(n_states, n_actions).to(device)
+            target_net = DQN_LateFusion_noTCtx(n_states, n_actions).to(device)
     else:
         policy_net = DQN_Z(n_states, n_actions).to(device)
         target_net = DQN_Z(n_states, n_actions).to(device)
@@ -292,7 +296,12 @@ for f in pt_files:
         steps_done += 1
         num_optim = 0
         
+        action = 5
+        flag_decision = False
+        
         action = select_action(state) #1
+        
+        decision_cont = 0
         
         reward_energy_ep = 0
         reward_time_ep = 0
@@ -379,6 +388,9 @@ for f in pt_files:
     
     # epoch_idle.append(np.sum(total_idle))
     epoch_idle.append(np.mean(total_idle))
+    
+    print("TOTAL IDLE: ", total_idle)
+    print("RWARD: ", total_reward)
     
     
     #maximum_time = sum(total_maximum_time_execution_epoch) #Human times
@@ -534,12 +546,16 @@ print("Energy reward: ", epoch_total_reward_energy_ep)
 print("Time reward: ", epoch_total_reward_time_ep)
 
 # -------------__REWARDS -------------------------
+
+best_reward = np.argmax(epoch_reward)
+be = "Best epoch " + str(epoch_test[best_reward])
+
 fig2 = plt.figure(figsize=(20,6))
 
 
 plt.subplot2grid((1,3),(0,0))
 
-plt.plot(epoch_total_reward_energy_ep, 'c:')
+plt.plot(epoch_test, epoch_total_reward_energy_ep, 'c:')
 plt.title("Energy reward")
 plt.legend(["Energy reward"])
 plt.xlabel("Epoch")
@@ -547,7 +563,7 @@ plt.xlabel("Epoch")
 
 plt.subplot2grid((1,3),(0,1))
 
-plt.plot(epoch_total_reward_time_ep, 'c:')
+plt.plot(epoch_test, epoch_total_reward_time_ep, 'c:')
 plt.title("Time reward")
 plt.legend(["Time reward"])
 plt.xlabel("Epoch")
@@ -556,8 +572,9 @@ plt.xlabel("Epoch")
 plt.subplot2grid((1,3),(0,2))
 
 plt.title("Total reward")
-plt.plot(epoch_reward, 'c-.')
-plt.legend(["Total reward"])
+plt.plot(epoch_test, epoch_reward, 'c-.', label='Total reward')
+plt.plot(epoch_test[best_reward], epoch_reward[best_reward], 'x', label=be)
+plt.legend()
 plt.xlabel("Epoch")
 
 # plt.show()
@@ -597,6 +614,10 @@ else: fig3.savefig(save_path+'/00_TRAIN_INTERACTION_TIME.jpg')
 plt.close()
 
 
+
+# IDLE TIME---------------------------------
+
+
 print("Idle time: ", epoch_idle)
 # ----------- IDLES -------------
 fig4 = plt.figure(figsize=(10,6))
@@ -609,6 +630,16 @@ else: fig4.savefig(save_path+'/00_TRAIN_IDLE_DECISIONS.jpg')
 
 plt.close()
 
+
+total_idle_filt = [i for i in total_idle if i<40]
+
+fig = plt.figure(figsize=(9,5))
+plt.title("Idle time before action")
+plt.hist(total_idle_filt, bins=50)
+plt.xlabel("Seconds")
+
+if env.test: fig.savefig(save_path+'/00_TEST_IDLE_TIME.jpg')
+else: fig.savefig(save_path+'/00_TRAIN_IDLE_TIME.jpg')
 
 if env.test: 
     for i in range(NUM_EPISODES):

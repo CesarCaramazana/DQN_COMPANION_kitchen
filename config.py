@@ -26,7 +26,7 @@ LOAD_MODEL = False
 LOAD_EPISODE = 0
 
 Z_hidden_state = True
-TEMPORAL_CONTEXT = True
+TEMPORAL_CONTEXT = False
 
  
 LATE_FUSION = True #Only supported for Z_hidden_state = True
@@ -37,7 +37,7 @@ LATE_FUSION = True #Only supported for Z_hidden_state = True
 DECISION_RATE = 30
 
 #ROBOT SPEED FACTOR: if BETA < 1, the robot becomes faster; if BETA > 1, the robot becomes slower. BETA = 1 is a robot that is as fast as the average person.
-BETA = 2
+BETA = 1.5
 
 #ENERGY PENALTY FACTOR
 FACTOR_ENERGY_PENALTY = 1

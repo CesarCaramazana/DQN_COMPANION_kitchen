@@ -763,7 +763,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
 
  
             #PLOT TRAIN
-            if i_epoch % 15 == 0: plot_each_epoch(i_epoch, phase,save_path,
+            if i_epoch % 30 == 0: plot_each_epoch(i_epoch, phase,save_path,
             minimum_time,
             total_results_train,
             total_loss_epoch_train,
@@ -833,7 +833,7 @@ for i_epoch in range (args.load_episode,NUM_EPOCH):
             total_UA_unrelated_epoch_val]
             #PLOT VALIDATION            
             
-            if i_epoch % 10== 0: plot_each_epoch(i_epoch, phase,save_path,
+            if i_epoch % 20== 0: plot_each_epoch(i_epoch, phase,save_path,
             minimum_time, 
             total_results,
             total_loss_epoch_val,

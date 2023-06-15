@@ -544,6 +544,7 @@ else: fig1.savefig(save_path+'/00_TRAIN_ACTIONS_PIE.jpg')
 
 print("Energy reward: ", epoch_total_reward_energy_ep)
 print("Time reward: ", epoch_total_reward_time_ep)
+print("TOTAL REWARD: ", epoch_reward)
 
 # -------------__REWARDS -------------------------
 

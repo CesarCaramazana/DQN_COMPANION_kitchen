@@ -8,18 +8,6 @@ The passive agent provides a reward signal via the available interfaces in order
 
 ![DQN Training loop](https://github.com/CesarCaramazana/DQN_COMPANION_kitchen/blob/main/images/DQN_loop.PNG?raw=True)
 
-In our particular Reinforcement Learning scenario:
-- The states are continuous and dynamic. We do not have a model of the environment (state transitions), so the state is updated by observations.
-- The discount factor of future rewards is close to 0 --we do not care that much about cumulative rewards; we want the agent to be optimal on a moment-to-moment basis--.
-- Rewards are bounded between -1 and 1. 
-- The output of the network should not be softmaxed (it approximates the Q value, not the probability of each action, which depends on the reward).
-
-
-**Some problems that have been identified**:
-- In order to train the model without the need of real interaction, a table of deterministic rewards has been stablished in the environment setup. This shifts the problem closer to a supervised learning scenario, since there is only one optimal action for every posible state.
-- The states are currently defined as the "Next atomic action", even though the Active Object variable is concatenated. To make the Active Object useful, one could try to implement a take_action function that takes into account which object is needed. 
-- The robot action repertoire is not the actual repertoire. Right now, actions have been hard-coded as "grab [object]", where [object] is every possibility of the environment. 
-- The discount gamma factor plays a critical role in the loss function curve. When gamma is close to 0.99, the loss is noisier; when gamma is close to 0, the loss has a very steep slope during the first episodes and then gets horizontal. 
 
 
 # FILES DESCRIPTION
@@ -43,11 +31,8 @@ Implementation of the fully-connected neural network and the Replay Memory modul
 ```
 ./DQN.py
 ```
-Basic implementation of a FCNN, with only one hidden layer, as well as the Replay Memory.
+Basic implementation of the DQN with a Mid-level fusion strategy, as well as the Replay Memory.
 
-The number of input neurons depends on the size of the STATE SPACE. For example, if we considered the state to be defined as the vector of probabilities of *Next Atomic Action*, we would have as many neurons in the input layer as the number of atomic actions. 
-
-The number of output neurons is the same as the number of actions from the robot action repertoire (or ACTION SPACE). The network approximates que Q value for each possible action. 
 
 ![DQN FCNN](https://github.com/CesarCaramazana/DQN_COMPANION_kitchen/blob/main/images/DQN_FCNN.PNG?raw=True)
 

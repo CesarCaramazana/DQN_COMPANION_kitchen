@@ -15,6 +15,8 @@ Our application scenario focuses on collaborative cooking tasks, in which a pati
 ![DQN Training loop](https://github.com/CesarCaramazana/DQN_COMPANION_kitchen/blob/main/images/system_overview.png)
 
 
+The core of the RDM is a Deep Q-Network (DQN) implemented as a feed-forward Multilayer Perceptron (MLP). The main motivation for working with a Q-learning framework is that it is a model-free algorithm, i.e., it does not require a transition model from the environment, and it can be coupled with neural networks to build a Deep Q-learning approach.
+
 
 # FILES DESCRIPTION
 

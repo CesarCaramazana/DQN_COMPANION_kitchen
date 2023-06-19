@@ -34,9 +34,7 @@ Implementation of the fully-connected neural network and the Replay Memory modul
 Basic implementation of the DQN with a Mid-level fusion strategy, as well as the Replay Memory.
 
 
-![DQN FCNN](https://github.com/CesarCaramazana/DQN_COMPANION_kitchen/blob/main/images/DQN_FCNN.PNG?raw=True)
-
-
+![DQN Midfusion](https://github.com/CesarCaramazana/DQN_COMPANION_kitchen/blob/main/images/DQN_Late3.PNG)
 
 
 Default configuration of the training script and the environment. 
@@ -64,9 +62,7 @@ There are three types of functions:
 2. **Get state**: as interface functions between the input systems and the environment. Right now using the video annotations. In the future, these functions will be used to retrieve the outputs of the Action Prediction system (among others) and generate the state of the environment.
 3. **Rewards**: user interfaces to get the reward value. 
 
-In the following picture, these blocks are incorporated into the general DQN loop. 
 
-![DQN Aux](https://github.com/CesarCaramazana/DQN_COMPANION_kitchen/blob/main/images/DQN_Late3.PNG)
 
 
 

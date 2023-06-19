@@ -66,13 +66,9 @@ There are three types of functions:
 
 In the following picture, these blocks are incorporated into the general DQN loop. 
 
-![DQN Aux](https://github.com/CesarCaramazana/DQN_COMPANION_kitchen/blob/main/images/auxiliary_functions.PNG?raw=True)
+![DQN Aux](https://github.com/CesarCaramazana/DQN_COMPANION_kitchen/blob/main/images/DQN_Late3.PNG)
 
-*Some notes*:
-- *In the current implementation, the Get_state() function uses video annotations, and does not call the Action Prediction System, nor the Visual Working Memory*. 
-- *The VWM is not encoded in the annotations, and therefore is not used right now as an input variable*. 
-- *One_hot() and Concatenate() are the two most significant general purpose functions. One-hot encoding is necessary right now because the Next Atomic Action is annotated as an integer. The Action Prediction System will output a vector of probabilties, which won't require one-hot encoding*. 
-- *Because of the three above, this picture should not be taken as a faithful representation of the annotation-based implementation of our scenario, but a mixture between what is and what will be once the other systems are available.*
+
 
 
 Video annotations from the breakfast dataset, as pickle files.
@@ -199,21 +195,5 @@ optional arguments:
   requirements.txt
 
 ```
-
-# TO DO
-
-- [x] Reward as a confirmation signal for the action to be performed.
-- [ ] Update robot action repertoire.
-- [ ] Incorporate the Visual Working Memory in the state.
-- [X] Parallelize reward and action performing.
-- [X] Incorporate the Face Expression Recognizer into the get_reward repertoire.
-- [X] Parallelize reward interfaces.
-- [X] Get reward via emotion recognition (function). (S)
-- [X] Try the emotion recognition with threads. 
-- [X] cv2.putText() -> scale with respect to image resolution. (C) 
-- [ ] Emotion recognition: different decision thresholds for each emotion. (S) 
-- [ ] Real-life videos for the emotion recognition. (C) 
-- [X] Remove main() in reward_parallel (C)
-- [ ] Sound effects for the interfaces. (C)
 
 

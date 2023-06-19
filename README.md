@@ -48,7 +48,7 @@ Implementation of the custom environment.
 ```
 ./gym-basic/gym_basic/envs/main.py
 ```
-Creation and definition of the kitchen environment. This is where the take_action, transition and get_reward functions are implemented.  
+Creation and definition of the kitchen environment.
 
 
 

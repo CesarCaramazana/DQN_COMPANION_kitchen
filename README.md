@@ -2,8 +2,9 @@
 
 # PROJECT DESCRIPTION
 
-A Pytorch implementation of a Deep Q Learning scenario with a custom gym environment. The environment simulates a recipe-preparation problem, where a passive agent interacts with the objects in a kitchen and a robot aims to provide useful help by performing an action related to the task.
-The passive agent provides a reward signal via the available interfaces in order to modify and fine-tune the action decision system. 
+A Pytorch implementation of a Deep Q Learning scenario with a custom gym environment. 
+
+Our application scenario focuses on collaborative cooking tasks, in which a patient with reduced mobility tries to prepare a breakfast recipe in a kitchen. The robot aims to assist the person by bringing in advance the ingredients and utensils that are out of the immediate reach, acting proactively and avoiding explicit commands.
 
 ![DQN Training loop](https://github.com/CesarCaramazana/DQN_COMPANION_kitchen/blob/main/images/system_overview.png)
 

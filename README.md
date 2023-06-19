@@ -1,5 +1,4 @@
-# PROJECT TITLE 
-### A Deep Q Network implementation for a recipe preparation task
+# A Deep Q-Network Decision Making System for assistive robots in a simulation environment of human-robot interaction
 
 # PROJECT DESCRIPTION
 

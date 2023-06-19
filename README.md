@@ -1,5 +1,11 @@
 # A Deep Q-Network Decision Making System for assistive robots in a simulation environment of human-robot interaction
 
+Abstract -- The development of intelligent robots has become a trend to assist people with cognitive or motor disabilities and reduce the dependency in their own homes. Personalizing the human-robot interaction (HRI) is a key component to ease the acceptance of the artificial agent into hospital or domestic environments. Latest efforts on social robotics aim to equip the robot with more human-like capabilities, such as Natural Language skills, emotional responses or proactiveness.
+This latter characteristic shifts the interactive paradigm from the traditional master-slave, in which the robot simply obeys commands, to the anticipative one, in which the robot predicts the patient’s needs and acts in advance without explicit orders.
+
+Our proposal contributes in the direction of anticipative robots by designing and implementing a Decision Making System for a robot that observes both its own
+capabilities and a patient’s behavior to assist in a collaborative cooking task. In our experiments we demonstrate that the robot is able to adapt its behavior based on the self-perception of its own physical skills and other parameters of interest, improving the efficiency of the HRI with respect to a reactive robot.
+
 # PROJECT DESCRIPTION
 
 A Pytorch implementation of a Deep Q Learning scenario with a custom gym environment. 

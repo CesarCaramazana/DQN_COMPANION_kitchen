@@ -51,38 +51,7 @@ Implementation of the custom environment.
 ```
 Creation and definition of the kitchen environment. This is where the take_action, transition and get_reward functions are implemented.  
 
-Auxiliary functions of the environment .
-------------------------------------------------
-```
-./aux.py
-```
-In this script, some auxiliary functions that are used in the environment setup (./gym-basic/gym_basic/envs/main.py) are implemented.
-There are three types of functions:
-1. **General purpose**: regarding the management of array variables.
-2. **Get state**: as interface functions between the input systems and the environment. Right now using the video annotations. In the future, these functions will be used to retrieve the outputs of the Action Prediction system (among others) and generate the state of the environment.
-3. **Rewards**: user interfaces to get the reward value. 
 
-
-
-
-
-
-Video annotations from the breakfast dataset, as pickle files.
-------------------------------------------------
-```
-./video_annotations/*.pkl
-```
-Each pickle has the following fields:
-- 'idx_action': Index/Order of the atomic actions in the recipe.
-- 'label': Atomic action.
-- 'verb_label': Verb of the atomic action. 
-- 'object_label': Objects used in the atomic action. 
-- 'frame_init': Initial frame of the atomic action in the video.
-- 'frame_end': Last frame of the atomic action in the video. 
-
-For example:
-
-![Pickle](https://github.com/CesarCaramazana/DQN_COMPANION_kitchen/blob/main/images/annotations_pickle.png?raw=True)
 
 
 # HOW TO INSTALL

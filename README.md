@@ -1,5 +1,7 @@
 # A Deep Q-Network Decision Making System for assistive robots in a simulation environment of human-robot interaction
 
+### César Caramazana, Silvia Abal
+
 Abstract -- The development of intelligent robots has become a trend to assist people with cognitive or motor disabilities and reduce the dependency in their own homes. Personalizing the human-robot interaction (HRI) is a key component to ease the acceptance of the artificial agent into hospital or domestic environments. Latest efforts on social robotics aim to equip the robot with more human-like capabilities, such as Natural Language skills, emotional responses or proactiveness.
 This latter characteristic shifts the interactive paradigm from the traditional master-slave, in which the robot simply obeys commands, to the anticipative one, in which the robot predicts the patient’s needs and acts in advance without explicit orders.
 
@@ -153,12 +155,21 @@ optional arguments:
   /images
       some_image.png
   /video_annotations
-      recipe_date.pkl
+      /5folds
+        /fold1
+          /train
+          /test
+        /fold2
+        ...
+        /fold5
   aux.py
   DQN.py
   config.py
   train_dqn.py
   test_dqn.py
+
+  calculate_mean_std.py
+  calculate_folds.py
   
   /Checkpoints
       /experiment_name

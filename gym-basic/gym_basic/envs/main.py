@@ -711,7 +711,10 @@ class BasicEnv(gym.Env):
         #RRRRRRRRRRRRRRRRRRRRRRRRRRR    
         # 1.2 Save sampled duration in the list of lists
         if action != 5: 
-            self.action_repertoire_durations[action].append(self.duration_action)    
+            #self.action_repertoire_durations[action].append(self.duration_action)   
+            
+            #Running mean
+            self.action_repertoire_durations[action] = 0.95 * self.action_repertoire_durations[action] + (1-0.95)*self.duration_action
             # print("DURATION: ", self.duration_action)
         
         # =========================================================================================================================
@@ -1776,15 +1779,13 @@ class BasicEnv(gym.Env):
                 
 
         if cfg.TEMPORAL_CONTEXT:
-            # print("WITH TEMPORAL CTX")
-            # if self.test:
-            #     action_durations_ML = list(cfg.ROBOT_ACTION_DURATIONS.values())
-            # else:
-            #     action_durations_ML = [np.array(ad).mean() if ad else 0 for ad in self.action_repertoire_durations]
                 
-            #FROM CONFIG
+            #FROM CONFIG (for testing, as we don't save the ML in external memory) (Since it is a ML estimate, with enough iterations, they are almost the same)
             action_durations_ML = list(cfg.ROBOT_ACTION_DURATIONS.values())
             action_durations_ML = (action_durations_ML - np.mean(action_durations_ML)) / np.std(action_durations_ML)
+
+            #FROM RUNNING MEAN
+            #action_durations_ML = self.action_repertoire_durations
             
             #print("Remainigng frames en transition: ", self.remaining_frames[frame_to_read])
             # human_action_estimate = [self.remaining_frames[frame_to_read]] #This will be output by the ACTION PREDICTION MODULE
@@ -1868,6 +1869,9 @@ class BasicEnv(gym.Env):
         
         #RRRRRRRRRRRRRR
         self.action_repertoire_durations = [[] for x in range(cfg.ACTION_SPACE)] #Empty list of lists
+
+        #For the ML estimates
+        #self.action_repertoire_durations = np.zeros(cfg.ACTION_SPACE)
         
         self.flags = {'freeze state': False, 'decision': False, 'threshold': " ",'evaluation': "Not evaluated", 'action robot': False,'break':False,'pdb': False}
         

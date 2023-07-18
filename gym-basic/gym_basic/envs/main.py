@@ -1779,21 +1779,25 @@ class BasicEnv(gym.Env):
                 
 
         if cfg.TEMPORAL_CONTEXT:
-                
-            #FROM CONFIG (for testing, as we don't save the ML in external memory) (Since it is a ML estimate, with enough iterations, they are almost the same)
+
+            #ROBOT ACTION DURATION ESTIMATES
+            # Etiquetas
+            #1) FROM CONFIG (for testing, as we don't save the ML in external memory) (Since it is a ML estimate, with enough iterations, they are almost the same)
             action_durations_ML = list(cfg.ROBOT_ACTION_DURATIONS.values())
             action_durations_ML = (action_durations_ML - np.mean(action_durations_ML)) / np.std(action_durations_ML)
 
-            #FROM RUNNING MEAN
+            # Estimaciones durante la HRI    
+            #2) FROM RUNNING MEAN
             #action_durations_ML = self.action_repertoire_durations
-            
-            #print("Remainigng frames en transition: ", self.remaining_frames[frame_to_read])
-            # human_action_estimate = [self.remaining_frames[frame_to_read]] #This will be output by the ACTION PREDICTION MODULE
-            
-            #Using ANNOTATIONS
+
+            # HUMAN TIME-TO-FINISH      
+            # 1) Etiquetas
             human_action_estimate = np.zeros(1)
             human_action_estimate[0] = (((annotations['frame_end'][action_idx] - frame) / 3513) - 0.5)*2
-            
+
+            # 2) Datos reales
+            #print("Remainigng frames en transition: ", self.remaining_frames[frame_to_read])
+            # human_action_estimate = [self.remaining_frames[frame_to_read]] #This will be output by the ACTION PREDICTION MODULE            
             
             # temp_ctx = concat_vectors(action_durations_ML, human_action_estimate)
             
@@ -2299,25 +2303,22 @@ class BasicEnv(gym.Env):
         # print("\nOIT: ", oit.shape)    
 
         if cfg.TEMPORAL_CONTEXT:
-            # print("WITH TEMPORAL CTX")
-            # if self.test:
-            #     action_durations_ML = list(cfg.ROBOT_ACTION_DURATIONS.values())
-            # else:
-            #     action_durations_ML = [np.array(ad).mean() if ad else 0 for ad in self.action_repertoire_durations]
-                
-            #FROM CONFIG
+            # Robot temporal context
+            #1) FROM CONFIG
             action_durations_ML = list(cfg.ROBOT_ACTION_DURATIONS.values())
             action_durations_ML = (action_durations_ML - np.mean(action_durations_ML)) / np.std(action_durations_ML)
-            
-            
-            #print("Remainigng frames en transition: ", self.remaining_frames[frame_to_read])
-            # human_action_estimate = [self.remaining_frames[frame_to_read]] #This will be output by the ACTION PREDICTION MODULE
-            
-            #Using ANNOTATIONS
+
+            # 2) From the interaction
+            #action_durations_ML = self.action_repertoire_durations       
+
+            #  Human time-to-finish        
+            # 1) Using ANNOTATIONS
             human_action_estimate = np.zeros(1)
             human_action_estimate[0] = (((annotations['frame_end'][action_idx] - frame) / 3513) - 0.5)*2
+
+            # 2) Datos reales
+            # human_action_estimate = [self.remaining_frames[frame_to_read]] #This will be output by the ACTION PREDICTION MODULE
                
-            # temp_ctx = concat_vectors(action_durations_ML, human_action_estimate)
             
             
             # W/O Z-hidden state of LSTM
